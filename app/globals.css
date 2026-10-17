@@ -1,0 +1,250 @@
+@import '@fontsource/ibm-plex-sans-arabic/400.css';
+@import '@fontsource/readex-pro/400.css';
+@import '@fontsource/readex-pro/700.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --bg: #f6f4ec;
+  --panel: #ffffff;
+  --muted: #6c6d5c;
+  --line: #e2e0d2;
+  --matcha: #6e8a3c;
+  --bean: #6b4a2e;
+  --focus-ring: rgba(110, 138, 60, 0.35);
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 1rem;
+}
+
+body {
+  @apply bg-[#f6f4ec] text-[#2a2b22] antialiased;
+  min-width: 320px;
+  font-family: 'IBM Plex Sans Arabic', sans-serif;
+  text-rendering: optimizeLegibility;
+  background-image:
+    radial-gradient(ellipse at 8% 4%, rgba(210, 219, 190, 0.28), transparent 28rem),
+    radial-gradient(ellipse at 92% 22%, rgba(236, 224, 203, 0.22), transparent 26rem);
+}
+
+::selection {
+  background: rgba(110, 138, 60, 0.2);
+  color: #2a2b22;
+}
+
+h1, h2, h3, h4 {
+  font-family: 'Readex Pro', sans-serif;
+}
+
+button, input, select, textarea {
+  font: inherit;
+}
+
+input, textarea, select {
+  @apply rounded-xl border border-[#dfe4d2] bg-white px-3 py-2 outline-none transition-colors focus:border-matcha-500;
+}
+
+input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+.category-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #d9ddce transparent;
+  scroll-padding-inline: 0.5rem;
+}
+
+.category-scroll::-webkit-scrollbar {
+  height: 4px;
+}
+
+.category-scroll::-webkit-scrollbar-thumb {
+  border-radius: 9999px;
+  background: #d9ddce;
+}
+
+.motion-enter {
+  animation: rise-in 480ms cubic-bezier(0.2, 0.75, 0.25, 1) both;
+}
+
+.motion-fill-both {
+  animation-fill-mode: both;
+}
+
+.motion-float {
+  animation: slow-float 8s ease-in-out infinite;
+}
+
+.login-cup {
+  filter: drop-shadow(0 24px 30px rgba(48, 54, 37, .12));
+}
+
+.login-cup-body {
+  position: absolute;
+  z-index: 0;
+  inset: 17px 20px 28px;
+  border: 1px solid rgba(255, 255, 255, .9);
+  border-radius: 2rem 2rem 2.5rem 2.5rem;
+  background: linear-gradient(180deg, #fffefa 0%, #fff 72%, #f7f0e5 100%);
+  clip-path: polygon(0 0, 100% 0, 94% 91%, 87% 100%, 13% 100%, 6% 91%);
+  box-shadow: inset 0 0 0 1px rgba(210, 193, 166, .18);
+}
+
+.login-cup-handle {
+  position: absolute;
+  z-index: -1;
+  top: 34%;
+  right: 3px;
+  width: 64px;
+  height: 112px;
+  border: 11px solid #c99a67;
+  border-left: 0;
+  border-radius: 0 52% 52% 0;
+  background: linear-gradient(90deg, transparent 45%, rgba(201, 154, 103, .12));
+}
+
+.login-cup-rim {
+  position: absolute;
+  z-index: 20;
+  top: 9px;
+  right: 34px;
+  left: 34px;
+  height: 22px;
+  border: 3px solid #d9c4a4;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #f8edda 0%, #fffdfa 75%);
+  box-shadow: 0 3px 5px rgba(83, 64, 42, .08);
+}
+
+.login-cup-saucer {
+  position: absolute;
+  right: 24%;
+  bottom: 4px;
+  left: 24%;
+  height: 22px;
+  border: 3px solid #c8a77a;
+  border-radius: 50%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .75), rgba(239, 226, 205, .85));
+  box-shadow: 0 5px 8px rgba(83, 64, 42, .09);
+}
+
+.hero-writing-word {
+  display: inline-block;
+  animation: hero-word-write 420ms steps(5, end) both;
+}
+
+.hero-writing-word:not(:last-child) {
+  margin-inline-end: .22em;
+}
+
+.hero-coffee-cup {
+  animation: coffee-cup-float 3.8s ease-in-out infinite;
+}
+
+.coffee-steam {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: coffee-steam-rise 2.1s ease-out infinite;
+}
+
+.coffee-steam-two {
+  animation-delay: 700ms;
+}
+
+.coffee-steam-three {
+  animation-delay: 1400ms;
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes hero-word-write {
+  from {
+    clip-path: inset(0 0 0 100%);
+    opacity: .3;
+    transform: translateY(3px);
+  }
+  to {
+    clip-path: inset(0);
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes coffee-cup-float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes coffee-steam-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(7px) scale(.8);
+  }
+  30% {
+    opacity: .75;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-10px) scale(1.1);
+  }
+}
+
+@keyframes slow-float {
+  0%, 100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(-10px, 12px, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .hero-coffee-cup,
+  .coffee-steam {
+    animation: none;
+  }
+}
+
+.card {
+  @apply rounded-2xl border border-[#e2e0d2] bg-white shadow-soft;
+}
+
+.badge {
+  @apply inline-flex items-center rounded-full px-2 py-1 text-[10px] font-semibold;
+}

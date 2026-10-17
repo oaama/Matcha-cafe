@@ -1,0 +1,1180 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>منيو ماتشا</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=Readex+Pro:wght@400;500;600;700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<style>
+/* Layout: customer menu is a single phone-first column; staff screens are wide boards with a slim demo switcher on top */
+:root{
+  --bg:#F6F4EC; --surface:#FFFFFF; --surface2:#EFEEE4; --ink:#2A2B22; --muted:#6C6D5C; --line:#E2E0D2;
+  --matcha:#6E8A3C; --matcha-ink:#FFFFFF; --matcha-soft:#E5EBD4; --bean:#6B4A2E; --honey:#C48F30;
+  --ok:#3F7A3A; --warn:#B07A1E; --bad:#B0442F; --bad-soft:#F6E1DA; --warn-soft:#F5ECD7; --ok-soft:#E1EEDC;
+  --display:"Readex Pro","IBM Plex Sans Arabic",system-ui,sans-serif;
+  --body:"IBM Plex Sans Arabic","Readex Pro",system-ui,sans-serif;
+  --r:14px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#141611; --surface:#1D2019; --surface2:#262A21; --ink:#ECEBE1; --muted:#A3A38F; --line:#33372C;
+  --matcha:#A3BD6B; --matcha-ink:#1A1D14; --matcha-soft:#2B3421; --bean:#D7AE86; --honey:#E3B964;
+  --ok:#86C27A; --warn:#E2B460; --bad:#E7826B; --bad-soft:#3A221C; --warn-soft:#382D18; --ok-soft:#203321; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141611; --surface:#1D2019; --surface2:#262A21; --ink:#ECEBE1; --muted:#A3A38F; --line:#33372C;
+  --matcha:#A3BD6B; --matcha-ink:#1A1D14; --matcha-soft:#2B3421; --bean:#D7AE86; --honey:#E3B964;
+  --ok:#86C27A; --warn:#E2B460; --bad:#E7826B; --bad-soft:#3A221C; --warn-soft:#382D18; --ok-soft:#203321; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--ink)}
+body{font-family:var(--body);font-size:15px;line-height:1.55}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--matcha);outline-offset:2px}
+.num,.price{font-variant-numeric:tabular-nums}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0}
+body.lock{overflow:hidden}
+
+/* demo switcher */
+.demo{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;background:var(--bean);color:#FBF6EE;display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:6px 16px;font-size:13px}
+.demo b{font-weight:600;margin-inline-end:4px}
+.demo .tabs{display:flex;gap:4px;flex-wrap:wrap}
+.demo button{background:transparent;border:1px solid rgba(255,255,255,.28);color:inherit;border-radius:999px;padding:3px 11px}
+.demo button.on{background:#FBF6EE;color:#3B2716;border-color:#FBF6EE}
+.demo button:disabled{opacity:.35;cursor:not-allowed}
+.demo select{background:transparent;border:1px solid rgba(255,255,255,.28);border-radius:999px;padding:2px 8px;color:inherit}
+.demo select option{color:#222}
+.demo .sp{flex:1}
+
+/* customer */
+.cust{max-width:720px;margin:0 auto;padding-inline:16px;padding-block:14px 120px}
+.c-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.brand img{width:58px;height:58px;border-radius:50%;border:1px solid var(--line);object-fit:cover}
+.brand h1{font-size:26px;letter-spacing:.06em;font-weight:600;line-height:1}
+.brand .tag{margin:4px 0 0;font-size:10.5px;letter-spacing:.32em;color:var(--muted)}
+.head-actions{display:flex;gap:6px}
+.ibtn{width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;font-family:var(--display);font-weight:600;font-size:14px}
+.ibtn svg{width:19px;height:19px}
+.meta-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:4px 12px;font-size:13px;background:var(--matcha-soft);color:var(--ink);border:0}
+.pill.track{background:var(--bean);color:#FBF6EE}
+.searchbar{margin-top:14px;display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:0 14px}
+.searchbar svg{width:18px;height:18px;color:var(--muted);flex:none}
+.searchbar input{border:0;background:transparent;padding:11px 0;width:100%;outline:none}
+.chips{position:sticky;top:calc(env(safe-area-inset-top,0px) + 34px);z-index:5;background:var(--bg);display:flex;gap:6px;overflow-x:auto;padding-block:10px;margin-inline:-16px;padding-inline:16px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 14px;font-size:13.5px;white-space:nowrap}
+.chip.on{background:var(--matcha);color:var(--matcha-ink);border-color:var(--matcha)}
+.chip.sep{margin-inline-start:6px}
+.sec{margin-top:18px}
+.sec-h{display:flex;align-items:baseline;gap:10px;margin-bottom:8px}
+.sec-h h2{font-size:21px;font-weight:600;color:var(--matcha)}
+.sec-h span{color:var(--muted);font-size:13px}
+.prod{display:grid;grid-template-columns:76px 1fr auto;gap:12px;align-items:center;padding:10px;border-radius:var(--r);background:var(--surface);border:1px solid var(--line);margin-bottom:8px;cursor:pointer;position:relative}
+.prod.off{opacity:.55}
+.prod.off .thumb{filter:grayscale(1)}
+.thumb{width:76px;height:76px;border-radius:12px;display:grid;place-items:center;overflow:hidden;background:linear-gradient(150deg,hsl(var(--h) 45% 88%),hsl(var(--h) 38% 76%));color:hsl(var(--h) 40% 30%)}
+.thumb svg{width:38px;height:38px}
+.thumb img{width:100%;height:100%;object-fit:cover}
+.pinfo{min-width:0}
+.pname{font-family:var(--display);font-weight:500;font-size:16px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.pdesc{margin:2px 0 4px;color:var(--muted);font-size:13px;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+.pprice{font-weight:600;font-size:15px}
+.pprice s{color:var(--muted);font-weight:400;font-size:13px;margin-inline-start:6px}
+.badge{font-size:11px;font-weight:600;border-radius:6px;padding:1px 7px;line-height:1.6;font-family:var(--body)}
+.b-best{background:var(--warn-soft);color:var(--warn)}
+.b-new{background:var(--bad-soft);color:var(--bad)}
+.b-offer{background:var(--ok-soft);color:var(--ok)}
+.b-off{background:var(--surface2);color:var(--muted)}
+.pside{display:flex;flex-direction:column;align-items:center;gap:6px}
+.fav{border:0;background:transparent;color:var(--muted);padding:4px;line-height:0}
+.fav.on{color:var(--bad)}
+.fav svg{width:20px;height:20px}
+.addbtn{width:36px;height:36px;border-radius:50%;border:0;background:var(--matcha);color:var(--matcha-ink);display:grid;place-items:center}
+.addbtn svg{width:18px;height:18px}
+.addbtn:disabled{background:var(--surface2);color:var(--muted)}
+.empty{padding:40px 10px;text-align:center;color:var(--muted)}
+.c-foot{margin-top:28px;padding-top:16px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:12px;color:var(--muted);font-size:13.5px}
+.c-foot .row{display:flex;gap:8px;flex-wrap:wrap}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 14px;display:inline-flex;align-items:center;justify-content:center;gap:6px;font-size:14px}
+.btn svg{width:17px;height:17px}
+.btn.pri{background:var(--matcha);color:var(--matcha-ink);border-color:var(--matcha);font-weight:600}
+.btn.dark{background:var(--bean);color:#FBF6EE;border-color:var(--bean)}
+.btn.danger{color:var(--bad);border-color:var(--bad)}
+.btn.sm{padding:4px 10px;font-size:13px;border-radius:8px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.block{width:100%;padding:13px}
+.cartbar{position:fixed;inset-inline:0;bottom:0;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));z-index:20;display:flex;justify-content:center;pointer-events:none}
+.cartbar button{pointer-events:auto;width:100%;max-width:688px;display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--bean);color:#FBF6EE;border:0;border-radius:16px;padding:14px 18px;font-family:var(--display);font-size:15.5px;box-shadow:0 10px 30px rgba(40,30,15,.25)}
+.cartbar .cnt{background:#FBF6EE;color:var(--bean);border-radius:999px;min-width:26px;height:26px;display:inline-grid;place-items:center;font-size:13px;font-weight:700;padding:0 6px}
+.consent{margin-top:12px;background:var(--surface2);border-radius:12px;padding:10px 12px;font-size:13px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.consent p{margin:0;flex:1;min-width:200px}
+
+/* sheet */
+#sheet{position:fixed;inset:0;z-index:50}
+.scrim{position:absolute;inset:0;background:rgba(20,18,10,.45)}
+.sheet{position:absolute;inset-inline:0;bottom:0;margin:0 auto;max-width:640px;max-height:92%;overflow:auto;background:var(--bg);border-radius:20px 20px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));animation:up .22s ease-out}
+.sheet.wide{max-width:860px}
+@media (min-width:760px){.sheet{bottom:auto;top:50%;transform:translateY(-50%);border-radius:20px;animation:none}}
+@keyframes up{from{transform:translateY(30px);opacity:.4}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.sheet{animation:none}}
+.sh-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px}
+.sh-top h2{font-size:21px}
+.x{border:0;background:var(--surface2);width:34px;height:34px;border-radius:50%;display:grid;place-items:center;flex:none}
+.x svg{width:16px;height:16px}
+.hero-tile{height:150px;border-radius:16px;display:grid;place-items:center;overflow:hidden;margin-bottom:12px;background:linear-gradient(150deg,hsl(var(--h) 45% 88%),hsl(var(--h) 38% 72%));color:hsl(var(--h) 40% 28%)}
+.hero-tile svg{width:70px;height:70px}
+.hero-tile img{width:100%;height:100%;object-fit:cover}
+.grp{margin-top:16px}
+.grp-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.grp-h b{font-family:var(--display);font-weight:500}
+.req{font-size:11.5px;border-radius:6px;padding:1px 8px;background:var(--bad-soft);color:var(--bad)}
+.req.okk{background:var(--ok-soft);color:var(--ok)}
+.req.opt{background:var(--surface2);color:var(--muted)}
+.opts{display:flex;flex-wrap:wrap;gap:6px}
+.opt{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:7px 12px;font-size:14px}
+.opt.on{border-color:var(--matcha);background:var(--matcha-soft);box-shadow:inset 0 0 0 1px var(--matcha)}
+.opt small{color:var(--muted);margin-inline-start:4px}
+textarea,input[type=text],input[type=tel],input[type=number],input[type=time],input[type=url],select.f{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 11px}
+textarea{min-height:64px;resize:vertical}
+label.fl{display:block;font-size:13px;color:var(--muted);margin:12px 0 5px}
+.stepper{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);border-radius:999px;background:var(--surface);padding:3px}
+.stepper button{width:32px;height:32px;border-radius:50%;border:0;background:var(--surface2);display:grid;place-items:center}
+.stepper button svg{width:15px;height:15px}
+.stepper span{min-width:26px;text-align:center;font-weight:600}
+.sh-bottom{display:flex;gap:10px;align-items:center;margin-top:18px;position:sticky;bottom:-18px;background:var(--bg);padding-block:10px}
+.sh-bottom .btn{flex:1;padding:13px}
+.sugg{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
+.sugg button{flex:none;width:128px;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:8px;text-align:start}
+.sugg .thumb{width:100%;height:60px;margin-bottom:6px}
+.sugg .thumb svg{width:28px}
+.sugg b{display:block;font-weight:500;font-size:13px;line-height:1.3}
+.sugg span{font-size:12.5px;color:var(--muted)}
+.line{display:grid;grid-template-columns:1fr auto;gap:8px;padding:10px 0;border-bottom:1px solid var(--line)}
+.line .lo{font-size:12.5px;color:var(--muted)}
+.line .lr{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.seg{display:flex;background:var(--surface2);border-radius:12px;padding:3px;gap:3px}
+.seg button{flex:1;border:0;background:transparent;border-radius:9px;padding:8px 4px;font-size:14px}
+.seg button.on{background:var(--surface);box-shadow:0 1px 3px rgba(0,0,0,.12);font-weight:600}
+.seg button:disabled{opacity:.4}
+.sum{margin-top:14px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+.sum div{display:flex;justify-content:space-between;padding:3px 0;font-size:14px}
+.sum .tot{border-top:1px dashed var(--line);margin-top:6px;padding-top:8px;font-weight:700;font-size:16px}
+.err{color:var(--bad);font-size:13px;margin-top:8px}
+.note{color:var(--muted);font-size:12.5px;margin-top:6px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.two>*{min-width:0}
+.radio{display:flex;flex-direction:column;gap:6px}
+.radio label{display:flex;gap:8px;align-items:center;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 12px}
+.radio label.dis{opacity:.5}
+.chk{display:flex;gap:8px;align-items:flex-start;margin-top:10px;font-size:13.5px}
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:14px 0}
+.steps div{text-align:center;font-size:12.5px;color:var(--muted)}
+.steps div i{display:block;height:6px;border-radius:3px;background:var(--surface2);margin-bottom:6px}
+.steps div.on{color:var(--ink);font-weight:600}
+.steps div.on i{background:var(--matcha)}
+.bigno{font-family:var(--display);font-size:34px;font-weight:600;color:var(--matcha)}
+.stars{display:flex;gap:4px}
+.stars button{border:0;background:none;font-size:28px;color:var(--line);padding:0;line-height:1}
+.stars button.on{color:var(--honey)}
+.ticket{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;background:var(--surface);border:1px dashed var(--muted);border-radius:8px;padding:14px;white-space:pre-wrap;direction:rtl}
+.toast{position:fixed;bottom:calc(84px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:999px;font-size:14px;z-index:80;max-width:90vw}
+
+/* staff */
+.staff{padding-inline:16px;padding-block:16px 40px;max-width:1400px;margin:0 auto}
+.st-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.st-head h1{font-size:22px;font-weight:600}
+.st-head .sp{flex:1}
+.board{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:start}
+@media (max-width:900px){.board{grid-template-columns:1fr}}
+.col{background:var(--surface2);border-radius:14px;padding:10px;min-height:120px}
+.col-h{display:flex;justify-content:space-between;align-items:center;padding:2px 4px 10px;font-family:var(--display);font-weight:600}
+.col-h .num{background:var(--surface);border-radius:999px;padding:0 10px;font-size:13px}
+.kcard{background:var(--surface);border-radius:12px;padding:12px;margin-bottom:10px;border-inline-start:5px solid var(--matcha);box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.kcard.late{border-inline-start-color:var(--warn)}
+.kcard.very{border-inline-start-color:var(--bad)}
+.kcard.fresh{animation:flash 1.2s ease-out 2}
+@keyframes flash{50%{background:var(--warn-soft)}}
+.k-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.k-no{font-family:var(--display);font-weight:700;font-size:20px}
+.k-time{font-variant-numeric:tabular-nums;font-weight:600;font-size:14px}
+.k-meta{font-size:13px;color:var(--muted);margin:2px 0 8px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.k-items{list-style:none;margin:0;padding:0;border-top:1px dashed var(--line)}
+.k-items li{padding:6px 0;border-bottom:1px dashed var(--line);font-size:14.5px}
+.k-items li.dim{opacity:.4}
+.k-items .q{font-weight:700;margin-inline-end:6px}
+.k-items .o{display:block;color:var(--muted);font-size:12.5px}
+.k-items .n{display:block;color:var(--bad);font-size:12.5px;font-weight:600}
+.st-tag{font-size:11px;border-radius:5px;padding:0 6px;background:var(--surface2);color:var(--muted);margin-inline-start:6px}
+.k-act{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.k-act .btn{flex:1}
+.svc{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.svc .item svg{width:22px;height:22px;flex:none;color:var(--warn)}
+.svc .item{display:flex;align-items:center;gap:10px;background:var(--warn-soft);border:1px solid var(--warn);border-radius:12px;padding:8px 12px;font-size:14px}
+.tablewrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:start;padding:9px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-weight:600;color:var(--muted);font-size:12.5px;background:var(--surface2)}
+td input,td select{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:5px 8px;width:auto}
+td input[type=number]{width:84px}
+.st{display:inline-block;font-size:12px;border-radius:6px;padding:1px 8px;font-weight:600}
+.st-new{background:var(--bad-soft);color:var(--bad)}
+.st-prep{background:var(--warn-soft);color:var(--warn)}
+.st-ready{background:var(--ok-soft);color:var(--ok)}
+.st-done{background:var(--surface2);color:var(--muted)}
+.st-cancelled{background:var(--surface2);color:var(--bad);text-decoration:line-through}
+.subtabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:14px;border-bottom:1px solid var(--line)}
+.subtabs button{border:0;background:none;padding:8px 12px;border-bottom:2px solid transparent;color:var(--muted)}
+.subtabs button.on{color:var(--ink);border-bottom-color:var(--matcha);font-weight:600}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+.panel h3{font-size:16px;font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.panel h3 .sp{flex:1}
+.prow{display:grid;grid-template-columns:48px minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:7px 0;border-top:1px solid var(--line)}
+.prow .thumb{width:48px;height:48px;border-radius:10px}
+.prow .thumb svg{width:24px;height:24px}
+.prow .nm{font-weight:500}
+.prow .sub{font-size:12.5px;color:var(--muted)}
+.sw{position:relative;width:42px;height:24px;border-radius:999px;border:0;background:var(--line);flex:none}
+.sw::after{content:"";position:absolute;top:3px;inset-inline-start:3px;width:18px;height:18px;border-radius:50%;background:var(--surface);transition:inset-inline-start .15s}
+.sw.on{background:var(--matcha)}
+.sw.on::after{inset-inline-start:21px}
+.grid-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px 14px}
+.grid-form>*{min-width:0}
+.qrgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+.qr{background:#fff;color:#222;border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center}
+.qr svg{width:100%;height:auto;display:block}
+.qr b{display:block;font-family:var(--display);margin-top:6px}
+.qr small{display:block;font-size:11px;color:#666;word-break:break-all}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:12px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.kpi span{font-size:12.5px;color:var(--muted);display:block}
+.kpi b{font-family:var(--display);font-size:24px;font-weight:600;font-variant-numeric:tabular-nums}
+.kpi em{font-style:normal;font-size:12.5px;margin-inline-start:6px}
+.up{color:var(--ok)} .down{color:var(--bad)}
+.rgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media (max-width:900px){.rgrid{grid-template-columns:1fr}}
+.hbar{display:grid;grid-template-columns:minmax(90px,150px) 1fr auto;gap:8px;align-items:center;font-size:13.5px;margin:5px 0}
+.hbar .tr{height:12px;background:var(--surface2);border-radius:6px;overflow:hidden}
+.hbar .fi{height:100%;background:var(--matcha);border-radius:6px}
+.hbar .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vchart{display:flex;align-items:flex-end;gap:3px;height:160px;padding-top:10px;border-bottom:1px solid var(--line)}
+.vchart div{flex:1;background:var(--matcha);border-radius:4px 4px 0 0;min-height:2px;position:relative}
+.vchart div.pk{background:var(--honey)}
+.vlab{display:flex;gap:3px;font-size:10.5px;color:var(--muted);margin-top:4px}
+.vlab span{flex:1;text-align:center;overflow:hidden}
+.demo-note{background:var(--warn-soft);border:1px solid var(--warn);color:var(--ink);border-radius:12px;padding:10px 14px;font-size:13.5px;margin-bottom:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.demo-note p{margin:0;flex:1;min-width:220px}
+.loglist{max-height:420px;overflow:auto;font-size:13.5px}
+.loglist div{padding:6px 0;border-bottom:1px solid var(--line);display:flex;gap:10px}
+.loglist time{color:var(--muted);font-variant-numeric:tabular-nums;flex:none}
+.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;direction:ltr;text-align:left}
+</style>
+
+<div id="demo"></div>
+<div id="app"></div>
+<div id="sheet" hidden></div>
+
+<script>
+const LOGO="data:image/jpeg;base64,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";
+const KEY="matcha_menu_v1";
+const r2=n=>Math.round(n*100)/100;
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const uid=()=>Math.random().toString(36).slice(2,9);
+const $=s=>document.querySelector(s);
+
+/* ---------- icons ---------- */
+const IC={
+ cup:'<path d="M6 11h16v5a7 7 0 0 1-7 7h-2a7 7 0 0 1-7-7z"/><path d="M22 13h2a3 3 0 0 1 0 6h-2"/><path d="M11 4c0 2 2 2 2 4M16 4c0 2 2 2 2 4"/><path d="M5 27h18"/>',
+ glass:'<path d="M9 7h14l-2 21H11z"/><path d="M10 14h12"/><path d="M18 7l3-5"/><circle cx="14" cy="19" r="1"/><circle cx="17" cy="23" r="1"/>',
+ plate:'<ellipse cx="16" cy="23" rx="12" ry="4"/><path d="M6.5 18.5c0 2 4.3 3.4 9.5 3.4s9.5-1.4 9.5-3.4"/><path d="M7 14c0 2 4 3.4 9 3.4s9-1.4 9-3.4-4-3.4-9-3.4S7 12 7 14z"/><path d="M14 9c1-1 3-1 4 0"/>',
+ cake:'<path d="M6 27h20V16H6z"/><path d="M6 20c3 2 5-2 8 0s5 2 8 0 4 0 4 0"/><path d="M16 16v-5"/><path d="M16 8c-1.2-1-1.2-2.2 0-3.4 1.2 1.2 1.2 2.4 0 3.4z"/>',
+ bottle:'<path d="M13 3h6v4l2 4v16a2 2 0 0 1-2 2h-6a2 2 0 0 1-2-2V11l2-4z"/><path d="M11 15h10M11 22h10"/>',
+ heart:'<path d="M16 27s-11-6.5-11-14a6 6 0 0 1 11-3.3A6 6 0 0 1 27 13c0 7.5-11 14-11 14z"/>',
+ search:'<circle cx="14" cy="14" r="8"/><path d="M20 20l7 7"/>',
+ plus:'<path d="M16 6v20M6 16h20"/>',
+ minus:'<path d="M6 16h20"/>',
+ x:'<path d="M8 8l16 16M24 8L8 24"/>',
+ share:'<circle cx="23" cy="7" r="3.5"/><circle cx="9" cy="16" r="3.5"/><circle cx="23" cy="25" r="3.5"/><path d="M12 14.3l8-5M12 17.7l8 5"/>',
+ bell:'<path d="M8 22V14a8 8 0 0 1 16 0v8l2 3H6z"/><path d="M13 28a3 3 0 0 0 6 0"/>',
+ bill:'<path d="M8 4h16v24l-3-2-3 2-2-2-2 2-3-2-3 2z"/><path d="M12 11h8M12 16h8M12 21h5"/>',
+ chat:'<path d="M5 25l2-6a10 10 0 1 1 4 4z"/>'
+};
+const ic=(k,fill)=>`<svg viewBox="0 0 32 32" fill="${fill?'currentColor':'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[k]}</svg>`;
+
+/* ---------- menu data (from the printed Matcha menu) ---------- */
+const GROUPS0={
+ sugar:{ar:"السكر",en:"Sugar",req:1,multi:0,def:2,opts:[["بدون سكر","No sugar",0],["قليل","Light",0],["مظبوط","Medium",0],["زيادة","Extra",0]]},
+ temp:{ar:"درجة الحرارة",en:"Temperature",req:1,multi:0,def:0,opts:[["ساخن","Hot",0],["ساخن جدًا","Extra hot",0],["دافئ","Warm",0]]},
+ ice:{ar:"الثلج",en:"Ice",req:1,multi:0,def:0,opts:[["عادي","Regular",0],["ثلج قليل","Light ice",0],["بدون ثلج","No ice",0]]},
+ milk:{ar:"نوع اللبن",en:"Milk",req:1,multi:0,def:0,opts:[["لبن كامل الدسم","Whole milk",0],["لبن خالي الدسم","Skimmed milk",0]]},
+ extras:{ar:"إضافات",en:"Extras",req:0,multi:1,def:null,opts:[["ويبد كريم","Whipped cream",20],["ويفر","Wafer",20],["بوبا","Boba",25]]},
+ flavor:{ar:"النكهة",en:"Flavor",req:1,multi:0,def:null,opts:[["شوكلت","Chocolate",0],["لوتس","Lotus",0],["اوريو","Oreo",0],["فراوله","Strawberry",0]]},
+ topping:{ar:"الصوص",en:"Sauce",req:1,multi:0,def:null,opts:[["توت","Berries",0],["فراوله","Strawberry",0],["نوتيلا","Nutella",0],["لوتس","Lotus",0],["كراميل","Caramel",0],["وايت","White chocolate",0]]}
+};
+const CATS0=[
+ {id:"coffee",ar:"قهوة",en:"Coffee",st:"bar",ic:"cup",h:28,g:["sugar","temp"],d:["بن محمّص طازة ويتحضر على الطلب","Freshly roasted beans, made to order"],items:`قهوة تركي|Turkish Coffee|20
+نسكافيه بلاك|Nescafé Black|25
+اسبريسو|Espresso|25
+اسبريسو دابل|Double Espresso|35
+نسكافيه حليب|Nescafé with Milk|40|m
+قهوة فرنساوي|French Coffee|35|m
+قهوة فليفر|Flavored Coffee|40|m
+ماكياتو|Macchiato|45|m
+فلات وايت|Flat White|50|m
+كورتادو|Cortado|50|m
+لاتيه|Latte|60|m b
+كابتشينو|Cappuccino|60|m b
+موكا|Mocha|70|m
+كراميل ميكاتو|Caramel Macchiato|70|m`},
+ {id:"hot",ar:"مشروبات ساخنة",en:"Hot Drinks",st:"bar",ic:"cup",h:18,g:["sugar","temp"],d:["مشروب ساخن يتحضر طازة عند الطلب","Freshly made hot drink"],items:`شاي|Tea|15
+ينسون|Anise|15
+لمون سخن|Hot Lemon|15
+نعناع|Mint Tea|15
+شاي حليب|Milk Tea|25|m
+ابل سيدر|Apple Cider|30
+سحلب مكسرات|Sahlab with Nuts|40
+سحلب شيكولاته|Chocolate Sahlab|50
+سحلب فواكه|Fruit Sahlab|60
+هوت شوكليت|Hot Chocolate|50|m`},
+ {id:"matcha",ar:"ماتشا",en:"Matcha",st:"bar",ic:"cup",h:82,g:["sugar","extras"],d:["ماتشا يابانية مخفوقة بالطريقة التقليدية","Japanese matcha, whisked the traditional way"],items:`هوت ماتشا|Hot Matcha|60|m t
+ايس ماتشا|Iced Matcha|70|m i b
+ايس ماتشا فراوله|Iced Strawberry Matcha|80|m i b
+ايس ماتشا وايت|Iced White Matcha|85|m i
+ميلك ماتشا|Matcha Milk|100|m i`},
+ {id:"ice",ar:"مشروبات مثلجة",en:"Ice Drinks",st:"bar",ic:"glass",h:30,g:["sugar","ice","milk","extras"],d:["قهوة مثلجة ومنعشة","Chilled, refreshing coffee drink"],items:`ايس كوفي|Iced Coffee|70
+ايس لاتيه|Iced Latte|70
+ايس فرابيه|Iced Frappé|70
+ايس فرابيه فانيليا|Vanilla Frappé|80
+ايس فرابيه بندق|Hazelnut Frappé|80
+ايس فرابيه كراميل|Caramel Frappé|80
+ايس موكا|Iced Mocha|80
+ايس وايت موكا|Iced White Mocha|80
+ايس كراميل ميكاتو|Iced Caramel Macchiato|80
+ايس سبانش لاتيه|Iced Spanish Latte|80|b`},
+ {id:"shake",ar:"ميلك شيك",en:"Milkshake",st:"bar",ic:"glass",h:340,g:["extras"],d:["ميلك شيك كريمي بالآيس كريم","Creamy ice-cream milkshake"],items:`ميلك فانيلا|Vanilla Milkshake|70
+ميلك نوتيلا|Nutella Milkshake|80
+ميلك فراوله|Strawberry Milkshake|80
+ميلك مانجا|Mango Milkshake|80
+ميلك موز|Banana Milkshake|80
+ميلك باشون فروت|Passion Fruit Milkshake|80
+ميلك اوريو|Oreo Milkshake|90
+ميلك لوتس|Lotus Milkshake|90|b
+ميلك بلوبيري|Blueberry Milkshake|90
+ميلك بستاشيو|Pistachio Milkshake|90
+ميلك تشيز كيك|Cheesecake Milkshake|100
+ميلك ريد فيلفت|Red Velvet Milkshake|100`},
+ {id:"juice",ar:"عصائر فريش",en:"Fresh Juices",st:"bar",ic:"glass",h:45,g:["sugar","ice"],d:["عصير فريش من فاكهة طازة","Fresh juice from fresh fruit"],items:`ليمون|Lemon|40
+ليمون نعناع|Lemon Mint|45
+مانجا|Mango|60
+فراوله|Strawberry|60
+كنتالوب|Cantaloupe|60
+بطيخ|Watermelon|60
+برتقال|Orange|60
+موز حليب|Banana Milk|60
+جوافه|Guava|60
+جوافه حليب|Guava Milk|60`},
+ {id:"smoothie",ar:"سموزي",en:"Smoothie",st:"bar",ic:"glass",h:10,g:["sugar","ice"],d:["سموزي فاكهة مثلج","Blended iced fruit smoothie"],items:`سموزي ليمون|Lemon Smoothie|45
+سموزي ليمون نعناع|Lemon Mint Smoothie|50
+سموزي بلوبيري|Blueberry Smoothie|60
+سموزي باشون|Passion Fruit Smoothie|60
+سموزي مانجا|Mango Smoothie|60
+سموزي فراوله|Strawberry Smoothie|60
+سموزي اناناس|Pineapple Smoothie|60
+سموزي خوخ|Peach Smoothie|60
+سموزي بطيخ|Watermelon Smoothie|60
+سموزي تفاح اخضر|Green Apple Smoothie|60
+سموزي كيوي|Kiwi Smoothie|70`},
+ {id:"mix",ar:"ميكسولوجي",en:"Mixology",st:"bar",ic:"glass",h:200,g:["ice"],d:["مشروب ميكسولوجي ملوّن ومنعش","Colorful, refreshing mixology drink"],items:`ميكسولوجي بلو|Blue Mixology|60
+ميكسولوجي باشون|Passion Fruit Mixology|60
+ميكسولوجي خوخ|Peach Mixology|60
+ميكسولوجي بلوبيري|Blueberry Mixology|60
+ميكسولوجي مانجا|Mango Mixology|60
+ميكسولوجي فراوله|Strawberry Mixology|60
+ميكسولوجي اناناس|Pineapple Mixology|60
+ميكسولوجي بطيخ|Watermelon Mixology|60
+موهيتو ريد بول|Red Bull Mojito|90
+موهيتو ريدبول فليفر|Flavored Red Bull Mojito|100`},
+ {id:"soft",ar:"مشروبات غازية",en:"Soft Drinks",st:"bar",ic:"bottle",h:210,g:[],d:["مشروب بارد مقفول","Chilled bottled drink"],items:`مياه|Water|10
+بيبسي|Pepsi|30
+كوكاكولا|Coca-Cola|30
+سبرايت|Sprite|30
+ميرندا|Mirinda|30
+فيروز|Fayrouz|30
+فيوري|Fury|30
+تويست|Twist|30
+ريد بول|Red Bull|70`},
+ {id:"crepe",ar:"كريب",en:"Crêpe",st:"kitchen",ic:"plate",h:36,g:[],d:["كريب طازة على الصاج بحشوة غنية","Fresh griddle crêpe with a rich filling"],items:`كريب شوكلت|Chocolate Crêpe|70|n
+كريب ميكس شوكلت|Mixed Chocolate Crêpe|80|n
+كريب بانانا|Banana Crêpe|80|n
+كريب اوريو|Oreo Crêpe|80|n
+كريب لوتس|Lotus Crêpe|80|n
+كريب بستاشيو|Pistachio Crêpe|90|n
+كريب فراوله|Strawberry Crêpe|90|n
+كريب بلوبيري|Blueberry Crêpe|90|n
+كريب كندر|Kinder Crêpe|90|n
+كريب فواكه|Fruit Crêpe|90|n
+سوشي|Sushi Crêpe|90|n
+فوتتشيني|Fettuccine Crêpe|100|n
+هاف اند هاف|Half & Half Crêpe|100|n`},
+ {id:"pancake",ar:"بان كيك ووافل",en:"Pancake & Waffle",st:"kitchen",ic:"plate",h:40,g:[],d:["بان كيك أو وافل طازة بالصوص","Fresh pancakes or waffle with sauce"],items:`بان كيك نوتيلا|Nutella Pancakes|80
+بان كيك لوتس|Lotus Pancakes|90|b
+بان كيك ميكس شيكولاته|Mixed Chocolate Pancakes|90
+بان كيك كيندر|Kinder Pancakes|95
+بان كيك بستاشيو|Pistachio Pancakes|100
+وافل نوتيلا|Nutella Waffle|80|o70
+وافل لوتس|Lotus Waffle|80
+وافل ميكس شيكولاته|Mixed Chocolate Waffle|90
+وافل كيندر|Kinder Waffle|90
+وافل بستاشيو|Pistachio Waffle|100`},
+ {id:"dessert",ar:"حلويات",en:"Dessert",st:"kitchen",ic:"cake",h:15,g:[],d:["حلويات بيتي تتقدم طازة","House-made dessert served fresh"],items:`كوكيز|Cookies|70
+تشيز كيك|Cheesecake|70|g:topping
+براونيز امريكي|American Brownies|80
+تراميسو|Tiramisu|80
+شوكلت كيك|Chocolate Cake|80
+ريد فيلفت|Red Velvet|80
+مولتن كيك|Molten Cake|90
+سان سباستيان|San Sebastián Cheesecake|90|g:topping b`},
+ {id:"sunday",ar:"صن داي",en:"Sundae",st:"bar",ic:"cake",h:330,g:[],d:["آيس كريم صن داي بالصوص","Ice-cream sundae with sauce"],items:`صن داي فليفر|Flavored Sundae|70|g:flavor
+صن داي بستاشيو|Pistachio Sundae|80
+صن داي سبشيال|Special Sundae|90`}
+];
+
+function seedMenu(){
+  const cats=[],products=[];
+  CATS0.forEach(c=>{
+    cats.push({id:c.id,ar:c.ar,en:c.en,st:c.st,ic:c.ic,h:c.h,on:true});
+    c.items.trim().split("\n").forEach((ln,i)=>{
+      const [ar,en,price,flags=""]=ln.split("|");const f=flags.split(" ").filter(Boolean);
+      const g=[...c.g];
+      if(f.includes("m")&&!g.includes("milk"))g.push("milk");
+      if(f.includes("i")&&!g.includes("ice"))g.splice(1,0,"ice");
+      if(f.includes("t")&&!g.includes("temp"))g.splice(1,0,"temp");
+      f.filter(x=>x.startsWith("g:")).forEach(x=>g.push(x.slice(2)));
+      const off=f.find(x=>/^o\d+/.test(x));
+      products.push({id:c.id+"-"+(i+1),cat:c.id,ar,en,price:+price,offer:off?+off.slice(1):0,
+        dAr:c.d[0],dEn:c.d[1],ing:"",best:f.includes("b"),isNew:f.includes("n"),on:true,from:"",to:"",img:"",g});
+    });
+  });
+  return {cats,products};
+}
+
+/* ---------- demo orders for reports ---------- */
+function rng(seed){return()=>{seed=(seed*1664525+1013904223)%4294967296;return seed/4294967296}}
+function demoOrders(st){
+  const R=rng(42),orders=[],now=Date.now(),day=864e5;
+  const pool=st.products.flatMap(p=>Array(p.best?6:1).fill(p));
+  const hourW=[8,1,9,1,10,2,11,3,12,4,13,5,14,5,15,5,16,6,17,8,18,10,19,12,20,14,21,14,22,12,23,9,0,5,1,2];
+  const hours=[];for(let i=0;i<hourW.length;i+=2)for(let k=0;k<hourW[i+1];k++)hours.push(hourW[i]);
+  let no=1001;
+  for(let d=29;d>=0;d--){
+    const base=new Date(now-d*day);base.setHours(0,0,0,0);
+    const dow=base.getDay(),n=8+Math.floor(R()*7)+((dow===4||dow===5)?6:0);
+    for(let k=0;k<n;k++){
+      const h=hours[Math.floor(R()*hours.length)];
+      let ts=base.getTime()+h*36e5+Math.floor(R()*60)*6e4;if(h<3)ts+=day;
+      if(ts>now-20*6e4)continue;
+      const cnt=1+Math.floor(R()*3),items=[];
+      for(let j=0;j<cnt;j++){const p=pool[Math.floor(R()*pool.length)];const sel=defaultsFor(p,st);
+        if(p.g.includes("extras")&&R()<.25)sel.extras=[Math.floor(R()*3)];
+        items.push(buildLine(p,sel,R()<.2?2:1,"",st));}
+      const tr=R(),type=tr<.62?"dine":tr<.84?"takeaway":"delivery";
+      const cp=R()<.07?"MATCHA10":"";
+      const t=totals(items,type,cp,st);
+      const cancelled=R()<.05;
+      const prepMin=4+Math.floor(R()*9);
+      orders.push({id:uid(),no:no++,branch:"main",demo:true,type,table:type==="dine"?String(1+Math.floor(R()*12)):"",addr:type==="delivery"?"عنوان تجريبي":"",name:"",phone:"",
+        items,...t,coupon:t.disc?cp:"",pay:R()<.85?"cash":"card",paid:!cancelled,refunded:cancelled&&R()<.5,status:cancelled?"cancelled":"done",
+        created:ts,sched:0,times:{new:ts,prep:ts+60e3,ready:ts+(1+prepMin)*6e4,done:ts+(3+prepMin)*6e4},urgent:false,
+        rating:cancelled?0:(R()<.55?(R()<.8?5:4):0),comment:"",src:R()<.3?"instagram":R()<.5?"qr":""});
+    }
+  }
+  st.set.seq=no;
+  st.stats.visits=Math.round(orders.length*3.4);
+  st.stats.bySrc={qr:Math.round(orders.length*1.9),instagram:Math.round(orders.length*.9),direct:Math.round(orders.length*.6)};
+  const live=[[3,"new"],[8,"prep"],[13,"ready"]];
+  const pick=["matcha-2","pancake-2","coffee-12","dessert-8","ice-10","crepe-5"];
+  live.forEach(([m,s],i)=>{
+    const ps=[pick[i*2],pick[i*2+1]].map(id=>st.products.find(p=>p.id===id));
+    const items=ps.map(p=>buildLine(p,defaultsFor(p,st),1,i===0&&p.cat==="matcha"?"سكر خفيف جدًا من فضلك":"",st));
+    const ts=now-m*6e4,t=totals(items,"dine","",st);
+    const times={new:ts};if(s!=="new")times.prep=ts+6e4;if(s==="ready")times.ready=ts+9*6e4;
+    st.orders.push({id:uid(),no:st.set.seq++,branch:"main",demo:true,type:"dine",table:String(3+i*2),addr:"",name:"",phone:"",items,...t,coupon:"",pay:"cash",paid:false,refunded:false,status:s,created:ts,sched:0,times,urgent:false,rating:0,comment:"",src:"qr"});
+  });
+  st.orders.unshift(...orders);
+  st.service.push({id:uid(),table:"7",kind:"waiter",t:now-2*6e4,done:false,demo:true});
+}
+
+function seed(){
+  const {cats,products}=seedMenu();
+  const st={v:1,cats,products,groups:JSON.parse(JSON.stringify(GROUPS0)),
+    brand:{ar:"ماتشا",en:"MATCHA",tag:"COFFEE & PANCAKES",phone:"01036618656",wa:"201036618656",addr:"",color:"",logo:""},
+    set:{seq:1001,service:0,tax:0,fee:20,min:100,dine:true,takeaway:true,delivery:true,tables:12,baseUrl:"",accepting:true},
+    coupons:[{code:"MATCHA10",type:"pct",val:10,min:0,on:true,ex:true},{code:"WELCOME20",type:"fixed",val:20,min:150,on:true,ex:true}],
+    branches:[{id:"main",name:"الفرع الرئيسي"}],
+    staff:[{id:"s1",name:"المدير",role:"admin"},{id:"s2",name:"كاشير",role:"cashier"},{id:"s3",name:"باريستا ومطبخ",role:"kitchen"}],
+    orders:[],service:[],log:[],customers:{},stats:{visits:0,bySrc:{}}};
+  demoOrders(st);
+  return st;
+}
+
+/* ---------- state ---------- */
+function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.v===1)return s}catch(e){}return seed()}
+let S;
+let lastRaw="";
+function save(){try{lastRaw=JSON.stringify(S);localStorage.setItem(KEY,lastRaw)}catch(e){toast("المتصفح رفض الحفظ. جرّب صورة أصغر.")}}
+function lget(k,d){try{const v=localStorage.getItem("matcha_ui_"+k);return v==null?d:JSON.parse(v)}catch(e){return d}}
+function lset(k,v){try{localStorage.setItem("matcha_ui_"+k,JSON.stringify(v))}catch(e){}}
+
+const ui={view:"menu",lang:lget("lang","ar"),cat:"all",q:"",cart:lget("cart",[]),favs:lget("favs",[]),myOrders:lget("my",[]),
+  consent:lget("consent",null),table:"",src:"",co:{type:"",addr:"",phone:"",name:"",when:"now",time:"",coupon:"",pay:"cash",offers:false,err:""},
+  sheet:null,user:"s1",adminTab:"products",range:7,kst:"all",cashTab:"open",sound:false,known:new Set(),fresh:new Set()};
+
+function log(what){const u=S.staff.find(s=>s.id===ui.user);S.log.unshift({t:Date.now(),who:u?u.name:"-",what});S.log=S.log.slice(0,300)}
+
+/* ---------- i18n ---------- */
+const T={
+ ar:{search:"ابحث عن مشروب أو حلو…",all:"الكل",fav:"المفضلة",best:"الأكثر مبيعًا",new:"جديد",offer:"عرض",offers:"العروض",off:"غير متاح الآن",egp:"ج.م",
+  add:"أضف للسلة",viewCart:"عرض السلة",cart:"سلتك",table:"ترابيزة",dine:"داخل الكافيه",takeaway:"تيك أواي",delivery:"دليفري",
+  subtotal:"المجموع",discount:"الخصم",fee:"التوصيل",service:"الخدمة",tax:"الضريبة",total:"الإجمالي",required:"إجباري",optional:"اختياري",done:"تم",
+  notes:"ملاحظات على الصنف",notesPh:"مثلًا: من غير صوص",sugg:"يحلى معاه",ing:"المكونات",share:"مشاركة",copied:"اتنسخ الرابط",
+  addr:"عنوان التوصيل",phone:"رقم الموبايل",name:"الاسم",when:"وقت الطلب",now:"دلوقتي",later:"وقت محدد",coupon:"كوبون خصم",apply:"تطبيق",
+  pay:"طريقة الدفع",cash:"كاش عند الاستلام",card:"فيزا عند الاستلام",online:"دفع إلكتروني",onlineSoon:"هيتفعّل بعد ربط بوابة دفع",
+  send:"أرسل الطلب",empty:"السلة فاضية. اختار حاجة من المنيو.",min:"الحد الأدنى للدليفري",chooseTable:"اختار الترابيزة",
+  offersOk:"أوافق على استلام عروض خاصة على رقمي",orderNo:"طلب رقم",st_new:"جديد",st_prep:"بيتحضر",st_ready:"جاهز",st_done:"اتسلّم",st_cancelled:"اتلغى",
+  cancel:"إلغاء الطلب",cancelNote:"تقدر تلغي الطلب لحد ما المطبخ يبدأ يحضّره. بعد كده كلّم الكاشير، والمبلغ المدفوع بيترجع بنفس طريقة الدفع.",
+  rate:"قيّم طلبك",rateThanks:"شكرًا على تقييمك",wa:"ابعت الطلب على واتساب",receipt:"تفاصيل الطلب",points:"نقاط الولاء",
+  waiter:"نادي الجرسون",bill:"اطلب الحساب",reqSent:"وصل طلبك للكاشير",follow:"تابع طلبك",shareMenu:"شارك المنيو",
+  consentQ:"نسمح لنا نعرف إنت جيت منين (QR، إنستجرام…) علشان نحسّن العروض؟",yes:"موافق",no:"لا شكرًا",noRes:"مفيش نتايج",
+  pickErr:"اختار",minErr:"الحد الأدنى لطلب الدليفري",addrErr:"اكتب عنوان التوصيل ورقم الموبايل",tableErr:"اختار رقم الترابيزة",timeErr:"اختار وقت الطلب",
+  cpBad:"الكوبون ده مش شغال",cpMin:"الكوبون محتاج طلب بحد أدنى",added:"اتضاف للسلة",items:"صنف",close:"إغلاق",closed:"الطلبات واقفة دلوقتي",phoneLbl:"تليفون",
+  sched:"مجدول",yourOrders:"طلباتك"},
+ en:{search:"Search drinks or desserts…",all:"All",fav:"Favorites",best:"Best seller",new:"New",offer:"Offer",offers:"Offers",off:"Unavailable now",egp:"EGP",
+  add:"Add to cart",viewCart:"View cart",cart:"Your cart",table:"Table",dine:"Dine in",takeaway:"Takeaway",delivery:"Delivery",
+  subtotal:"Subtotal",discount:"Discount",fee:"Delivery",service:"Service",tax:"Tax",total:"Total",required:"Required",optional:"Optional",done:"Done",
+  notes:"Notes for this item",notesPh:"e.g. no sauce",sugg:"Goes well with",ing:"Ingredients",share:"Share",copied:"Link copied",
+  addr:"Delivery address",phone:"Mobile number",name:"Name",when:"Order time",now:"Now",later:"Schedule",coupon:"Coupon",apply:"Apply",
+  pay:"Payment",cash:"Cash on delivery",card:"Card on delivery",online:"Online payment",onlineSoon:"Available once a payment gateway is connected",
+  send:"Place order",empty:"Your cart is empty. Pick something from the menu.",min:"Delivery minimum",chooseTable:"Choose table",
+  offersOk:"Send me special offers on this number",orderNo:"Order",st_new:"Received",st_prep:"Preparing",st_ready:"Ready",st_done:"Delivered",st_cancelled:"Cancelled",
+  cancel:"Cancel order",cancelNote:"You can cancel until the kitchen starts preparing. After that, ask the cashier; paid amounts are refunded to the same method.",
+  rate:"Rate your order",rateThanks:"Thanks for your rating",wa:"Send order on WhatsApp",receipt:"Order details",points:"Loyalty points",
+  waiter:"Call waiter",bill:"Request bill",reqSent:"The cashier got your request",follow:"Track order",shareMenu:"Share menu",
+  consentQ:"Can we note where you came from (QR, Instagram…) to improve our offers?",yes:"Allow",no:"No thanks",noRes:"No results",
+  pickErr:"Choose",minErr:"Delivery minimum is",addrErr:"Enter the delivery address and mobile number",tableErr:"Choose your table number",timeErr:"Choose a time",
+  cpBad:"This coupon isn't valid",cpMin:"This coupon needs a minimum order of",added:"Added to cart",items:"items",close:"Close",closed:"Ordering is paused right now",phoneLbl:"Phone",
+  sched:"Scheduled",yourOrders:"Your orders"}
+};
+const t=k=>T[ui.lang][k]??k;
+const L=()=>ui.lang;
+const nm=o=>L()==="ar"?o.ar:(o.en||o.ar);
+const money=n=>`${(+n).toLocaleString("en-US",{maximumFractionDigits:2})} ${t("egp")}`;
+const moneyA=n=>`${(+n).toLocaleString("en-US",{maximumFractionDigits:2})} ج.م`;
+
+/* ---------- pricing ---------- */
+const catOf=p=>S.cats.find(c=>c.id===p.cat)||{};
+const unitPrice=p=>p.offer&&p.offer<p.price?p.offer:p.price;
+function inWindow(p){if(!p.from||!p.to)return true;const d=new Date(),m=d.getHours()*60+d.getMinutes();const[a,b]=[p.from,p.to].map(x=>{const[h,mm]=x.split(":").map(Number);return h*60+mm});return a<=b?(m>=a&&m<b):(m>=a||m<b)}
+const avail=p=>p.on&&catOf(p).on!==false&&inWindow(p);
+function defaultsFor(p,st=S){const s={};p.g.forEach(gid=>{const g=st.groups[gid];if(!g)return;if(g.multi)s[gid]=[];else if(g.def!=null)s[gid]=g.def});return s}
+function buildLine(p,sel,qty,note,st=S){
+  const opts=[];let add=0;
+  p.g.forEach(gid=>{const g=st.groups[gid];if(!g)return;const v=sel[gid];const idx=g.multi?(v||[]):(v==null?[]:[v]);
+    idx.forEach(i=>{const o=g.opts[i];if(o){opts.push({ar:o[0],en:o[1],price:+o[2]||0});add+=+o[2]||0}})});
+  const c=st.cats.find(c=>c.id===p.cat)||{};
+  return {key:p.id+"|"+JSON.stringify(sel)+"|"+note,pid:p.id,ar:p.ar,en:p.en,qty,unit:unitPrice(p)+add,opts,note:note||"",st:c.st||"bar",sel};
+}
+function totals(lines,type,code,st=S){
+  const sub=lines.reduce((a,l)=>a+l.unit*l.qty,0);
+  let disc=0,cpErr="";const cp=code?st.coupons.find(c=>c.on&&c.code.toUpperCase()===code.trim().toUpperCase()):null;
+  if(code&&!cp)cpErr="bad";
+  else if(cp){if(cp.min&&sub<cp.min)cpErr="min";else disc=cp.type==="pct"?sub*cp.val/100:Math.min(cp.val,sub)}
+  const fee=type==="delivery"?st.set.fee:0;
+  const svc=type==="dine"?(sub-disc)*st.set.service/100:0;
+  const tax=(sub-disc+svc)*st.set.tax/100;
+  return {sub:r2(sub),disc:r2(disc),fee,svc:r2(svc),tax:r2(tax),total:r2(sub-disc+fee+svc+tax),cpErr,cpMin:cp?cp.min:0};
+}
+
+/* ---------- small UI helpers ---------- */
+function toast(msg){const d=document.createElement("div");d.className="toast";d.textContent=msg;document.body.appendChild(d);setTimeout(()=>d.remove(),2200)}
+function copy(text,msg){const done=()=>toast(msg||"اتنسخ");try{navigator.clipboard.writeText(text).then(done,()=>fallback())}catch(e){fallback()}
+  function fallback(){openSheet("copy",{text})}}
+let actx;
+function beep(){if(!ui.sound)return;try{actx=actx||new(window.AudioContext||window.webkitAudioContext)();
+  [0,.2,.4].forEach((d,i)=>{const o=actx.createOscillator(),g=actx.createGain();o.frequency.value=[784,988,1175][i];o.connect(g);g.connect(actx.destination);
+  const s=actx.currentTime+d;g.gain.setValueAtTime(.0001,s);g.gain.exponentialRampToValueAtTime(.35,s+.02);g.gain.exponentialRampToValueAtTime(.0001,s+.18);o.start(s);o.stop(s+.2)})}catch(e){}}
+function checkNew(){let n=0;S.orders.forEach(o=>{if(!ui.known.has(o.id)){ui.known.add(o.id);ui.fresh.add(o.id);n++}});
+  S.service.forEach(s=>{if(!ui.known.has(s.id)){ui.known.add(s.id);n++}});if(n)beep();return n}
+function thumb(p,cls="thumb"){const c=catOf(p);return `<div class="${cls}" style="--h:${c.h??90}">${p.img?`<img src="${p.img}" alt="">`:ic(c.ic||"cup")}</div>`}
+function badges(p,lang){const tt=k=>T[lang||L()][k];let b="";if(!avail(p))b+=`<span class="badge b-off">${tt("off")}</span>`;
+  if(p.offer&&p.offer<p.price)b+=`<span class="badge b-offer">${tt("offer")}</span>`;if(p.isNew)b+=`<span class="badge b-new">${tt("new")}</span>`;if(p.best)b+=`<span class="badge b-best">${tt("best")}</span>`;return b}
+function priceHtml(p){return p.offer&&p.offer<p.price?`${money(p.offer)}<s>${money(p.price)}</s>`:money(p.price)}
+const logo=()=>S.brand.logo||LOGO;
+const cartCount=()=>ui.cart.reduce((a,l)=>a+l.qty,0);
+function saveCart(){lset("cart",ui.cart)}
+function applyBrand(){const r=document.documentElement.style;if(S.brand.color){r.setProperty("--matcha",S.brand.color)}else r.removeProperty("--matcha")}
+
+/* ---------- demo bar ---------- */
+const PERMS={admin:["cashier","kitchen","admin","reports"],cashier:["cashier","reports"],kitchen:["kitchen"]};
+const ROLE_AR={admin:"مدير",cashier:"كاشير",kitchen:"مطبخ/بار"};
+function vDemo(){
+  const u=S.staff.find(s=>s.id===ui.user)||S.staff[0];const perms=PERMS[u?.role]||[];
+  const tabs=[["menu","منيو العميل"],["cashier","الكاشير"],["kitchen","المطبخ"],["admin","الإدارة"],["reports","التقارير"]];
+  return `<div class="demo" dir="rtl"><b>نموذج تجريبي</b><div class="tabs">${tabs.map(([v,l])=>`<button data-act="view" data-v="${v}" class="${ui.view===v?"on":""}" ${v!=="menu"&&!perms.includes(v)?"disabled":""}>${l}</button>`).join("")}</div>
+  <span class="sp"></span><label>الموظف: <select id="userSel">${S.staff.map(s=>`<option value="${s.id}" ${s.id===ui.user?"selected":""}>${esc(s.name)} (${ROLE_AR[s.role]})</option>`).join("")}</select></label></div>`;
+}
+
+/* ---------- customer menu ---------- */
+function filtered(){
+  const q=ui.q.trim().toLowerCase();
+  return S.products.filter(p=>{
+    if(q&&!(p.ar+" "+p.en+" "+p.dAr+" "+p.dEn+" "+p.ing).toLowerCase().includes(q))return false;
+    const f=ui.cat;if(f==="fav")return ui.favs.includes(p.id);if(f==="best")return p.best;if(f==="new")return p.isNew;if(f==="offer")return p.offer&&p.offer<p.price;
+    if(f!=="all")return p.cat===f;return catOf(p).on!==false;
+  });
+}
+function vChips(){
+  const base=[["all",t("all")],["fav",t("fav")],["best",t("best")],["new",t("new")],["offer",t("offers")]];
+  return base.map(([k,l])=>`<button class="chip ${ui.cat===k?"on":""}" data-act="cat" data-v="${k}">${l}</button>`).join("")+
+    S.cats.filter(c=>c.on!==false).map((c,i)=>`<button class="chip ${i===0?"sep":""} ${ui.cat===c.id?"on":""}" data-act="cat" data-v="${c.id}">${esc(nm(c))}</button>`).join("");
+}
+function prodRow(p){
+  const a=avail(p),fav=ui.favs.includes(p.id);
+  return `<article class="prod ${a?"":"off"}" data-act="open" data-id="${p.id}">${thumb(p)}
+   <div class="pinfo"><div class="pname">${esc(nm(p))} ${badges(p)}</div><p class="pdesc">${esc(L()==="ar"?p.dAr:p.dEn)}</p><div class="pprice price">${priceHtml(p)}</div></div>
+   <div class="pside"><button class="fav ${fav?"on":""}" data-act="fav" data-id="${p.id}" aria-label="${t("fav")}">${ic("heart",fav)}</button>
+   <button class="addbtn" data-act="quick" data-id="${p.id}" ${a?"":"disabled"} aria-label="${t("add")}">${ic("plus")}</button></div></article>`;
+}
+function vList(){
+  const ps=filtered();if(!ps.length)return `<div class="empty">${ui.cat==="fav"&&!ui.q?(L()==="ar"?"اضغط على القلب جنب أي صنف علشان يظهر هنا.":"Tap the heart on any item to save it here."):t("noRes")}</div>`;
+  return S.cats.map(c=>{const items=ps.filter(p=>p.cat===c.id).sort((a,b)=>avail(b)-avail(a));if(!items.length)return"";
+    return `<section class="sec" id="sec-${c.id}"><div class="sec-h"><h2>${esc(nm(c))}</h2><span class="num">${items.length} ${t("items")}</span></div>${items.map(prodRow).join("")}</section>`}).join("");
+}
+function vMenu(){
+  const active=ui.myOrders.map(id=>S.orders.find(o=>o.id===id)).filter(o=>o&&!["done","cancelled"].includes(o.status));
+  const consent=ui.consent===null&&ui.src?`<div class="consent"><p>${t("consentQ")}</p><button class="btn sm pri" data-act="consent" data-v="1">${t("yes")}</button><button class="btn sm" data-act="consent" data-v="0">${t("no")}</button></div>`:"";
+  return `<div class="cust" dir="${L()==="ar"?"rtl":"ltr"}" lang="${L()}">
+  <header class="c-head"><div class="brand"><img src="${logo()}" alt="${esc(S.brand.en)}"><div><h1>${esc(L()==="ar"?S.brand.ar:S.brand.en)}</h1><p class="tag">${esc(S.brand.tag)}</p></div></div>
+   <div class="head-actions"><button class="ibtn" data-act="lang" aria-label="Language">${L()==="ar"?"EN":"ع"}</button><button class="ibtn" data-act="shareMenu" aria-label="${t("shareMenu")}">${ic("share")}</button></div></header>
+  <div class="meta-row">${ui.table?`<span class="pill">${t("table")} <b class="num">${esc(ui.table)}</b></span>`:""}
+   ${active.map(o=>`<button class="pill track" data-act="track" data-id="${o.id}">${t("follow")} #${o.no} · ${t("st_"+o.status)}</button>`).join("")}
+   ${!S.set.accepting?`<span class="pill" style="background:var(--bad-soft);color:var(--bad)">${t("closed")}</span>`:""}</div>
+  ${consent}
+  <div class="searchbar">${ic("search")}<input id="q" type="search" placeholder="${t("search")}" value="${esc(ui.q)}" autocomplete="off"></div>
+  <nav class="chips" id="chips">${vChips()}</nav>
+  <main id="list">${vList()}</main>
+  <footer class="c-foot">
+   ${ui.table?`<div class="row"><button class="btn" data-act="svc" data-v="waiter">${ic("bell")} ${t("waiter")}</button><button class="btn" data-act="svc" data-v="bill">${ic("bill")} ${t("bill")}</button></div>`:""}
+   <div>${t("phoneLbl")}: <span class="num" style="user-select:all">${esc(S.brand.phone)}</span>${S.brand.addr?` · ${esc(S.brand.addr)}`:""}</div>
+   <div>Made with love &amp; good vibes</div></footer>
+  </div>
+  ${cartCount()?`<div class="cartbar" dir="${L()==="ar"?"rtl":"ltr"}"><button data-act="cart"><span><span class="cnt num">${cartCount()}</span> ${t("viewCart")}</span><span class="price">${money(ui.cart.reduce((a,l)=>a+l.unit*l.qty,0))}</span></button></div>`:""}`;
+}
+
+/* product sheet */
+function vProduct(){
+  const s=ui.sheet,p=S.products.find(x=>x.id===s.id);if(!p)return"";const a=avail(p);
+  const line=buildLine(p,s.sel,s.qty,s.note);
+  const groups=p.g.map(gid=>{const g=S.groups[gid];if(!g)return"";const v=s.sel[gid];
+    const picked=g.multi?(v||[]).length>0:v!=null;
+    return `<div class="grp"><div class="grp-h"><b>${esc(nm(g))}</b><span class="req ${g.req?(picked?"okk":""):"opt"}">${g.req?t("required"):t("optional")}</span></div>
+    <div class="opts">${g.opts.map((o,i)=>{const on=g.multi?(v||[]).includes(i):v===i;return `<button class="opt ${on?"on":""}" data-act="opt" data-g="${gid}" data-i="${i}" aria-pressed="${on}">${esc(L()==="ar"?o[0]:o[1])}${+o[2]?`<small class="num">+${o[2]}</small>`:""}</button>`}).join("")}</div></div>`}).join("");
+  const c=catOf(p);const drink=c.st==="bar"&&c.ic!=="cake";
+  const sugg=S.products.filter(x=>x.id!==p.id&&avail(x)&&x.best&&(drink?catOf(x).st==="kitchen":catOf(x).st==="bar")).slice(0,4);
+  return `<div class="sh-top"><div><h2>${esc(nm(p))}</h2><div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">${badges(p)}</div></div><button class="x" data-act="closeSheet" aria-label="${t("close")}">${ic("x")}</button></div>
+   ${thumb(p,"hero-tile")}
+   <p style="margin:0">${esc(L()==="ar"?p.dAr:p.dEn)}</p>
+   ${p.ing?`<p class="note"><b>${t("ing")}:</b> ${esc(p.ing)}</p>`:""}
+   <div class="pprice price" style="margin-top:8px;font-size:18px">${priceHtml(p)}</div>
+   ${groups}
+   <div class="grp"><label class="fl" for="pnote">${t("notes")}</label><textarea id="pnote" data-pnote placeholder="${t("notesPh")}">${esc(s.note)}</textarea></div>
+   ${sugg.length?`<div class="grp"><div class="grp-h"><b>${t("sugg")}</b></div><div class="sugg">${sugg.map(x=>`<button data-act="open" data-id="${x.id}">${thumb(x)}<b>${esc(nm(x))}</b><span class="num">${money(unitPrice(x))}</span></button>`).join("")}</div></div>`:""}
+   <div class="grp"><button class="btn sm" data-act="shareP" data-id="${p.id}">${ic("share")} ${t("share")}</button></div>
+   ${s.err?`<p class="err">${esc(s.err)}</p>`:""}
+   <div class="sh-bottom"><div class="stepper"><button data-act="pq" data-d="-1" aria-label="-">${ic("minus")}</button><span class="num">${s.qty}</span><button data-act="pq" data-d="1" aria-label="+">${ic("plus")}</button></div>
+   <button class="btn pri" data-act="addLine" ${a&&S.set.accepting?"":"disabled"}>${a?`${t("add")} · ${money(line.unit*s.qty)}`:t("off")}</button></div>`;
+}
+function missingReq(p,sel){return p.g.filter(gid=>{const g=S.groups[gid];return g&&g.req&&(g.multi?!(sel[gid]||[]).length:sel[gid]==null)})}
+function addToCart(p,sel,qty,note){
+  const ln=buildLine(p,sel,qty,note);const ex=ui.cart.find(l=>l.key===ln.key);
+  if(ex)ex.qty+=qty;else ui.cart.push(ln);saveCart();toast(t("added"));
+}
+
+/* cart sheet */
+function vCart(){
+  if(!ui.cart.length)return `<div class="sh-top"><h2>${t("cart")}</h2><button class="x" data-act="closeSheet">${ic("x")}</button></div><div class="empty">${t("empty")}</div>`;
+  ui.cart.forEach(l=>{const p=S.products.find(x=>x.id===l.pid);if(p){const n=buildLine(p,l.sel,l.qty,l.note);l.unit=n.unit}});
+  const co=ui.co;const types=["dine","takeaway","delivery"].filter(k=>S.set[k]);
+  if(!co.type||!types.includes(co.type))co.type=ui.table&&S.set.dine?"dine":types[0];
+  const tt=totals(ui.cart,co.type,co.coupon);
+  const tables=Array.from({length:S.set.tables},(_,i)=>String(i+1));
+  return `<div class="sh-top"><h2>${t("cart")}</h2><button class="x" data-act="closeSheet" aria-label="${t("close")}">${ic("x")}</button></div>
+  ${ui.cart.map((l,i)=>`<div class="line"><div><b>${esc(nm(l))}</b>${l.opts.length?`<div class="lo">${l.opts.map(o=>esc(nm(o))+(o.price?` (+${o.price})`:"")).join("، ")}</div>`:""}${l.note?`<div class="lo">“${esc(l.note)}”</div>`:""}<div class="lo num">${money(l.unit)}</div></div>
+   <div class="lr"><b class="price">${money(l.unit*l.qty)}</b><div class="stepper"><button data-act="cq" data-i="${i}" data-d="-1" aria-label="-">${ic("minus")}</button><span class="num">${l.qty}</span><button data-act="cq" data-i="${i}" data-d="1" aria-label="+">${ic("plus")}</button></div></div></div>`).join("")}
+  <label class="fl">${L()==="ar"?"نوع الطلب":"Order type"}</label>
+  <div class="seg">${["dine","takeaway","delivery"].map(k=>`<button data-act="otype" data-v="${k}" class="${co.type===k?"on":""}" ${S.set[k]?"":"disabled"}>${t(k)}</button>`).join("")}</div>
+  ${co.type==="dine"?`<label class="fl" for="co_table">${t("chooseTable")}</label><select class="f" id="co_table" data-co="table"><option value="">—</option>${tables.map(n=>`<option ${ui.table===n?"selected":""}>${n}</option>`).join("")}</select>`:""}
+  ${co.type==="delivery"?`<label class="fl" for="co_addr">${t("addr")}</label><textarea id="co_addr" data-co="addr">${esc(co.addr)}</textarea><p class="note">${t("min")}: ${money(S.set.min)} · ${t("fee")}: ${money(S.set.fee)}</p>`:""}
+  <div class="two"><div><label class="fl" for="co_name">${t("name")}</label><input type="text" id="co_name" data-co="name" value="${esc(co.name)}"></div>
+   <div><label class="fl" for="co_phone">${t("phone")}</label><input type="tel" id="co_phone" data-co="phone" value="${esc(co.phone)}" dir="ltr"></div></div>
+  <label class="fl">${t("when")}</label>
+  <div class="seg"><button data-act="when" data-v="now" class="${co.when==="now"?"on":""}">${t("now")}</button><button data-act="when" data-v="later" class="${co.when==="later"?"on":""}">${t("later")}</button></div>
+  ${co.when==="later"?`<input type="time" id="co_time" data-co="time" value="${esc(co.time)}" style="margin-top:8px">`:""}
+  <label class="fl" for="co_coupon">${t("coupon")}</label>
+  <div style="display:flex;gap:8px"><input type="text" id="co_coupon" data-co="couponDraft" value="${esc(co.couponDraft??co.coupon)}" dir="ltr" placeholder="MATCHA10"><button class="btn" data-act="coupon">${t("apply")}</button></div>
+  ${co.coupon&&tt.cpErr?`<p class="err">${tt.cpErr==="min"?`${t("cpMin")} ${money(tt.cpMin)}`:t("cpBad")}</p>`:""}
+  <label class="fl">${t("pay")}</label>
+  <div class="radio">${["cash","card"].map(k=>`<label><input type="radio" name="pay" data-act="pay" value="${k}" ${co.pay===k?"checked":""}> ${t(k)}</label>`).join("")}
+   <label class="dis"><input type="radio" name="pay" disabled> ${t("online")} <small class="note" style="margin:0">— ${t("onlineSoon")}</small></label></div>
+  <label class="chk"><input type="checkbox" id="co_offers" data-co="offers" ${co.offers?"checked":""}> <span>${t("offersOk")}</span></label>
+  <div class="sum"><div><span>${t("subtotal")}</span><span class="num">${money(tt.sub)}</span></div>
+   ${tt.disc?`<div style="color:var(--ok)"><span>${t("discount")} (${esc(co.coupon.toUpperCase())})</span><span class="num">−${money(tt.disc)}</span></div>`:""}
+   ${tt.fee?`<div><span>${t("fee")}</span><span class="num">${money(tt.fee)}</span></div>`:""}
+   ${tt.svc?`<div><span>${t("service")} ${S.set.service}%</span><span class="num">${money(tt.svc)}</span></div>`:""}
+   ${tt.tax?`<div><span>${t("tax")} ${S.set.tax}%</span><span class="num">${money(tt.tax)}</span></div>`:""}
+   <div class="tot"><span>${t("total")}</span><span class="num">${money(tt.total)}</span></div></div>
+  ${co.err?`<p class="err">${esc(co.err)}</p>`:""}
+  <div class="sh-bottom"><button class="btn pri" data-act="send" ${S.set.accepting?"":"disabled"}>${S.set.accepting?`${t("send")} · ${money(tt.total)}`:t("closed")}</button></div>`;
+}
+function placeOrder(){
+  const co=ui.co;co.err="";
+  const tt=totals(ui.cart,co.type,co.coupon);
+  if(co.type==="dine"&&!ui.table)co.err=t("tableErr");
+  else if(co.type==="delivery"&&(!co.addr.trim()||co.phone.replace(/\D/g,"").length<8))co.err=t("addrErr");
+  else if(co.type==="delivery"&&tt.sub-tt.disc<S.set.min)co.err=`${t("minErr")} ${money(S.set.min)}`;
+  else if(co.when==="later"&&!co.time)co.err=t("timeErr");
+  if(co.err){renderSheet();return}
+  let sched=0;if(co.when==="later"){const[h,m]=co.time.split(":").map(Number);const d=new Date();d.setHours(h,m,0,0);if(d<Date.now())d.setDate(d.getDate()+1);sched=d.getTime()}
+  const now=Date.now();
+  const o={id:uid(),no:S.set.seq++,branch:"main",type:co.type,table:co.type==="dine"?ui.table:"",addr:co.type==="delivery"?co.addr.trim():"",name:co.name.trim(),phone:co.phone.trim(),
+    items:ui.cart.map(l=>({...l})),sub:tt.sub,disc:tt.disc,fee:tt.fee,svc:tt.svc,tax:tt.tax,total:tt.total,coupon:tt.disc?co.coupon.toUpperCase():"",pay:co.pay,paid:false,refunded:false,
+    status:"new",created:now,sched,times:{new:now},urgent:false,rating:0,comment:"",src:ui.consent?ui.src:"",lang:L()};
+  S.orders.push(o);
+  if(o.phone){const c=S.customers[o.phone]||{name:o.name,points:0,orders:0,offers:false};c.name=o.name||c.name;c.orders++;c.points+=Math.floor(o.total/10);c.offers=co.offers;S.customers[o.phone]=c}
+  save();ui.myOrders.push(o.id);lset("my",ui.myOrders);ui.cart=[];saveCart();checkNew();
+  ui.co={...ui.co,coupon:"",couponDraft:"",err:"",time:"",when:"now"};
+  openSheet("track",{id:o.id});render();
+}
+function waText(o){
+  const lines=o.items.map(l=>`• ${l.qty}× ${l.ar}${l.opts.length?" ("+l.opts.map(x=>x.ar).join("، ")+")":""}${l.note?" — "+l.note:""}`).join("\n");
+  const where=o.type==="dine"?`ترابيزة ${o.table}`:o.type==="delivery"?`دليفري: ${o.addr}`:"تيك أواي";
+  return `طلب جديد #${o.no}\n${where}\n${o.name?o.name+" ":""}${o.phone}\n\n${lines}\n\nالإجمالي: ${o.total} ج.م\nالدفع: ${o.pay==="cash"?"كاش":"فيزا"} عند الاستلام${o.sched?"\nالموعد: "+new Date(o.sched).toLocaleTimeString("ar-EG",{hour:"2-digit",minute:"2-digit"}):""}`;
+}
+function vTrack(){
+  const o=S.orders.find(x=>x.id===ui.sheet.id);if(!o)return"";
+  const steps=["new","prep","ready","done"],idx=steps.indexOf(o.status);
+  const pts=o.phone&&S.customers[o.phone]?S.customers[o.phone].points:0;
+  return `<div class="sh-top"><div><div class="note" style="margin:0">${t("orderNo")}</div><div class="bigno num">#${o.no}</div></div><button class="x" data-act="closeSheet" aria-label="${t("close")}">${ic("x")}</button></div>
+  ${o.status==="cancelled"?`<p class="st st-cancelled">${t("st_cancelled")}</p>`:`<div class="steps">${steps.map((s,i)=>`<div class="${i<=idx?"on":""}"><i></i>${t("st_"+s)}</div>`).join("")}</div>`}
+  ${o.sched?`<p class="note">${t("sched")}: <span class="num">${new Date(o.sched).toLocaleTimeString(L()==="ar"?"ar-EG":"en-GB",{hour:"2-digit",minute:"2-digit"})}</span></p>`:""}
+  <h3 style="font-size:15px;margin:14px 0 4px">${t("receipt")}</h3>
+  ${o.items.map(l=>`<div class="line"><div><b>${l.qty}× ${esc(nm(l))}</b>${l.opts.length?`<div class="lo">${l.opts.map(x=>esc(nm(x))).join("، ")}</div>`:""}${l.note?`<div class="lo">“${esc(l.note)}”</div>`:""}</div><div class="num">${money(l.unit*l.qty)}</div></div>`).join("")}
+  <div class="sum"><div><span>${t(o.type)}${o.table?` · ${t("table")} ${o.table}`:""}</span><span>${o.pay==="cash"?t("cash"):t("card")}</span></div>
+   ${o.disc?`<div><span>${t("discount")}</span><span class="num">−${money(o.disc)}</span></div>`:""}${o.fee?`<div><span>${t("fee")}</span><span class="num">${money(o.fee)}</span></div>`:""}
+   ${o.svc?`<div><span>${t("service")}</span><span class="num">${money(o.svc)}</span></div>`:""}${o.tax?`<div><span>${t("tax")}</span><span class="num">${money(o.tax)}</span></div>`:""}
+   <div class="tot"><span>${t("total")}</span><span class="num">${money(o.total)}</span></div></div>
+  ${pts?`<p class="note">${t("points")}: <b class="num">${pts}</b></p>`:""}
+  <div style="display:flex;flex-direction:column;gap:8px;margin-top:14px">
+   <a class="btn dark" href="https://wa.me/${esc(S.brand.wa)}?text=${encodeURIComponent(waText(o))}" target="_blank" rel="noopener">${ic("chat")} ${t("wa")}</a>
+   ${o.status==="new"?`<button class="btn danger" data-act="custCancel" data-id="${o.id}">${t("cancel")}</button>`:""}
+   <p class="note">${t("cancelNote")}</p></div>
+  ${o.status==="done"?`<div class="grp"><div class="grp-h"><b>${o.rating?t("rateThanks"):t("rate")}</b></div><div class="stars">${[1,2,3,4,5].map(v=>`<button data-act="rate" data-id="${o.id}" data-v="${v}" class="${v<=o.rating?"on":""}" aria-label="${v}">★</button>`).join("")}</div>
+   <textarea id="rcomment" data-rc="${o.id}" placeholder="${L()==="ar"?"رأيك يهمنا (اختياري)":"Your feedback (optional)"}" style="margin-top:8px">${esc(o.comment)}</textarea></div>`:""}`;
+}
+
+/* ---------- staff: kitchen ---------- */
+const typeAr=o=>o.type==="dine"?`ترابيزة ${o.table}`:o.type==="delivery"?"دليفري":"تيك أواي";
+const stAr={new:"جديد",prep:"قيد التحضير",ready:"جاهز",done:"مسلّم",cancelled:"ملغي"};
+const mmss=ms=>{const s=Math.max(0,Math.floor(ms/1000));return `${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`};
+function sortOrders(a,b){return (b.urgent-a.urgent)||((a.sched||a.created)-(b.sched||b.created))}
+function vService(){const open=S.service.filter(s=>!s.done);if(!open.length)return"";
+  return `<div class="svc">${open.map(s=>`<div class="item">${ic(s.kind==="bill"?"bill":"bell")}<span><b>ترابيزة ${esc(s.table)}</b> · ${s.kind==="bill"?"طلب الحساب":"بتنادي الجرسون"} · <span class="num" data-since="${s.t}"></span></span><button class="btn sm" data-act="svcDone" data-id="${s.id}">تم</button></div>`).join("")}</div>`}
+function kCard(o){
+  const items=o.items.map(l=>{const dim=ui.kst!=="all"&&l.st!==ui.kst;return `<li class="${dim?"dim":""}"><span class="q num">${l.qty}×</span>${esc(l.ar)}<span class="st-tag">${l.st==="bar"?"بار":"مطبخ"}</span>${l.opts.length?`<span class="o">${l.opts.map(x=>esc(x.ar)).join(" · ")}</span>`:""}${l.note?`<span class="n">ملاحظة: ${esc(l.note)}</span>`:""}</li>`}).join("");
+  const next={new:["prep","ابدأ التحضير"],prep:["ready","جاهز"],ready:["done","تم التسليم"]}[o.status];
+  return `<div class="kcard ${ui.fresh.has(o.id)?"fresh":""}" data-age="${o.created}">
+   <div class="k-top"><span class="k-no num">#${o.no}</span><span class="k-time" data-since="${o.status==="prep"&&o.times.prep?o.times.prep:o.created}"></span></div>
+   <div class="k-meta"><span>${typeAr(o)}</span>${o.urgent?`<span class="st st-new">عاجل</span>`:""}${o.sched&&o.sched>Date.now()?`<span class="st st-prep">مجدول ${new Date(o.sched).toLocaleTimeString("ar-EG",{hour:"2-digit",minute:"2-digit"})}</span>`:""}${o.status==="prep"?`<span>وقت التحضير</span>`:""}</div>
+   <ul class="k-items">${items}</ul>
+   <div class="k-act">${next?`<button class="btn pri" data-act="adv" data-id="${o.id}" data-v="${next[0]}">${next[1]}</button>`:""}<button class="btn sm" data-act="ticket" data-id="${o.id}">تذكرة</button></div></div>`;
+}
+function vKitchen(){
+  const live=S.orders.filter(o=>["new","prep","ready"].includes(o.status)&&(ui.kst==="all"||o.items.some(l=>l.st===ui.kst))).sort(sortOrders);
+  const cols=[["new","جديد"],["prep","قيد التحضير"],["ready","جاهز للتسليم"]];
+  const today=S.orders.filter(o=>o.status==="done"&&o.times.done>new Date().setHours(0,0,0,0)).length;
+  return `<div class="staff" dir="rtl"><div class="st-head"><h1>شاشة المطبخ والبار</h1>
+   <div class="seg" style="min-width:240px">${[["all","الكل"],["bar","البار"],["kitchen","المطبخ"]].map(([k,l])=>`<button data-act="kst" data-v="${k}" class="${ui.kst===k?"on":""}">${l}</button>`).join("")}</div>
+   <span class="sp"></span><span class="note" style="margin:0">اتسلّم النهارده: <b class="num">${today}</b></span>
+   <button class="btn ${ui.sound?"pri":""}" data-act="sound">${ic("bell")} ${ui.sound?"التنبيه الصوتي شغّال":"شغّل التنبيه الصوتي"}</button></div>
+   ${vService()}
+   <div class="board">${cols.map(([s,l])=>{const os=live.filter(o=>o.status===s);return `<div class="col"><div class="col-h"><span>${l}</span><span class="num">${os.length}</span></div>${os.map(kCard).join("")||`<p class="note" style="text-align:center">مفيش طلبات</p>`}</div>`}).join("")}</div>
+   <p class="note">الطلبات بتظهر هنا لوحدها من غير تحديث. افتح المنيو في تاب تاني وابعت طلب علشان تشوف ده بيحصل.</p></div>`;
+}
+
+/* ---------- staff: cashier ---------- */
+function vCashier(){
+  const start=new Date().setHours(0,0,0,0);
+  let os=S.orders.filter(o=>o.created>=start||["new","prep","ready"].includes(o.status));
+  if(ui.cashTab==="open")os=os.filter(o=>!["done","cancelled"].includes(o.status)||(!o.paid&&o.status==="done"));
+  os=os.sort((a,b)=>b.created-a.created);
+  const unpaid=S.orders.filter(o=>o.status==="done"&&!o.paid).reduce((a,o)=>a+o.total,0);
+  return `<div class="staff" dir="rtl"><div class="st-head"><h1>الكاشير</h1>
+   <div class="seg" style="min-width:240px"><button data-act="cashTab" data-v="open" class="${ui.cashTab==="open"?"on":""}">المفتوحة</button><button data-act="cashTab" data-v="today" class="${ui.cashTab==="today"?"on":""}">كل طلبات النهارده</button></div>
+   <span class="sp"></span><label class="chk" style="margin:0"><input type="checkbox" data-act="accepting" ${S.set.accepting?"checked":""}> استقبال الطلبات</label></div>
+   ${vService()}
+   ${unpaid?`<div class="demo-note"><p>فيه طلبات اتسلّمت ولسه ما اتحصّلتش بإجمالي <b class="num">${moneyA(unpaid)}</b>.</p></div>`:""}
+   <div class="tablewrap"><table><thead><tr><th>الطلب</th><th>الوقت</th><th>النوع</th><th>الأصناف</th><th>الإجمالي</th><th>الدفع</th><th>الحالة</th><th></th></tr></thead><tbody>
+   ${os.map(o=>`<tr><td class="num"><b>#${o.no}</b>${o.urgent?` <span class="st st-new">عاجل</span>`:""}</td><td class="num">${new Date(o.created).toLocaleTimeString("ar-EG",{hour:"2-digit",minute:"2-digit"})}</td>
+    <td>${typeAr(o)}${o.addr?`<div class="note" style="margin:0;white-space:normal;max-width:180px">${esc(o.addr)} · <span class="num">${esc(o.phone)}</span></div>`:""}</td>
+    <td style="white-space:normal;min-width:180px">${o.items.map(l=>`${l.qty}× ${esc(l.ar)}`).join("، ")}</td>
+    <td class="num"><b>${moneyA(o.total)}</b>${o.disc?`<div class="note" style="margin:0">خصم ${o.disc} (${esc(o.coupon)})</div>`:""}</td>
+    <td>${o.refunded?`<span class="st st-cancelled" style="text-decoration:none">اترجع</span>`:o.paid?`<span class="st st-ready">اتحصّل</span>`:`<span class="st st-prep">${o.pay==="cash"?"كاش":"فيزا"} · لسه</span>`}</td>
+    <td><select data-act="setStatus" data-id="${o.id}">${Object.entries(stAr).map(([k,v])=>`<option value="${k}" ${o.status===k?"selected":""}>${v}</option>`).join("")}</select></td>
+    <td><div style="display:flex;gap:4px">${!o.paid&&o.status!=="cancelled"?`<button class="btn sm pri" data-act="paid" data-id="${o.id}">تحصيل</button>`:""}
+     ${o.status==="cancelled"&&o.paid&&!o.refunded?`<button class="btn sm danger" data-act="refund" data-id="${o.id}">استرداد</button>`:""}
+     ${!["done","cancelled"].includes(o.status)?`<button class="btn sm" data-act="urgent" data-id="${o.id}">${o.urgent?"عادي":"عاجل"}</button>`:""}
+     <button class="btn sm" data-act="ticket" data-id="${o.id}">تذكرة</button></div></td></tr>`).join("")||`<tr><td colspan="8" class="note">مفيش طلبات</td></tr>`}
+   </tbody></table></div></div>`;
+}
+function ticketText(o){
+  const w=32,ln="-".repeat(w);
+  return `${S.brand.ar} | ${S.brand.en}\n${ln}\nطلب #${o.no}   ${new Date(o.created).toLocaleString("ar-EG",{hour:"2-digit",minute:"2-digit",day:"numeric",month:"numeric"})}\n${typeAr(o)}${o.addr?"\n"+o.addr:""}${o.phone?"\n"+o.phone:""}\n${ln}\n`+
+  o.items.map(l=>`${l.qty} × ${l.ar}   ${l.unit*l.qty}${l.opts.length?"\n   - "+l.opts.map(x=>x.ar+(x.price?" +"+x.price:"")).join("\n   - "):""}${l.note?"\n   * "+l.note:""}`).join("\n")+
+  `\n${ln}\nالمجموع: ${o.sub}${o.disc?"\nالخصم: -"+o.disc:""}${o.fee?"\nالتوصيل: "+o.fee:""}${o.svc?"\nالخدمة: "+o.svc:""}${o.tax?"\nالضريبة: "+o.tax:""}\nالإجمالي: ${o.total} ج.م\n${ln}\n${S.brand.phone}`;
+}
+
+/* ---------- staff: admin ---------- */
+const ATABS=[["products","الأقسام والمنتجات"],["groups","الاختيارات والإضافات"],["coupons","العروض والكوبونات"],["tables","الفروع والترابيزات وQR"],["fees","الرسوم والضرائب"],["staff","الموظفين والصلاحيات"],["log","سجل التعديلات"],["brand","هوية الكافيه"],["backup","النسخ الاحتياطي"]];
+function vAdmin(){
+  const tab={products:aProducts,groups:aGroups,coupons:aCoupons,tables:aTables,fees:aFees,staff:aStaff,log:aLog,brand:aBrand,backup:aBackup}[ui.adminTab];
+  return `<div class="staff" dir="rtl"><div class="st-head"><h1>لوحة الإدارة</h1></div>
+   <div class="subtabs">${ATABS.map(([k,l])=>`<button data-act="atab" data-v="${k}" class="${ui.adminTab===k?"on":""}">${l}</button>`).join("")}</div>${tab()}</div>`;
+}
+function aProducts(){
+  return `<div class="panel"><h3>الأقسام <span class="sp"></span><button class="btn sm pri" data-act="addCat">قسم جديد</button></h3>
+   <p class="note" style="margin-top:0">رتّب الأقسام بالأسهم. القسم الموقوف بيختفي من المنيو.</p></div>`+
+  S.cats.map((c,ci)=>{const ps=S.products.filter(p=>p.cat===c.id);
+   return `<div class="panel"><h3><input type="text" value="${esc(c.ar)}" data-edit="cats.${ci}.ar" aria-label="اسم القسم بالعربي" style="max-width:180px">
+    <input type="text" value="${esc(c.en)}" data-edit="cats.${ci}.en" dir="ltr" aria-label="Category name" style="max-width:180px">
+    <select class="f" data-edit="cats.${ci}.st" style="width:auto"><option value="bar" ${c.st==="bar"?"selected":""}>محطة: البار</option><option value="kitchen" ${c.st==="kitchen"?"selected":""}>محطة: المطبخ</option></select>
+    <span class="sp"></span><button class="sw ${c.on!==false?"on":""}" data-act="catOn" data-i="${ci}" aria-label="تشغيل القسم"></button>
+    <button class="btn sm" data-act="catMove" data-i="${ci}" data-d="-1" ${ci?"":"disabled"} aria-label="لأعلى">▲</button><button class="btn sm" data-act="catMove" data-i="${ci}" data-d="1" ${ci<S.cats.length-1?"":"disabled"} aria-label="لأسفل">▼</button>
+    <button class="btn sm" data-act="editP" data-id="" data-cat="${c.id}">منتج جديد</button></h3>
+    ${ps.map(p=>`<div class="prow">${thumb(p)}<div style="min-width:0"><div class="nm">${esc(p.ar)} <span class="sub">${esc(p.en)}</span> ${badges(p,"ar")}</div><div class="sub num">${p.offer&&p.offer<p.price?`${p.offer} بدل ${p.price}`:p.price} ج.م${p.from&&p.to?` · متاح ${p.from}–${p.to}`:""}</div></div>
+     <button class="sw ${p.on?"on":""}" data-act="pOn" data-id="${p.id}" aria-label="متاح"></button><button class="btn sm" data-act="editP" data-id="${p.id}">تعديل</button></div>`).join("")||`<p class="note">مفيش منتجات في القسم ده.</p>`}</div>`}).join("");
+}
+function vEditP(){
+  const s=ui.sheet,p=s.p;
+  return `<div class="sh-top" dir="rtl"><h2>${s.isNew?"منتج جديد":"تعديل "+esc(p.ar)}</h2><button class="x" data-act="closeSheet">${ic("x")}</button></div>
+  <div dir="rtl"><div class="grid-form">
+   <div><label class="fl" for="e_ar">الاسم بالعربي</label><input type="text" id="e_ar" value="${esc(p.ar)}"></div>
+   <div><label class="fl" for="e_en">الاسم بالإنجليزي</label><input type="text" id="e_en" value="${esc(p.en)}" dir="ltr"></div>
+   <div><label class="fl" for="e_cat">القسم</label><select class="f" id="e_cat">${S.cats.map(c=>`<option value="${c.id}" ${p.cat===c.id?"selected":""}>${esc(c.ar)}</option>`).join("")}</select></div>
+   <div><label class="fl" for="e_price">السعر (ج.م)</label><input type="number" id="e_price" value="${p.price}" min="0"></div>
+   <div><label class="fl" for="e_offer">سعر العرض (اختياري)</label><input type="number" id="e_offer" value="${p.offer||""}" min="0"></div>
+   <div><label class="fl">متاح من / لحد (اختياري)</label><div class="two"><input type="time" id="e_from" value="${p.from}"><input type="time" id="e_to" value="${p.to}"></div></div></div>
+   <label class="fl" for="e_dar">الوصف بالعربي</label><textarea id="e_dar">${esc(p.dAr)}</textarea>
+   <label class="fl" for="e_den">الوصف بالإنجليزي</label><textarea id="e_den" dir="ltr">${esc(p.dEn)}</textarea>
+   <label class="fl" for="e_ing">المكونات</label><input type="text" id="e_ing" value="${esc(p.ing)}">
+   <label class="fl">العلامات</label><div class="opts">
+    <label class="opt"><input type="checkbox" id="e_on" ${p.on?"checked":""}> متاح</label><label class="opt"><input type="checkbox" id="e_best" ${p.best?"checked":""}> الأكثر مبيعًا</label><label class="opt"><input type="checkbox" id="e_new" ${p.isNew?"checked":""}> جديد</label></div>
+   <label class="fl">الاختيارات والإضافات اللي تظهر مع المنتج</label><div class="opts">${Object.entries(S.groups).map(([k,g])=>`<label class="opt"><input type="checkbox" data-eg="${k}" ${p.g.includes(k)?"checked":""}> ${esc(g.ar)}${g.req?" *":""}</label>`).join("")}</div>
+   <label class="fl" for="e_img">صورة المنتج</label><div style="display:flex;gap:10px;align-items:center">${thumb(p)}<input type="file" id="e_img" accept="image/*">${p.img?`<button class="btn sm" data-act="rmImg">شيل الصورة</button>`:""}</div>
+   <p class="note">الصورة بتتصغّر تلقائيًا لـ 600 بكسل علشان المنيو يفتح بسرعة.</p>
+   <div class="sh-bottom">${s.isNew?"":`<button class="btn danger" data-act="delP" style="flex:0 0 auto">${s.confirmDel?"اضغط تاني للتأكيد":"حذف"}</button>`}<button class="btn pri" data-act="saveP">حفظ</button></div></div>`;
+}
+function aGroups(){
+  return Object.entries(S.groups).map(([k,g])=>`<div class="panel"><h3><input type="text" value="${esc(g.ar)}" data-edit="groups.${k}.ar" style="max-width:160px"><input type="text" value="${esc(g.en)}" data-edit="groups.${k}.en" dir="ltr" style="max-width:160px">
+   <label class="chk" style="margin:0"><input type="checkbox" data-editb="groups.${k}.req" ${g.req?"checked":""}> إجباري</label><label class="chk" style="margin:0"><input type="checkbox" data-editb="groups.${k}.multi" ${g.multi?"checked":""}> اختيار متعدد</label>
+   <span class="sp"></span><span class="note" style="margin:0">مستخدم في ${S.products.filter(p=>p.g.includes(k)).length} منتج</span></h3>
+   <div class="tablewrap"><table><thead><tr><th>بالعربي</th><th>بالإنجليزي</th><th>السعر الإضافي</th><th>افتراضي</th><th></th></tr></thead><tbody>
+   ${g.opts.map((o,i)=>`<tr><td><input type="text" value="${esc(o[0])}" data-edit="groups.${k}.opts.${i}.0"></td><td><input type="text" dir="ltr" value="${esc(o[1])}" data-edit="groups.${k}.opts.${i}.1"></td><td><input type="number" min="0" value="${o[2]}" data-edit="groups.${k}.opts.${i}.2" data-num></td>
+    <td>${g.multi?"—":`<input type="radio" name="def_${k}" data-act="gdef" data-g="${k}" data-i="${i}" ${g.def===i?"checked":""}>`}</td><td><button class="btn sm danger" data-act="gdel" data-g="${k}" data-i="${i}">حذف</button></td></tr>`).join("")}
+   </tbody></table></div><button class="btn sm" data-act="gadd" data-g="${k}" style="margin-top:8px">أضف اختيار</button></div>`).join("")+
+  `<div class="panel"><h3>مجموعة جديدة</h3><div style="display:flex;gap:8px;flex-wrap:wrap"><input type="text" id="ng_ar" placeholder="مثلًا: الحجم" style="max-width:220px"><button class="btn pri" data-act="gnew">إضافة</button></div>
+   <p class="note">للأحجام: اعمل مجموعة "الحجم" إجبارية، وحط فرق السعر في كل اختيار (صغير +0، وسط +10، كبير +20)، وبعدين فعّلها من تعديل المنتج.</p></div>`;
+}
+function aCoupons(){
+  const offers=S.products.filter(p=>p.offer&&p.offer<p.price);
+  return `<div class="panel"><h3>كوبونات الخصم</h3><div class="tablewrap"><table><thead><tr><th>الكود</th><th>النوع</th><th>القيمة</th><th>حد أدنى للطلب</th><th>اتستخدم</th><th>شغّال</th><th></th></tr></thead><tbody>
+   ${S.coupons.map((c,i)=>`<tr><td class="mono"><b>${esc(c.code)}</b>${c.ex?' <span class="badge b-best">مثال</span>':""}</td><td><select data-edit="coupons.${i}.type"><option value="pct" ${c.type==="pct"?"selected":""}>نسبة %</option><option value="fixed" ${c.type==="fixed"?"selected":""}>مبلغ ثابت</option></select></td>
+    <td><input type="number" min="0" value="${c.val}" data-edit="coupons.${i}.val" data-num></td><td><input type="number" min="0" value="${c.min}" data-edit="coupons.${i}.min" data-num></td>
+    <td class="num">${S.orders.filter(o=>o.coupon===c.code).length}</td><td><button class="sw ${c.on?"on":""}" data-act="cpOn" data-i="${i}"></button></td><td><button class="btn sm danger" data-act="cpDel" data-i="${i}">حذف</button></td></tr>`).join("")}
+   </tbody></table></div><div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><input type="text" id="ncp" placeholder="كود جديد" dir="ltr" style="max-width:180px"><button class="btn pri" data-act="cpAdd">إضافة كوبون</button></div></div>
+  <div class="panel"><h3>عروض المنتجات</h3><p class="note" style="margin-top:0">أي منتج ليه "سعر عرض" بيظهر بعلامة عرض وبالسعر القديم مشطوب. عدّله من تبويب المنتجات.</p>
+   ${offers.map(p=>`<div class="prow">${thumb(p)}<div><div class="nm">${esc(p.ar)}</div><div class="sub num">${p.offer} بدل ${p.price} ج.م</div></div><span></span><button class="btn sm" data-act="editP" data-id="${p.id}">تعديل</button></div>`).join("")||`<p class="note">مفيش عروض دلوقتي.</p>`}
+   <p class="note">عرض "وافل نوتيلا" مجرد مثال، امسحه أو غيّره.</p></div>`;
+}
+function qrSvg(text){try{const q=qrcode(0,"M");q.addData(text);q.make();return q.createSvgTag({cellSize:4,margin:2,scalable:true})}catch(e){return `<p class="note">مكتبة QR ما اتحمّلتش</p>`}}
+function menuUrl(){return (S.set.baseUrl||"https://your-domain.com/menu").replace(/#.*$/,"")}
+function aTables(){
+  const base=menuUrl();
+  return `<div class="panel"><h3>الفروع</h3>${S.branches.map((b,i)=>`<div style="display:flex;gap:8px;margin-bottom:6px"><input type="text" value="${esc(b.name)}" data-edit="branches.${i}.name" style="max-width:260px"></div>`).join("")}
+   <button class="btn sm" data-act="addBranch">أضف فرع</button></div>
+  <div class="panel"><h3>الترابيزات وأكواد QR</h3><div class="grid-form">
+   <div><label class="fl" for="t_count">عدد الترابيزات</label><input type="number" id="t_count" min="0" max="80" value="${S.set.tables}" data-edit="set.tables" data-num></div>
+   <div style="grid-column:span 2"><label class="fl" for="t_url">رابط المنيو بعد الرفع على الاستضافة</label><input type="url" id="t_url" dir="ltr" value="${esc(S.set.baseUrl)}" placeholder="https://your-domain.com/menu" data-edit="set.baseUrl"></div></div>
+   <p class="note">كل كود ترابيزة بيفتح المنيو ورقم الترابيزة متحدد لوحده. الكود العام للمدخل والسوشيال ميديا. حط رابطك الحقيقي فوق والأكواد هتتحدث.</p>
+   <div class="qrgrid" style="margin-top:12px"><div class="qr">${qrSvg(base+"#src_qr")}<b>المنيو العام</b><small>${esc(base)}#src_qr</small></div>
+    <div class="qr">${qrSvg(base+"#src_instagram")}<b>إنستجرام</b><small>#src_instagram</small></div>
+    ${Array.from({length:Math.min(S.set.tables,80)},(_,i)=>`<div class="qr">${qrSvg(base+"#t"+(i+1))}<b>ترابيزة ${i+1}</b><small>#t${i+1}</small></div>`).join("")}</div></div>`;
+}
+function aFees(){
+  return `<div class="panel"><h3>الرسوم والضرائب</h3><div class="grid-form">
+   <div><label class="fl" for="f_svc">خدمة داخل الكافيه %</label><input type="number" id="f_svc" min="0" value="${S.set.service}" data-edit="set.service" data-num></div>
+   <div><label class="fl" for="f_tax">ضريبة القيمة المضافة %</label><input type="number" id="f_tax" min="0" value="${S.set.tax}" data-edit="set.tax" data-num></div>
+   <div><label class="fl" for="f_fee">رسوم التوصيل (ج.م)</label><input type="number" id="f_fee" min="0" value="${S.set.fee}" data-edit="set.fee" data-num></div>
+   <div><label class="fl" for="f_min">الحد الأدنى للدليفري (ج.م)</label><input type="number" id="f_min" min="0" value="${S.set.min}" data-edit="set.min" data-num></div></div>
+   <p class="note">الأسعار في المنيو الورقي مكتوبة نهائية، فالخدمة والضريبة صفر. لو بتضيفهم على الفاتورة اكتب النسبة هنا وهتتحسب تلقائيًا. رسوم التوصيل والحد الأدنى أرقام مبدئية غيّرها.</p></div>
+  <div class="panel"><h3>أنواع الطلب</h3><div class="opts">${[["dine","داخل الكافيه"],["takeaway","تيك أواي"],["delivery","دليفري"]].map(([k,l])=>`<label class="opt"><input type="checkbox" data-editb="set.${k}" ${S.set[k]?"checked":""}> ${l}</label>`).join("")}</div></div>`;
+}
+function aStaff(){
+  const rows=[["منيو العميل وإرسال الطلبات","✓","✓","✓"],["شاشة المطبخ","✓","","✓"],["الكاشير والتحصيل والاسترداد","✓","✓",""],["التقارير","✓","✓",""],["تعديل المنيو والأسعار والإعدادات","✓","",""]];
+  return `<div class="panel"><h3>الموظفين</h3><div class="tablewrap"><table><thead><tr><th>الاسم</th><th>الدور</th><th></th></tr></thead><tbody>
+   ${S.staff.map((s,i)=>`<tr><td><input type="text" value="${esc(s.name)}" data-edit="staff.${i}.name"></td><td><select data-edit="staff.${i}.role">${Object.entries(ROLE_AR).map(([k,v])=>`<option value="${k}" ${s.role===k?"selected":""}>${v}</option>`).join("")}</select></td>
+    <td>${S.staff.length>1&&s.id!==ui.user?`<button class="btn sm danger" data-act="stDel" data-i="${i}">حذف</button>`:""}</td></tr>`).join("")}</tbody></table></div>
+   <button class="btn sm" data-act="stAdd" style="margin-top:8px">أضف موظف</button></div>
+  <div class="panel"><h3>الصلاحيات</h3><div class="tablewrap"><table><thead><tr><th>الشاشة</th><th>مدير</th><th>كاشير</th><th>مطبخ/بار</th></tr></thead><tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join("")}</tr>`).join("")}</tbody></table></div>
+   <p class="note">في النموذج ده بتبدّل بين الموظفين من الشريط اللي فوق. في النسخة النهائية كل موظف هيدخل بحساب وكلمة سر.</p></div>`;
+}
+function aLog(){return `<div class="panel"><h3>سجل التعديلات <span class="sp"></span><span class="note" style="margin:0">${S.log.length} تعديل</span></h3><div class="loglist">${S.log.map(l=>`<div><time>${new Date(l.t).toLocaleString("ar-EG",{day:"numeric",month:"numeric",hour:"2-digit",minute:"2-digit"})}</time><b>${esc(l.who)}</b><span>${esc(l.what)}</span></div>`).join("")||`<p class="note">أي تعديل في الأسعار أو المنتجات أو الخصومات أو الطلبات هيتسجّل هنا باسم الموظف.</p>`}</div></div>`}
+function aBrand(){
+  return `<div class="panel"><h3>هوية الكافيه</h3><div class="grid-form">
+   <div><label class="fl" for="b_ar">الاسم بالعربي</label><input type="text" id="b_ar" value="${esc(S.brand.ar)}" data-edit="brand.ar"></div>
+   <div><label class="fl" for="b_en">الاسم بالإنجليزي</label><input type="text" id="b_en" value="${esc(S.brand.en)}" data-edit="brand.en" dir="ltr"></div>
+   <div><label class="fl" for="b_tag">الشعار المكتوب</label><input type="text" id="b_tag" value="${esc(S.brand.tag)}" data-edit="brand.tag" dir="ltr"></div>
+   <div><label class="fl" for="b_ph">رقم التليفون</label><input type="tel" id="b_ph" value="${esc(S.brand.phone)}" data-edit="brand.phone" dir="ltr"></div>
+   <div><label class="fl" for="b_wa">رقم واتساب الطلبات (بكود الدولة)</label><input type="tel" id="b_wa" value="${esc(S.brand.wa)}" data-edit="brand.wa" dir="ltr"></div>
+   <div><label class="fl" for="b_addr">العنوان</label><input type="text" id="b_addr" value="${esc(S.brand.addr)}" data-edit="brand.addr" placeholder="مش مكتوب في المنيو، اكتبه هنا"></div>
+   <div><label class="fl" for="b_col">اللون الأساسي</label><input type="color" id="b_col" value="${S.brand.color||"#6E8A3C"}" data-edit="brand.color" style="width:100%;height:40px;border:1px solid var(--line);border-radius:10px;background:var(--surface)"></div>
+   <div><label class="fl" for="b_logo">اللوجو</label><div style="display:flex;gap:8px;align-items:center"><img src="${logo()}" alt="" style="width:44px;height:44px;border-radius:50%"><input type="file" id="b_logo" accept="image/*"></div></div></div>
+   ${S.brand.color?`<button class="btn sm" data-act="resetColor" style="margin-top:10px">رجّع لون ماتشا الأصلي</button>`:""}</div>`;
+}
+function aBackup(){
+  return `<div class="panel"><h3>تصدير نسخة احتياطية</h3><p class="note" style="margin-top:0">كل المنيو والإعدادات والطلبات في ملف واحد. انسخه واحفظه في ملف نصي.</p>
+   <button class="btn pri" data-act="exportJson">انسخ النسخة الاحتياطية</button></div>
+  <div class="panel"><h3>استرجاع نسخة</h3><textarea id="importBox" class="mono" placeholder="الصق النسخة الاحتياطية هنا" style="min-height:110px"></textarea><button class="btn" data-act="importJson" style="margin-top:8px">استرجاع</button></div>
+  <div class="panel"><h3>البيانات التجريبية</h3><p class="note" style="margin-top:0">فيه حوالي 30 يوم طلبات تجريبية علشان التقارير تبان. امسحها قبل التشغيل الحقيقي.</p>
+   <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn danger" data-act="clearDemo">${ui.confirmClear?"اضغط تاني للتأكيد":"امسح الطلبات التجريبية"}</button><button class="btn" data-act="resetAll">${ui.confirmReset?"اضغط تاني للتأكيد":"رجّع كل حاجة للبداية"}</button></div></div>`;
+}
+
+/* ---------- staff: reports ---------- */
+function vReports(){
+  const day=864e5,now=Date.now(),R=ui.range;
+  const start=R===1?new Date().setHours(0,0,0,0):new Date(now-(R-1)*day).setHours(0,0,0,0),prevStart=start-(R===1?day:R*day);
+  const inR=S.orders.filter(o=>o.created>=start),prev=S.orders.filter(o=>o.created>=prevStart&&o.created<start);
+  const valid=a=>a.filter(o=>o.status!=="cancelled");
+  const sales=a=>valid(a).reduce((s,o)=>s+o.total,0);
+  const cur=sales(inR),pv=sales(prev),cnt=valid(inR).length,pcnt=valid(prev).length,avg=cnt?cur/cnt:0,pavg=pcnt?pv/pcnt:0;
+  const canc=inR.filter(o=>o.status==="cancelled"),refunded=canc.filter(o=>o.refunded).reduce((s,o)=>s+o.total,0),disc=inR.reduce((s,o)=>s+(o.disc||0),0);
+  const prepT=valid(inR).filter(o=>o.times.ready&&o.times.prep).map(o=>(o.times.ready-o.times.prep)/6e4);const avgPrep=prepT.length?prepT.reduce((a,b)=>a+b,0)/prepT.length:0;
+  const rated=inR.filter(o=>o.rating),avgRate=rated.length?rated.reduce((a,o)=>a+o.rating,0)/rated.length:0;
+  const visits=Math.round(S.stats.visits*(R/30)),conv=visits?cnt/visits*100:0;
+  const chg=(a,b)=>{if(!b)return"";const p=(a-b)/b*100;return `<em class="${p>=0?"up":"down"}">${p>=0?"▲":"▼"} ${Math.abs(p).toFixed(0)}%</em>`};
+  const pq={},cq={};valid(inR).forEach(o=>o.items.forEach(l=>{pq[l.ar]=(pq[l.ar]||0)+l.qty;const p=S.products.find(x=>x.id===l.pid);const c=p?S.cats.find(c=>c.id===p.cat)?.ar:"—";cq[c]=(cq[c]||0)+l.unit*l.qty}));
+  const top=Object.entries(pq).sort((a,b)=>b[1]-a[1]).slice(0,8),topC=Object.entries(cq).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const hrs=Array(24).fill(0);valid(inR).forEach(o=>hrs[new Date(o.created).getHours()]++);
+  const hOrder=[...Array(24).keys()].map(i=>(i+8)%24).filter(h=>!(h>=3&&h<8));const hMax=Math.max(1,...hOrder.map(h=>hrs[h]));const peak=hOrder.reduce((a,h)=>hrs[h]>hrs[a]?h:a,hOrder[0]);
+  const days=R===1?[]:[...Array(R).keys()].map(i=>{const d0=start+i*day;return {d:new Date(d0),v:sales(S.orders.filter(o=>o.created>=d0&&o.created<d0+day))}});const dMax=Math.max(1,...days.map(d=>d.v));
+  const types={dine:0,takeaway:0,delivery:0};valid(inR).forEach(o=>types[o.type]++);
+  const bars=(arr,max,fmt)=>arr.map(([k,v])=>`<div class="hbar"><span class="nm">${esc(k)}</span><div class="tr"><div class="fi" style="width:${(v/max*100).toFixed(1)}%"></div></div><span class="num">${fmt(v)}</span></div>`).join("");
+  const cust=Object.entries(S.customers).sort((a,b)=>b[1].points-a[1].points).slice(0,10);
+  const hasDemo=S.orders.some(o=>o.demo);
+  const fmtH=h=>`${h%12||12}${h<12?"ص":"م"}`;
+  return `<div class="staff" dir="rtl"><div class="st-head"><h1>التقارير</h1><div class="seg" style="min-width:280px">${[[1,"النهارده"],[7,"آخر 7 أيام"],[30,"آخر 30 يوم"]].map(([v,l])=>`<button data-act="range" data-v="${v}" class="${R===v?"on":""}">${l}</button>`).join("")}</div>
+   <span class="sp"></span><button class="btn" data-act="csv">تصدير CSV / Excel</button></div>
+   ${hasDemo?`<div class="demo-note"><p>الأرقام دي من طلبات تجريبية علشان تشوف شكل التقارير، مش مبيعاتك الحقيقية. تقدر تمسحها من الإدارة ← النسخ الاحتياطي.</p></div>`:""}
+   <div class="kpis">
+    <div class="kpi"><span>إجمالي المبيعات</span><b>${moneyA(Math.round(cur))}</b>${chg(cur,pv)}</div>
+    <div class="kpi"><span>عدد الطلبات</span><b>${cnt}</b>${chg(cnt,pcnt)}</div>
+    <div class="kpi"><span>متوسط قيمة الطلب</span><b>${moneyA(Math.round(avg))}</b>${chg(avg,pavg)}</div>
+    <div class="kpi"><span>وقت الذروة</span><b>${fmtH(peak)}</b></div>
+    <div class="kpi"><span>متوسط زمن التحضير</span><b>${avgPrep.toFixed(1)} د</b></div>
+    <div class="kpi"><span>الخصومات</span><b>${moneyA(Math.round(disc))}</b></div>
+    <div class="kpi"><span>إلغاءات / مسترد</span><b>${canc.length} <small class="note">/ ${moneyA(Math.round(refunded))}</small></b></div>
+    <div class="kpi"><span>زيارات المنيو · التحويل</span><b>${visits} <small class="note">· ${conv.toFixed(1)}%</small></b></div>
+    <div class="kpi"><span>متوسط التقييم</span><b>${avgRate?avgRate.toFixed(1)+" ★":"—"}</b><small class="note"> ${rated.length} تقييم</small></div></div>
+   <div class="rgrid">
+    ${R>1?`<div class="panel"><h3>المبيعات اليومية</h3><div class="vchart">${days.map(d=>`<div style="height:${(d.v/dMax*100).toFixed(1)}%" title="${d.d.toLocaleDateString("ar-EG")}: ${Math.round(d.v)} ج.م"></div>`).join("")}</div>
+      <div class="vlab">${days.map((d,i)=>`<span>${(R<=7||i%5===0)?d.d.getDate()+"/"+(d.d.getMonth()+1):""}</span>`).join("")}</div></div>`:""}
+    <div class="panel"><h3>الطلبات حسب الساعة</h3><div class="vchart">${hOrder.map(h=>`<div class="${h===peak?"pk":""}" style="height:${(hrs[h]/hMax*100).toFixed(1)}%" title="${fmtH(h)}: ${hrs[h]}"></div>`).join("")}</div>
+     <div class="vlab">${hOrder.map((h,i)=>`<span>${i%3===0?fmtH(h):""}</span>`).join("")}</div></div>
+    <div class="panel"><h3>أفضل المنتجات (بالكمية)</h3>${bars(top,top[0]?.[1]||1,v=>v)||'<p class="note">مفيش بيانات</p>'}</div>
+    <div class="panel"><h3>أفضل الأقسام (بالمبيعات)</h3>${bars(topC,topC[0]?.[1]||1,v=>Math.round(v))||'<p class="note">مفيش بيانات</p>'}</div>
+    <div class="panel"><h3>نوع الطلب</h3>${bars([["داخل الكافيه",types.dine],["تيك أواي",types.takeaway],["دليفري",types.delivery]],Math.max(1,cnt),v=>`${v} (${cnt?Math.round(v/cnt*100):0}%)`)}</div>
+    <div class="panel"><h3>مصدر الزيارات <span class="note" style="margin:0;font-weight:400">بموافقة العميل</span></h3>${bars(Object.entries(S.stats.bySrc).map(([k,v])=>[{qr:"QR",instagram:"إنستجرام",direct:"مباشر"}[k]||k,v]),Math.max(1,...Object.values(S.stats.bySrc)),v=>v)||'<p class="note">مفيش بيانات</p>'}</div>
+    <div class="panel"><h3>مقارنة الفروع</h3><div class="tablewrap"><table><thead><tr><th>الفرع</th><th>المبيعات</th><th>الطلبات</th><th>الفترة السابقة</th></tr></thead><tbody>${S.branches.map(b=>{const a=inR.filter(o=>o.branch===b.id),p=prev.filter(o=>o.branch===b.id);return `<tr><td>${esc(b.name)}</td><td class="num">${moneyA(Math.round(sales(a)))}</td><td class="num">${valid(a).length}</td><td class="num">${moneyA(Math.round(sales(p)))}</td></tr>`}).join("")}</tbody></table></div></div>
+    <div class="panel"><h3>برنامج الولاء</h3><p class="note" style="margin-top:0">نقطة لكل 10 ج.م. العميل بيتسجّل برقم موبايله وقت الطلب.</p>
+     ${cust.length?`<div class="tablewrap"><table><thead><tr><th>العميل</th><th>الموبايل</th><th>طلبات</th><th>نقاط</th><th>يقبل عروض</th></tr></thead><tbody>${cust.map(([ph,c])=>`<tr><td>${esc(c.name||"—")}</td><td class="num">${esc(ph)}</td><td class="num">${c.orders}</td><td class="num">${c.points}</td><td>${c.offers?"✓":"—"}</td></tr>`).join("")}</tbody></table></div>`:`<p class="note">لسه مفيش عملاء مسجلين. ابعت طلب برقم موبايل من المنيو.</p>`}</div>
+    <div class="panel"><h3>آخر التقييمات</h3>${inR.filter(o=>o.rating).slice(-6).reverse().map(o=>`<div class="line"><div>#${o.no} ${o.comment?`<div class="lo">${esc(o.comment)}</div>`:""}</div><div style="color:var(--honey)">${"★".repeat(o.rating)}</div></div>`).join("")||'<p class="note">مفيش تقييمات</p>'}</div>
+   </div></div>`;
+}
+function csvFor(){
+  const start=ui.range===1?new Date().setHours(0,0,0,0):new Date(Date.now()-(ui.range-1)*864e5).setHours(0,0,0,0);
+  const rows=[["order_no","date","time","type","table","items","subtotal","discount","coupon","delivery_fee","service","tax","total","payment","paid","status","rating"]];
+  S.orders.filter(o=>o.created>=start).forEach(o=>{const d=new Date(o.created);rows.push([o.no,d.toISOString().slice(0,10),d.toTimeString().slice(0,5),o.type,o.table,o.items.map(l=>l.qty+"x "+l.en).join("; "),o.sub,o.disc,o.coupon,o.fee,o.svc,o.tax,o.total,o.pay,o.paid?"yes":"no",o.status,o.rating||""])});
+  return rows.map(r=>r.map(v=>`"${String(v??"").replace(/"/g,'""')}"`).join(",")).join("\n");
+}
+
+/* ---------- sheets ---------- */
+function openSheet(kind,data){ui.sheet={kind,...data};renderSheet()}
+function closeSheet(){ui.sheet=null;renderSheet()}
+function renderSheet(){
+  const w=$("#sheet");if(!ui.sheet){w.hidden=true;w.innerHTML="";document.body.classList.remove("lock");return}
+  const k=ui.sheet.kind;let body="",wide=false,dir=L()==="ar"?"rtl":"ltr";
+  if(k==="product")body=vProduct();else if(k==="cart")body=vCart();else if(k==="track")body=vTrack();
+  else if(k==="editP"){body=vEditP();wide=true;dir="rtl"}
+  else if(k==="ticket"){const o=S.orders.find(x=>x.id===ui.sheet.id);dir="rtl";body=`<div class="sh-top"><h2>تذكرة الطلب #${o.no}</h2><button class="x" data-act="closeSheet">${ic("x")}</button></div><div class="ticket">${esc(ticketText(o))}</div>
+    <p class="note">في النسخة المرفوعة الزرار ده بيطبع على طابعة الكاشير مباشرة. هنا تقدر تنسخ التذكرة.</p><div class="sh-bottom"><button class="btn pri" data-act="copyTicket">انسخ التذكرة</button></div>`}
+  else if(k==="copy"){dir="rtl";body=`<div class="sh-top"><h2>انسخ النص</h2><button class="x" data-act="closeSheet">${ic("x")}</button></div><textarea class="mono" style="min-height:220px" id="copyBox" readonly>${esc(ui.sheet.text)}</textarea><p class="note">علّم النص كله وانسخه.</p>`}
+  w.hidden=false;document.body.classList.add("lock");
+  const sc=w.querySelector(".sheet")?.scrollTop||0;
+  w.innerHTML=`<div class="scrim" data-act="closeSheet"></div><div class="sheet ${wide?"wide":""}" role="dialog" aria-modal="true" dir="${dir}">${body}</div>`;
+  w.querySelector(".sheet").scrollTop=sc;
+  if(k==="copy"){const b=$("#copyBox");b.focus();b.select()}
+}
+
+/* ---------- render ---------- */
+function render(){
+  applyBrand();
+  $("#demo").innerHTML=vDemo();
+  const v=ui.view;
+  $("#app").innerHTML=v==="menu"?vMenu():v==="kitchen"?vKitchen():v==="cashier"?vCashier():v==="admin"?vAdmin():vReports();
+  tick();
+}
+function renderList(){$("#list").innerHTML=vList();$("#chips").innerHTML=vChips()}
+function tick(){
+  document.querySelectorAll("[data-since]").forEach(el=>{el.textContent=mmss(Date.now()-+el.dataset.since)});
+  document.querySelectorAll(".kcard[data-age]").forEach(el=>{const m=(Date.now()-+el.dataset.age)/6e4;el.classList.toggle("late",m>10&&m<=20);el.classList.toggle("very",m>20)});
+}
+setInterval(tick,1000);
+
+/* sync between tabs (customer tab → kitchen tab) */
+function syncFromStorage(){
+  let raw;try{raw=localStorage.getItem(KEY)}catch(e){return}
+  if(!raw||raw===lastRaw)return;lastRaw=raw;
+  try{S=JSON.parse(raw)}catch(e){return}
+  checkNew();
+  const typing=document.activeElement&&["INPUT","TEXTAREA","SELECT"].includes(document.activeElement.tagName);
+  if(!typing){render();if(ui.sheet&&["track","cart"].includes(ui.sheet.kind))renderSheet()}
+}
+window.addEventListener("storage",e=>{if(e.key===KEY)syncFromStorage()});
+setInterval(syncFromStorage,3000);
+
+/* ---------- path editing ---------- */
+function setPath(path,val){const ks=path.split(".");let o=S;for(let i=0;i<ks.length-1;i++)o=o[ks[i]];o[ks[ks.length-1]]=val}
+function getPath(path){return path.split(".").reduce((o,k)=>o?.[k],S)}
+async function shrink(file,max=600){return new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>{const im=new Image();im.onload=()=>{const sc=Math.min(1,max/Math.max(im.width,im.height));const c=document.createElement("canvas");c.width=Math.round(im.width*sc);c.height=Math.round(im.height*sc);c.getContext("2d").drawImage(im,0,0,c.width,c.height);res(c.toDataURL("image/jpeg",.78))};im.onerror=rej;im.src=fr.result};fr.onerror=rej;fr.readAsDataURL(file)})}
+
+document.addEventListener("change",async e=>{
+  const el=e.target;
+  if(el.id==="userSel"){ui.user=el.value;const u=S.staff.find(s=>s.id===ui.user);if(ui.view!=="menu"&&!(PERMS[u.role]||[]).includes(ui.view))ui.view=PERMS[u.role][0]||"menu";render();return}
+  if(el.dataset.edit){const old=getPath(el.dataset.edit);let v=el.value;if(el.dataset.num!==undefined||typeof old==="number")v=+v||0;setPath(el.dataset.edit,v);log(`غيّر ${el.dataset.edit.replace(/\.\d+\./g," ")}: ${old} ← ${v}`);save();
+    if(ui.adminTab==="tables"||el.dataset.edit.startsWith("brand"))render();return}
+  if(el.dataset.editb){setPath(el.dataset.editb,el.checked);log(`${el.checked?"فعّل":"وقّف"} ${el.dataset.editb}`);save();return}
+  if(el.dataset.act==="setStatus"){const o=S.orders.find(x=>x.id===el.dataset.id);o.status=el.value;o.times[el.value]=Date.now();log(`طلب #${o.no}: الحالة ← ${stAr[el.value]}`);save();render();return}
+  if(el.dataset.act==="accepting"){S.set.accepting=el.checked;log(el.checked?"فتح استقبال الطلبات":"وقف استقبال الطلبات");save();return}
+  if(el.dataset.act==="pay"){ui.co.pay=el.value;return}
+  if(el.dataset.act==="gdef"){S.groups[el.dataset.g].def=+el.dataset.i;save();return}
+  if(el.dataset.co==="table"){ui.table=el.value;renderSheet();return}
+  if(el.dataset.co==="offers"){ui.co.offers=el.checked;return}
+  if(el.id==="e_img"&&el.files[0]){try{ui.sheet.p.img=await shrink(el.files[0]);renderSheet()}catch(err){toast("الصورة دي مش مدعومة")}return}
+  if(el.id==="b_logo"&&el.files[0]){try{S.brand.logo=await shrink(el.files[0],300);log("غيّر اللوجو");save();render()}catch(err){toast("الصورة دي مش مدعومة")}return}
+});
+document.addEventListener("input",e=>{
+  const el=e.target;
+  if(el.id==="q"){ui.q=el.value;renderList();return}
+  if(el.dataset.pnote!==undefined&&ui.sheet){ui.sheet.note=el.value;return}
+  if(el.dataset.co&&el.dataset.co!=="table"&&el.dataset.co!=="offers"){ui.co[el.dataset.co]=el.value;return}
+  if(el.dataset.rc){const o=S.orders.find(x=>x.id===el.dataset.rc);o.comment=el.value;save()}
+});
+
+document.addEventListener("click",e=>{
+  const b=e.target.closest("[data-act]");if(!b)return;
+  if(b.tagName==="SELECT"||(b.tagName==="INPUT"&&b.type!=="checkbox"&&b.type!=="radio"))return;
+  const a=b.dataset.act,id=b.dataset.id,v=b.dataset.v;
+  const P=()=>S.products.find(p=>p.id===id);
+  switch(a){
+  case"view":ui.view=v;closeSheet();render();window.scrollTo(0,0);break;
+  case"lang":ui.lang=L()==="ar"?"en":"ar";lset("lang",ui.lang);render();break;
+  case"cat":ui.cat=v;renderList();document.getElementById("chips").querySelector(".on")?.scrollIntoView({inline:"center",block:"nearest"});break;
+  case"fav":{const i=ui.favs.indexOf(id);i<0?ui.favs.push(id):ui.favs.splice(i,1);lset("favs",ui.favs);renderList();break}
+  case"open":{const p=P();openSheet("product",{id,sel:defaultsFor(p),qty:1,note:"",err:""});break}
+  case"quick":{const p=P();const sel=defaultsFor(p);if(missingReq(p,sel).length){openSheet("product",{id,sel,qty:1,note:"",err:""})}else{addToCart(p,sel,1,"");render()}break}
+  case"opt":{const g=S.groups[b.dataset.g],i=+b.dataset.i,s=ui.sheet.sel;if(g.multi){s[b.dataset.g]=s[b.dataset.g]||[];const k=s[b.dataset.g].indexOf(i);k<0?s[b.dataset.g].push(i):s[b.dataset.g].splice(k,1)}else s[b.dataset.g]=(!g.req&&s[b.dataset.g]===i)?null:i;ui.sheet.err="";renderSheet();break}
+  case"pq":ui.sheet.qty=Math.max(1,ui.sheet.qty+ +b.dataset.d);renderSheet();break;
+  case"addLine":{const s=ui.sheet,p=S.products.find(x=>x.id===s.id);const miss=missingReq(p,s.sel);if(miss.length){s.err=`${t("pickErr")}: ${miss.map(g=>nm(S.groups[g])).join("، ")}`;renderSheet();break}
+    addToCart(p,s.sel,s.qty,s.note);closeSheet();render();break}
+  case"cart":openSheet("cart",{});break;
+  case"cq":{const l=ui.cart[+b.dataset.i];l.qty+=+b.dataset.d;if(l.qty<1)ui.cart.splice(+b.dataset.i,1);saveCart();renderSheet();render();break}
+  case"otype":ui.co.type=v;ui.co.err="";renderSheet();break;
+  case"when":ui.co.when=v;renderSheet();break;
+  case"coupon":ui.co.coupon=(ui.co.couponDraft??"").trim();renderSheet();break;
+  case"send":placeOrder();break;
+  case"track":openSheet("track",{id});break;
+  case"custCancel":{const o=S.orders.find(x=>x.id===id);if(o.status==="new"){o.status="cancelled";o.times.cancelled=Date.now();log(`العميل ألغى طلب #${o.no}`);save()}renderSheet();render();break}
+  case"rate":{const o=S.orders.find(x=>x.id===id);o.rating=+v;save();renderSheet();break}
+  case"svc":{S.service.push({id:uid(),table:ui.table,kind:v,t:Date.now(),done:false});save();checkNew();toast(t("reqSent"));break}
+  case"shareMenu":copy(menuUrl()+(ui.table?"":"#src_qr"),t("copied"));break;
+  case"shareP":copy(menuUrl()+"#p-"+id,t("copied"));break;
+  case"consent":ui.consent=v==="1";lset("consent",ui.consent);if(ui.consent&&ui.src){S.stats.bySrc[ui.src]=(S.stats.bySrc[ui.src]||0)+1;save()}render();break;
+  case"closeSheet":closeSheet();break;
+  /* kitchen & cashier */
+  case"kst":ui.kst=v;render();break;
+  case"sound":ui.sound=!ui.sound;if(ui.sound)beep();render();break;
+  case"adv":{const o=S.orders.find(x=>x.id===id);o.status=v;o.times[v]=Date.now();ui.fresh.delete(id);log(`طلب #${o.no}: ${stAr[v]}`);save();render();break}
+  case"ticket":openSheet("ticket",{id});break;
+  case"copyTicket":copy(ticketText(S.orders.find(x=>x.id===ui.sheet.id)),"اتنسخت التذكرة");break;
+  case"svcDone":{const s=S.service.find(x=>x.id===id);s.done=true;save();render();break}
+  case"cashTab":ui.cashTab=v;render();break;
+  case"paid":{const o=S.orders.find(x=>x.id===id);o.paid=true;log(`حصّل طلب #${o.no} (${o.total} ج.م)`);save();render();break}
+  case"refund":{const o=S.orders.find(x=>x.id===id);o.refunded=true;log(`استرد ${o.total} ج.م لطلب #${o.no}`);save();render();break}
+  case"urgent":{const o=S.orders.find(x=>x.id===id);o.urgent=!o.urgent;save();render();break}
+  /* admin */
+  case"atab":ui.adminTab=v;render();break;
+  case"pOn":{const p=P();p.on=!p.on;log(`${p.on?"شغّل":"وقّف"} ${p.ar}`);save();render();break}
+  case"catOn":{const c=S.cats[+b.dataset.i];c.on=c.on===false;log(`${c.on?"شغّل":"وقّف"} قسم ${c.ar}`);save();render();break}
+  case"catMove":{const i=+b.dataset.i,j=i+ +b.dataset.d;[S.cats[i],S.cats[j]]=[S.cats[j],S.cats[i]];log(`غيّر ترتيب قسم ${S.cats[j].ar}`);save();render();break}
+  case"addCat":{const id2="cat"+uid();S.cats.push({id:id2,ar:"قسم جديد",en:"New category",st:"bar",ic:"cup",h:60,on:true});log("أضاف قسم جديد");save();render();break}
+  case"editP":{const p=id?JSON.parse(JSON.stringify(P())):{id:"",cat:b.dataset.cat,ar:"",en:"",price:0,offer:0,dAr:"",dEn:"",ing:"",best:false,isNew:true,on:true,from:"",to:"",img:"",g:[]};openSheet("editP",{p,isNew:!id});break}
+  case"rmImg":ui.sheet.p.img="";renderSheet();break;
+  case"saveP":{const p=ui.sheet.p,g=id=>$("#"+id);
+    const np={...p,ar:g("e_ar").value.trim(),en:g("e_en").value.trim(),cat:g("e_cat").value,price:+g("e_price").value||0,offer:+g("e_offer").value||0,from:g("e_from").value,to:g("e_to").value,
+      dAr:g("e_dar").value,dEn:g("e_den").value,ing:g("e_ing").value,on:g("e_on").checked,best:g("e_best").checked,isNew:g("e_new").checked,g:[...document.querySelectorAll("[data-eg]")].filter(x=>x.checked).map(x=>x.dataset.eg)};
+    if(!np.ar){toast("اكتب اسم المنتج بالعربي");break}
+    if(ui.sheet.isNew){np.id=np.cat+"-"+uid();S.products.push(np);log(`أضاف منتج ${np.ar} بسعر ${np.price}`)}
+    else{const i=S.products.findIndex(x=>x.id===p.id),old=S.products[i];if(old.price!==np.price)log(`سعر ${np.ar}: ${old.price} ← ${np.price}`);if((old.offer||0)!==np.offer)log(`عرض ${np.ar}: ${old.offer||"—"} ← ${np.offer||"—"}`);log(`عدّل منتج ${np.ar}`);S.products[i]=np}
+    save();closeSheet();render();toast("اتحفظ");break}
+  case"delP":{if(!ui.sheet.confirmDel){ui.sheet.confirmDel=true;renderSheet();break}const p=ui.sheet.p;S.products=S.products.filter(x=>x.id!==p.id);log(`حذف منتج ${p.ar}`);save();closeSheet();render();break}
+  case"gadd":S.groups[b.dataset.g].opts.push(["اختيار جديد","New option",0]);save();render();break;
+  case"gdel":{const g=S.groups[b.dataset.g];g.opts.splice(+b.dataset.i,1);if(g.def!=null&&g.def>=g.opts.length)g.def=null;log(`حذف اختيار من ${g.ar}`);save();render();break}
+  case"gnew":{const n=$("#ng_ar").value.trim();if(!n)break;S.groups["g"+uid()]={ar:n,en:n,req:0,multi:0,def:null,opts:[]};log(`أضاف مجموعة ${n}`);save();render();break}
+  case"cpOn":{const c=S.coupons[+b.dataset.i];c.on=!c.on;log(`${c.on?"فعّل":"وقّف"} كوبون ${c.code}`);save();render();break}
+  case"cpDel":{const c=S.coupons.splice(+b.dataset.i,1)[0];log(`حذف كوبون ${c.code}`);save();render();break}
+  case"cpAdd":{const c=$("#ncp").value.trim().toUpperCase();if(!c||S.coupons.some(x=>x.code===c)){toast("اكتب كود جديد مش متكرر");break}S.coupons.push({code:c,type:"pct",val:10,min:0,on:true});log(`أضاف كوبون ${c}`);save();render();break}
+  case"addBranch":S.branches.push({id:"b"+uid(),name:"فرع جديد"});log("أضاف فرع");save();render();break;
+  case"stAdd":S.staff.push({id:"s"+uid(),name:"موظف جديد",role:"cashier"});log("أضاف موظف");save();render();break;
+  case"stDel":{const s=S.staff.splice(+b.dataset.i,1)[0];log(`حذف الموظف ${s.name}`);save();render();break}
+  case"resetColor":S.brand.color="";save();render();break;
+  case"exportJson":copy(JSON.stringify(S),"اتنسخت النسخة الاحتياطية");break;
+  case"importJson":{try{const n=JSON.parse($("#importBox").value);if(n.v!==1||!n.products)throw 0;S=n;log("استرجع نسخة احتياطية");save();render();toast("اترجعت النسخة")}catch(err){toast("النص ده مش نسخة احتياطية صحيحة")}break}
+  case"clearDemo":if(!ui.confirmClear){ui.confirmClear=true;render();break}ui.confirmClear=false;S.orders=S.orders.filter(o=>!o.demo);S.service=S.service.filter(s=>!s.demo);S.stats={visits:0,bySrc:{}};log("مسح الطلبات التجريبية");save();render();toast("اتمسحت");break;
+  case"resetAll":if(!ui.confirmReset){ui.confirmReset=true;render();break}ui.confirmReset=false;S=seed();save();ui.known=new Set(S.orders.map(o=>o.id));render();toast("رجعت للبداية");break;
+  case"range":ui.range=+v;render();break;
+  case"csv":openSheet("copy",{text:csvFor()});break;
+  }
+});
+
+/* ---------- boot: read #t5 / #p-coffee-3 / #src_ig / #kitchen ---------- */
+(function boot(){
+  S=load();ui.known=new Set(S.orders.map(o=>o.id));S.service.forEach(x=>ui.known.add(x.id));
+  const h=(location.hash||"").slice(1);
+  let m;
+  if(m=h.match(/^t(\d+)$/))ui.table=m[1];
+  else if(m=h.match(/^src_(\w+)$/))ui.src=m[1];
+  else if(["kitchen","cashier","admin","reports"].includes(h))ui.view=h;
+  ui.co.type="";
+  S.stats.visits=(S.stats.visits||0)+1;
+  if(ui.consent&&ui.src){S.stats.bySrc[ui.src]=(S.stats.bySrc[ui.src]||0)+1}
+  save();render();
+  if(m=h.match(/^p-(.+)$/)){const p=S.products.find(x=>x.id===m[1]);if(p)openSheet("product",{id:p.id,sel:defaultsFor(p),qty:1,note:"",err:""})}
+})();
+</script>
+
+</body></html>
