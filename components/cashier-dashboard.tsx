@@ -10,11 +10,12 @@ import InventoryManagement from './inventory-management';
 import ReceiptPrint from './receipt-print';
 import UserManagement from './user-management';
 import ExpenseManagement from './expense-management';
+import CashierOrder from './cashier-order';
 
 type OrderRow = OrderRecord;
 
 type OrderFilter = 'ALL' | OrderRow['status'];
-type DashboardSection = 'orders' | 'menu' | 'inventory' | 'settings' | 'shifts' | 'users' | 'expenses';
+type DashboardSection = 'orders' | 'new-order' | 'menu' | 'inventory' | 'settings' | 'shifts' | 'users' | 'expenses';
 
 const statusLabels: Record<OrderRow['status'], string> = {
   NEW: 'طلب جديد',
@@ -54,6 +55,7 @@ export default function CashierDashboard() {
   const [activeShift, setActiveShift] = useState<ShiftRecord | null>(null);
   const [shiftRows, setShiftRows] = useState<ShiftRecord[]>([]);
   const [shiftMessage, setShiftMessage] = useState('');
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -82,12 +84,13 @@ export default function CashierDashboard() {
     void fetch('/api/auth/session')
       .then(async (response) => {
         if (!response.ok) throw new Error('تعذر التحقق من جلسة الدخول');
-        return await response.json() as { authenticated: boolean; staff?: StaffIdentity | null };
+        return await response.json() as { authenticated: boolean; staff?: StaffIdentity | null; activeShift?: ShiftRecord | null };
       })
       .then((session) => {
         if (!active) return;
         if (session.authenticated) {
           setStaff(session.staff ?? null);
+          setActiveShift(session.activeShift ?? null);
           setLoggedIn(true);
           void fetchOrders();
           void fetch('/api/dashboard/shift').then((response) => response.json() as Promise<{ active?: ShiftRecord | null; shifts?: ShiftRecord[] }>).then((data) => {
@@ -156,12 +159,13 @@ export default function CashierDashboard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(credentials),
       });
-      const data = await response.json() as { error?: string; staff?: StaffIdentity };
+      const data = await response.json() as { error?: string; staff?: StaffIdentity; activeShift?: ShiftRecord | null };
       if (!response.ok) {
         setError(data.error || 'تعذر تسجيل الدخول. تحقق من البريد الإلكتروني وكلمة المرور.');
         return;
       }
       setStaff(data.staff ?? null);
+      setActiveShift(data.activeShift ?? null);
       setLoggedIn(true);
       await fetchOrders();
     } catch {
@@ -278,7 +282,7 @@ export default function CashierDashboard() {
             <div className="mb-7 flex items-center gap-3">
               <Image src="/matcha-logo.png" alt="Matcha Coffee and Pancakes" width={64} height={64} className="h-14 w-14 rounded-full object-cover" priority />
               <div>
-                <p className="text-[11px] font-semibold tracking-[.16em] text-[#705331]">MATCHA CAFÉ</p>
+                <p className="brand-name text-[11px] tracking-[.16em] text-[#705331]">MATCHA CAFÉ</p>
               </div>
             </div>
             <h1 className="text-2xl font-bold leading-relaxed text-[#232122] sm:text-3xl">دخول الكاشير</h1>
@@ -339,17 +343,14 @@ export default function CashierDashboard() {
           <div className="flex items-center gap-3">
           <Image src="/matcha-logo.png" alt="Matcha Coffee and Pancakes" width={64} height={64} className="h-14 w-14 rounded-full object-cover" priority />
             <div>
-              <p className="text-[11px] font-semibold tracking-[.14em] text-[#705331]">MATCHA CAFÉ</p>
+              <p className="brand-name text-[11px] tracking-[.14em] text-[#705331]">MATCHA CAFÉ</p>
               <h1 className="mt-0.5 text-xl font-bold text-[#232122] sm:text-2xl">لوحة الكاشير</h1>
             </div>
           </div>
           <div className="flex items-center gap-2">
             {staff ? <span className="hidden rounded-xl bg-[#FCF5ED] px-3 py-2 text-sm font-semibold text-[#705331] sm:inline-block">{staff.username}</span> : null}
-            {staff?.role === 'EMPLOYEE' ? <button type="button" onClick={() => void updateShift(activeShift ? 'end' : 'start')} className="rounded-xl bg-[#6B8136] px-3 py-2.5 text-sm font-semibold text-white">{activeShift ? 'إنهاء الشيفت' : 'بدء الشيفت'}</button> : null}
+            {staff?.role === 'EMPLOYEE' && activeShift ? <button type="button" onClick={() => void updateShift('end')} className="rounded-xl bg-[#6B8136] px-3 py-2.5 text-sm font-semibold text-white">مغادرة الشفت</button> : null}
             <div className="flex items-center gap-2">
-              <button type="button" onClick={() => setReceiptOrder(orders[0] ?? null)} disabled={!orders[0]} className="rounded-xl border border-[#E5E3B2] bg-white px-4 py-2.5 text-sm font-semibold text-[#705331] transition hover:bg-[#FCF5ED] disabled:opacity-50">
-                إعادة طباعة آخر طلب
-              </button>
               <button onClick={logout} className="rounded-xl border border-[#E5E3B2] bg-white px-4 py-2.5 text-sm font-semibold text-[#705331] transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700">
                 تسجيل الخروج
               </button>
@@ -357,21 +358,19 @@ export default function CashierDashboard() {
           </div>
         </header>
 
-        <nav aria-label="أقسام لوحة التحكم" className="sticky top-2 z-30 mb-6 flex gap-2 overflow-x-auto rounded-2xl border border-[#E5E3B2] bg-white/90 p-2 shadow-[0_4px_16px_rgba(44,43,35,.06)] backdrop-blur">
-          {((staff?.role === 'ADMIN' ? [
-            ['orders', 'الطلبات'],
-            ['expenses', 'المصروفات'],
-            ['menu', 'إدارة المنيو'],
-            ['inventory', 'المخزون والتقارير'],
-            ['settings', 'الإعدادات والرسوم'],
-            ['shifts', 'الشيفتات'],
-            ['users', 'المستخدمون'],
-          ] : [['orders', 'الطلبات'], ['expenses', 'المصروفات']]) as Array<[DashboardSection, string]>).map(([section, title]) => (
-            <button key={section} type="button" aria-pressed={dashboardSection === section} onClick={() => setDashboardSection(section)} className={`shrink-0 rounded-xl px-4 py-2.5 text-sm font-semibold transition sm:px-5 ${dashboardSection === section ? 'bg-[#6B8136] text-white shadow-sm' : 'text-[#705331] hover:bg-[#FCF5ED]'}`}>
-              {title}
-            </button>
-          ))}
-        </nav>
+        <button type="button" onClick={() => setDrawerOpen(true)} className="mb-6 inline-flex items-center gap-2 rounded-xl border border-[#E5E3B2] bg-white/90 px-4 py-3 text-sm font-semibold text-[#705331] shadow-[0_4px_16px_rgba(44,43,35,.06)]">
+          <span className="text-lg" aria-hidden="true">☰</span> أقسام لوحة التحكم
+        </button>
+        {drawerOpen ? <div className="fixed inset-0 z-50 bg-[#232122]/35 backdrop-blur-[1px]" onClick={() => setDrawerOpen(false)}>
+          <aside className="h-full w-72 max-w-[85vw] bg-white p-5 shadow-2xl" onClick={(event) => event.stopPropagation()}>
+            <div className="mb-6 flex items-center justify-between"><h2 className="text-lg font-bold text-[#232122]">أقسام الداشبورد</h2><button type="button" onClick={() => setDrawerOpen(false)} className="rounded-lg px-2 py-1 text-xl text-[#705331]" aria-label="إغلاق القائمة">×</button></div>
+            <nav aria-label="أقسام لوحة التحكم" className="space-y-2">
+              {((staff?.role === 'ADMIN' ? [['orders', 'الطلبات'], ['new-order', 'إنشاء طلب'], ['expenses', 'المصروفات'], ['menu', 'إدارة المنيو'], ['inventory', 'المخزون والتقارير'], ['settings', 'الإعدادات والرسوم'], ['shifts', 'الشيفتات'], ['users', 'المستخدمون']] : [['orders', 'الطلبات'], ['new-order', 'إنشاء طلب'], ['expenses', 'المصروفات']]) as Array<[DashboardSection, string]>).map(([section, title]) => (
+                <button key={section} type="button" aria-pressed={dashboardSection === section} onClick={() => { setDashboardSection(section); setDrawerOpen(false); }} className={`w-full rounded-xl px-4 py-3 text-start text-sm font-semibold transition ${dashboardSection === section ? 'bg-[#6B8136] text-white shadow-sm' : 'text-[#705331] hover:bg-[#FCF5ED]'}`}>{title}</button>
+              ))}
+            </nav>
+          </aside>
+        </div> : null}
         {shiftMessage ? <p role="status" className="mb-5 rounded-xl border border-[#E5E3B2] bg-[#FCF5ED] px-4 py-3 text-sm text-[#705331]">{shiftMessage}</p> : null}
 
         {demoMode ? (
@@ -402,6 +401,7 @@ export default function CashierDashboard() {
 
         </> : null}
 
+        {dashboardSection === 'new-order' ? <CashierOrder onCreated={() => void fetchOrders()} /> : null}
         {dashboardSection === 'expenses' && staff ? <ExpenseManagement staff={staff} /> : null}
         {dashboardSection === 'menu' ? <MenuManagement /> : null}
         {dashboardSection === 'inventory' ? <InventoryManagement /> : null}

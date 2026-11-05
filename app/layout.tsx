@@ -19,7 +19,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="flex min-h-screen flex-col">
         {children}
         <footer className="mt-auto px-4 py-4 text-center text-xs text-[#705331]">
-          تم التطوير بواسطة <span dir="ltr" className="inline-block font-semibold text-[#6B8136]">Eng- Anlous Rezq</span>
+          <span dir="ltr" className="inline-block font-semibold tracking-wide text-[#6B8136]">by: HEXA PLUS · TECH LEAD: Eng. Angluos Rezq</span>
         </footer>
       </body>
     </html>

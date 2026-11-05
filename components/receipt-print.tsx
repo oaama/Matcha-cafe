@@ -58,7 +58,10 @@ export default function ReceiptPrint({ order, onClose }: ReceiptPrintProps) {
         <div className="overflow-y-auto p-4">
           <article className={`receipt receipt-${paperWidth === '58mm' ? '58' : '80'} mx-auto bg-white text-center text-[#232122]`} dir="rtl">
             <Image src="/matcha-logo.png" alt="Matcha Coffee and Pancakes" width={80} height={80} className="mx-auto h-20 w-20 rounded-full object-cover" />
-            <h3 className="mt-2 text-lg font-bold">MATCHA COFFEE AND PANCAKES</h3>
+            <h3 className="mt-2 text-lg font-bold leading-tight">
+              <span className="block">MATCHA</span>
+              <span className="mt-1 block font-normal text-base">COFFEE AND PANCAKES</span>
+            </h3>
             <p className="mt-1 text-xs">01036618656</p>
             <div className="receipt-rule my-3" />
             <div className="space-y-1 text-start text-xs">
@@ -93,7 +96,7 @@ export default function ReceiptPrint({ order, onClose }: ReceiptPrintProps) {
               <p className="flex justify-between"><span>الدفع</span><span>{order.paymentMethod === 'card' ? 'بطاقة' : 'كاش'}</span></p>
             </div>
             {order.deliveryInstructions ? <p className="mt-3 text-start text-[10px]">تعليمات التوصيل: {order.deliveryInstructions}</p> : null}
-            <p className="mt-5 text-xs font-semibold">شكرًا لزيارتكم — نتمنى لكم يومًا سعيدًا</p>
+            <p className="mt-5 text-xs font-semibold" dir="ltr">Made with love &amp; good vibes</p>
           </article>
         </div>
         {printError ? <p role="alert" className="px-4 pb-2 text-sm text-rose-700">{printError}</p> : null}

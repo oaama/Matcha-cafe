@@ -347,7 +347,7 @@ export default function CustomerOrdering() {
         <div className="flex items-center gap-3">
         <Image src="/matcha-logo.png" alt="Matcha Coffee and Pancakes" width={52} height={52} className="h-12 w-12 rounded-full object-cover" priority />
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[.18em] text-[#705331]">MATCHA CAFÉ</p>
+            <p className="brand-name text-[11px] uppercase tracking-[.18em] text-[#705331]">MATCHA CAFÉ</p>
             <h1 className="text-lg font-bold text-[#232122] sm:text-xl">منيو اليوم</h1>
           </div>
         </div>
@@ -426,6 +426,7 @@ export default function CustomerOrdering() {
             <path d="M80 82c-10-7-18 4-7 5 7 1 13-8 20-6 8 2 2 8-5 7" stroke="#F5D89A" strokeWidth="2.5" strokeLinecap="round" />
             <path d="M56 93c3 3 4 7 4 11" stroke="#FFD6B2" strokeOpacity=".7" strokeWidth="2" strokeLinecap="round" />
             <path d="M99 124c-4-5-10-5-14 0 4 1 7 3 8 7 2-3 4-5 6-7Z" fill="#B95045" fillOpacity=".8" />
+            <image href="/matcha-logo.png" x="61" y="98" width="39" height="39" preserveAspectRatio="xMidYMid slice" opacity=".96" />
           </svg>
         </div>
       </section>
@@ -642,15 +643,24 @@ export default function CustomerOrdering() {
         </aside>
       </div>
 
-      <section aria-labelledby="contact-title" className="mt-8 rounded-[1.5rem] border border-[#E5E3B2] bg-white p-5 shadow-[0_8px_24px_rgba(44,43,35,.045)] sm:flex sm:items-center sm:justify-between sm:gap-6 sm:p-6">
-        <div>
-          <p className="text-xs font-semibold tracking-[.14em] text-[#705331]">MATCHA CAFÉ</p>
+      <section aria-labelledby="contact-title" className="mt-8 overflow-hidden rounded-[1.5rem] border border-[#E5E3B2] bg-white shadow-[0_8px_24px_rgba(44,43,35,.045)]">
+        <div className="p-5 sm:flex sm:items-center sm:justify-between sm:gap-6 sm:p-6">
+          <div>
+          <p className="brand-name text-xs tracking-[.14em] text-[#705331]">MATCHA CAFÉ</p>
           <h2 id="contact-title" className="mt-1 text-xl font-bold text-[#232122]">محتاج مساعدة؟ تواصل معنا</h2>
           <p className="mt-1 text-sm text-[#705331]">نحن سعداء بخدمتك — اطلب الآن أو تواصل معنا مباشرة.</p>
+          </div>
+          <a href="tel:01036618656" dir="ltr" className="mt-4 inline-flex min-h-11 items-center justify-center rounded-xl border border-[#E5E3B2] px-5 py-2.5 text-sm font-semibold text-[#6B8136] transition hover:bg-[#FCF5ED] sm:mt-0">01036618656</a>
         </div>
-        <div className="mt-4 flex flex-wrap gap-2 sm:mt-0">
-          <a href="tel:01036618656" dir="ltr" className="inline-flex min-h-11 items-center rounded-xl border border-[#E5E3B2] px-4 py-2.5 text-sm font-semibold text-[#6B8136] transition hover:bg-[#FCF5ED]">01036618656</a>
-          <a href="https://maps.app.goo.gl/jYKaTj3xof2xcSoo6" target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center rounded-xl bg-[#6B8136] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#5d702f]">موقع الكافيه على الخريطة</a>
+        <div className="border-t border-[#E5E3B2] bg-[#FCF5ED] p-2 sm:p-3">
+          <iframe
+            title="خريطة موقع Matcha Café"
+            src="https://www.google.com/maps?q=Matcha%20Cafe&output=embed"
+            className="h-64 w-full rounded-xl border-0 sm:h-72"
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+          />
+          <a href="https://maps.app.goo.gl/jYKaTj3xof2xcSoo6" target="_blank" rel="noreferrer" className="mt-2 inline-flex text-sm font-semibold text-[#6B8136] underline underline-offset-4">فتح الموقع في خرائط Google</a>
         </div>
       </section>
 
