@@ -10,7 +10,7 @@ type InventoryData = {
   movements: InventoryMovement[];
 };
 
-const inputClass = 'rounded-xl border-[#e5e5dc] bg-white px-3 py-2 text-sm';
+const inputClass = 'rounded-xl border-[#E5E3B2] bg-white px-3 py-2 text-sm';
 
 function localDate(date: Date) {
   const year = date.getFullYear();
@@ -201,32 +201,32 @@ export default function InventoryManagement() {
 
   return (
     <div className="space-y-6">
-      <section aria-labelledby="report-heading" className="rounded-[1.5rem] border border-[#e8e6dc] bg-white/85 p-4 shadow-[0_8px_24px_rgba(44,43,35,.04)] sm:p-6">
+      <section aria-labelledby="report-heading" className="rounded-[1.5rem] border border-[#E5E3B2] bg-white/85 p-4 shadow-[0_8px_24px_rgba(44,43,35,.04)] sm:p-6">
         <div className="mb-4">
-          <h2 id="report-heading" className="text-xl font-bold text-[#302b23]">تقارير Excel</h2>
-          <p className="mt-1 text-sm leading-6 text-[#77766c]">نزّل ملخص المبيعات والطلبات ورصيد المخزون وحركته لأي فترة تختارها.</p>
+          <h2 id="report-heading" className="text-xl font-bold text-[#232122]">تقارير Excel</h2>
+          <p className="mt-1 text-sm leading-6 text-[#705331]">نزّل ملخص المبيعات والطلبات ورصيد المخزون وحركته لأي فترة تختارها.</p>
         </div>
         <form onSubmit={(event) => void downloadReport(event)} className="flex flex-wrap items-end gap-3">
-          <label className="grid gap-1.5 text-sm font-semibold text-[#514d43]">
+          <label className="grid gap-1.5 text-sm font-semibold text-[#232122]">
             من
             <input required type="date" value={from} max={to} onChange={(event) => setFrom(event.target.value)} className={inputClass} />
           </label>
-          <label className="grid gap-1.5 text-sm font-semibold text-[#514d43]">
+          <label className="grid gap-1.5 text-sm font-semibold text-[#232122]">
             إلى
             <input required type="date" value={to} min={from} onChange={(event) => setTo(event.target.value)} className={inputClass} />
           </label>
-          <button type="button" onClick={selectLastWeek} className="rounded-xl border border-[#dce3d2] bg-white px-4 py-2.5 text-sm font-semibold text-[#526b3a] transition hover:bg-[#f4f6ef]">آخر 7 أيام</button>
-          <button disabled={downloading || !from || !to} type="submit" className="rounded-xl bg-[#435d32] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#344b27] disabled:opacity-50">
+          <button type="button" onClick={selectLastWeek} className="rounded-xl border border-[#c9d19e] bg-white px-4 py-2.5 text-sm font-semibold text-[#6B8136] transition hover:bg-[#f4f6ef]">آخر 7 أيام</button>
+          <button disabled={downloading || !from || !to} type="submit" className="rounded-xl bg-[#6B8136] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#5d702f] disabled:opacity-50">
             {downloading ? 'جارٍ تجهيز التقرير…' : 'تنزيل تقرير Excel'}
           </button>
         </form>
       </section>
 
-      <section aria-labelledby="inventory-heading" className="rounded-[1.5rem] border border-[#e8e6dc] bg-white/85 p-4 shadow-[0_8px_24px_rgba(44,43,35,.04)] sm:p-6">
+      <section aria-labelledby="inventory-heading" className="rounded-[1.5rem] border border-[#E5E3B2] bg-white/85 p-4 shadow-[0_8px_24px_rgba(44,43,35,.04)] sm:p-6">
         <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 id="inventory-heading" className="text-xl font-bold text-[#302b23]">إدارة المخزون</h2>
-            <p className="mt-1 text-sm text-[#77766c]">تابع رصيد الأصناف والخامات، وحدد وصفة كل منتج عشان يتخصم استهلاكها مع الطلب.</p>
+            <h2 id="inventory-heading" className="text-xl font-bold text-[#232122]">إدارة المخزون</h2>
+            <p className="mt-1 text-sm text-[#705331]">تابع رصيد الأصناف والخامات، وحدد وصفة كل منتج عشان يتخصم استهلاكها مع الطلب.</p>
           </div>
           <span className={`rounded-full px-3 py-1.5 text-xs font-semibold ${lowStockCount ? 'bg-amber-50 text-amber-800' : 'bg-[#f4f6ef] text-[#66764e]'}`}>
             {lowStockCount ? `${lowStockCount} محتاج مراجعة` : trackedCount ? 'الأرصدة المتابعة تمام' : 'ابدأ بتفعيل متابعة المخزون'}
@@ -244,20 +244,20 @@ export default function InventoryManagement() {
           <>
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="دور على صنف أو خامة..." aria-label="البحث في المخزون" className={`${inputClass} min-w-[min(100%,16rem)] flex-1`} />
-              <button type="button" disabled={saving} onClick={() => void saveSettings()} className="rounded-xl bg-[#435d32] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#344b27] disabled:opacity-50">
+              <button type="button" disabled={saving} onClick={() => void saveSettings()} className="rounded-xl bg-[#6B8136] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#5d702f] disabled:opacity-50">
                 {saving ? 'جارٍ الحفظ…' : 'حفظ إعدادات المخزون'}
               </button>
             </div>
             <form onSubmit={(event) => void addIngredient(event)} className="mb-6 grid gap-3 rounded-2xl border border-dashed border-[#dfe2d5] bg-[#fafbf7] p-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
-              <label className="grid gap-1.5 text-sm font-semibold text-[#514d43]">
+              <label className="grid gap-1.5 text-sm font-semibold text-[#232122]">
                 خامة جديدة
                 <input required maxLength={150} value={ingredientName} onChange={(event) => setIngredientName(event.target.value)} placeholder="مثال: لبن كامل الدسم" className={inputClass} />
               </label>
-              <label className="grid gap-1.5 text-sm font-semibold text-[#514d43]">
+              <label className="grid gap-1.5 text-sm font-semibold text-[#232122]">
                 وحدة القياس
                 <input required maxLength={30} value={ingredientUnit} onChange={(event) => setIngredientUnit(event.target.value)} placeholder="مل، جرام، قطعة..." className={inputClass} />
               </label>
-              <button disabled={saving} className="rounded-xl border border-[#dce3d2] bg-white px-4 py-2.5 text-sm font-semibold text-[#526b3a] transition hover:bg-[#f4f6ef] disabled:opacity-50">
+              <button disabled={saving} className="rounded-xl border border-[#c9d19e] bg-white px-4 py-2.5 text-sm font-semibold text-[#6B8136] transition hover:bg-[#f4f6ef] disabled:opacity-50">
                 {saving ? 'جارٍ الحفظ…' : 'إضافة خامة'}
               </button>
             </form>
@@ -275,12 +275,12 @@ export default function InventoryManagement() {
             <div className="mb-6">
               <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
                 <h3 className="font-bold text-[#403d33]">الخامات والوصفات</h3>
-                <button type="button" disabled={saving} onClick={() => void saveSettings()} className="rounded-xl bg-[#435d32] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#344b27] disabled:opacity-50">
+                <button type="button" disabled={saving} onClick={() => void saveSettings()} className="rounded-xl bg-[#6B8136] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#5d702f] disabled:opacity-50">
                   {saving ? 'جارٍ الحفظ…' : 'حفظ الإعدادات والوصفات'}
                 </button>
               </div>
               {ingredients.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-[#e1e2d8] px-4 py-8 text-center text-sm text-[#77766c]">ضيف الخامات الأول، وبعدها اربط كل منتج بمكوناته.</div>
+                <div className="rounded-xl border border-dashed border-[#E5E3B2] px-4 py-8 text-center text-sm text-[#705331]">ضيف الخامات الأول، وبعدها اربط كل منتج بمكوناته.</div>
               ) : (
                 <div className="grid gap-3 sm:grid-cols-2">
                   {ingredients.map((item) => (
@@ -295,18 +295,18 @@ export default function InventoryManagement() {
               {recipeProducts.map((product) => {
                 const recipe = recipes.find((entry) => entry.productId === product.id);
                 return (
-                  <details key={product.id} className="group rounded-xl border border-[#ecebe4] bg-white">
+                  <details key={product.id} className="group rounded-xl border border-[#E5E3B2] bg-white">
                     <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 font-semibold text-[#403d33]">
                       <span>{product.ar}</span>
-                      <span className="text-xs font-medium text-[#77766c]">{recipe?.ingredients.length ? `${recipe.ingredients.length} خامة` : 'من غير وصفة'}</span>
+                      <span className="text-xs font-medium text-[#705331]">{recipe?.ingredients.length ? `${recipe.ingredients.length} خامة` : 'من غير وصفة'}</span>
                     </summary>
-                    <div className="space-y-3 border-t border-[#eeede7] p-4">
+                    <div className="space-y-3 border-t border-[#E5E3B2] p-4">
                       {(recipe?.ingredients ?? []).map((entry) => {
                         const ingredient = ingredients.find((item) => item.id === entry.itemId);
                         return (
                           <div key={entry.itemId} className="flex items-center justify-between gap-3 rounded-lg bg-[#f8f8f4] px-3 py-2 text-sm">
                             <span>{ingredient?.name ?? 'خامة محذوفة'}</span>
-                            <span className="flex items-center gap-3 text-[#77766c]">
+                            <span className="flex items-center gap-3 text-[#705331]">
                               {entry.quantity} {ingredient?.unit}
                               <button type="button" aria-label={`إزالة ${ingredient?.name ?? 'الخامة'} من وصفة ${product.ar}`} onClick={() => {
                                 const nextIngredients = recipe!.ingredients.filter((row) => row.itemId !== entry.itemId);
@@ -326,21 +326,21 @@ export default function InventoryManagement() {
             <div className="mt-7">
               <h3 className="mb-3 font-bold text-[#403d33]">آخر حركات المخزون</h3>
               {movements.length === 0 ? (
-                <p className="rounded-xl bg-[#fafaf7] px-4 py-6 text-center text-sm text-[#77766c]">الحركات هتظهر هنا بعد تسجيل إضافة أو خصم أو طلب.</p>
+                <p className="rounded-xl bg-[#FCF5ED] px-4 py-6 text-center text-sm text-[#705331]">الحركات هتظهر هنا بعد تسجيل إضافة أو خصم أو طلب.</p>
               ) : (
-                <div className="overflow-x-auto rounded-xl border border-[#ecebe4]">
+                <div className="overflow-x-auto rounded-xl border border-[#E5E3B2]">
                   <table className="w-full min-w-[600px] text-right text-sm">
                     <thead className="bg-[#f6f7f2] text-xs text-[#6c6d5c]">
                       <tr><th className="px-3 py-2.5">التاريخ</th><th className="px-3 py-2.5">الصنف</th><th className="px-3 py-2.5">الحركة</th><th className="px-3 py-2.5">الكمية</th><th className="px-3 py-2.5">ملاحظة</th></tr>
                     </thead>
-                    <tbody className="divide-y divide-[#eeede7]">
+                    <tbody className="divide-y divide-[#E5E3B2]">
                       {movements.slice(0, 20).map((movement) => (
                         <tr key={movement.id}>
-                          <td className="whitespace-nowrap px-3 py-2.5 text-xs text-[#77766c]">{new Date(movement.createdAt).toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' })}</td>
+                          <td className="whitespace-nowrap px-3 py-2.5 text-xs text-[#705331]">{new Date(movement.createdAt).toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' })}</td>
                           <td className="px-3 py-2.5 font-medium">{movement.itemName}</td>
                           <td className="px-3 py-2.5 text-xs">{movement.reason === 'sale' ? 'طلب' : movement.reason === 'cancellation' ? 'إلغاء طلب' : 'تعديل يدوي'}</td>
                           <td dir="ltr" className={`whitespace-nowrap px-3 py-2.5 font-semibold ${movement.quantity < 0 ? 'text-rose-700' : 'text-emerald-700'}`}>{movement.quantity > 0 ? '+' : ''}{movement.quantity}</td>
-                          <td className="px-3 py-2.5 text-xs text-[#77766c]">{movement.note ?? movement.referenceId ?? '—'}</td>
+                          <td className="px-3 py-2.5 text-xs text-[#705331]">{movement.note ?? movement.referenceId ?? '—'}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -358,23 +358,23 @@ export default function InventoryManagement() {
         }}>
           <form onSubmit={(event) => void adjustStock(event)} className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl">
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-[#302b23]">{adjustment.direction === 1 ? 'إضافة للمخزون' : 'خصم من المخزون'}</h3>
-              <button type="button" onClick={() => setAdjustment(null)} aria-label="إغلاق" className="rounded-lg px-2 py-1 text-xl text-[#77766c]">×</button>
+              <h3 className="text-lg font-bold text-[#232122]">{adjustment.direction === 1 ? 'إضافة للمخزون' : 'خصم من المخزون'}</h3>
+              <button type="button" onClick={() => setAdjustment(null)} aria-label="إغلاق" className="rounded-lg px-2 py-1 text-xl text-[#705331]">×</button>
             </div>
             <div className="mb-4 flex gap-2">
-              <button type="button" aria-pressed={adjustment.direction === 1} onClick={() => setAdjustment({ ...adjustment, direction: 1 })} className={`flex-1 rounded-xl px-3 py-2 text-sm font-semibold ${adjustment.direction === 1 ? 'bg-[#435d32] text-white' : 'bg-[#f4f3ef] text-[#625f54]'}`}>إضافة</button>
-              <button type="button" aria-pressed={adjustment.direction === -1} onClick={() => setAdjustment({ ...adjustment, direction: -1 })} className={`flex-1 rounded-xl px-3 py-2 text-sm font-semibold ${adjustment.direction === -1 ? 'bg-rose-700 text-white' : 'bg-[#f4f3ef] text-[#625f54]'}`}>خصم</button>
+              <button type="button" aria-pressed={adjustment.direction === 1} onClick={() => setAdjustment({ ...adjustment, direction: 1 })} className={`flex-1 rounded-xl px-3 py-2 text-sm font-semibold ${adjustment.direction === 1 ? 'bg-[#6B8136] text-white' : 'bg-[#f4f3ef] text-[#705331]'}`}>إضافة</button>
+              <button type="button" aria-pressed={adjustment.direction === -1} onClick={() => setAdjustment({ ...adjustment, direction: -1 })} className={`flex-1 rounded-xl px-3 py-2 text-sm font-semibold ${adjustment.direction === -1 ? 'bg-rose-700 text-white' : 'bg-[#f4f3ef] text-[#705331]'}`}>خصم</button>
             </div>
-            <label className="mb-3 grid gap-1.5 text-sm font-semibold text-[#514d43]">
+            <label className="mb-3 grid gap-1.5 text-sm font-semibold text-[#232122]">
               الكمية
               <input required min="0.001" step="any" type="number" inputMode="decimal" value={adjustment.quantity} onChange={(event) => setAdjustment({ ...adjustment, quantity: event.target.value })} className={inputClass} />
             </label>
-            <label className="grid gap-1.5 text-sm font-semibold text-[#514d43]">
+            <label className="grid gap-1.5 text-sm font-semibold text-[#232122]">
               ملاحظة (اختياري)
               <input maxLength={250} value={adjustment.note} onChange={(event) => setAdjustment({ ...adjustment, note: event.target.value })} className={inputClass} />
             </label>
             {error ? <p role="alert" className="mt-3 text-sm text-rose-700">{error}</p> : null}
-            <button type="submit" className="mt-5 w-full rounded-xl bg-[#435d32] px-4 py-3 font-semibold text-white transition hover:bg-[#344b27]">تسجيل الحركة</button>
+            <button type="submit" className="mt-5 w-full rounded-xl bg-[#6B8136] px-4 py-3 font-semibold text-white transition hover:bg-[#5d702f]">تسجيل الحركة</button>
           </form>
         </div>
       ) : null}
@@ -389,32 +389,32 @@ function InventoryCard({ item, onAdjust, onUpdate }: {
 }) {
   const low = item.trackStock && item.quantity <= item.lowStockThreshold;
   return (
-    <article className="rounded-2xl border border-[#ecebe4] bg-white p-4">
+    <article className="rounded-2xl border border-[#E5E3B2] bg-white p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h4 className="font-bold text-[#403d33]">{item.name}</h4>
-          <p className="mt-1 text-sm text-[#77766c]">{item.quantity} {item.unit}</p>
+          <p className="mt-1 text-sm text-[#705331]">{item.quantity} {item.unit}</p>
         </div>
-        <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${low ? 'bg-amber-50 text-amber-800' : item.trackStock ? 'bg-[#f4f6ef] text-[#66764e]' : 'bg-[#f4f3ef] text-[#77766c]'}`}>
+        <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${low ? 'bg-amber-50 text-amber-800' : item.trackStock ? 'bg-[#f4f6ef] text-[#66764e]' : 'bg-[#f4f3ef] text-[#705331]'}`}>
           {low ? 'مخزون قليل' : item.trackStock ? 'متابَع' : 'غير متابَع'}
         </span>
       </div>
       <div className="mt-3 grid grid-cols-[1fr_1fr] gap-2">
-        <label className="text-xs text-[#77766c]">
+        <label className="text-xs text-[#705331]">
           الوحدة
-          <input aria-label={`وحدة ${item.name}`} maxLength={30} value={item.unit} onChange={(event) => onUpdate(item.id, { unit: event.target.value })} className="mt-1 w-full rounded-lg border-[#e5e5dc] px-2 py-1.5 text-sm" />
+          <input aria-label={`وحدة ${item.name}`} maxLength={30} value={item.unit} onChange={(event) => onUpdate(item.id, { unit: event.target.value })} className="mt-1 w-full rounded-lg border-[#E5E3B2] px-2 py-1.5 text-sm" />
         </label>
-        <label className="text-xs text-[#77766c]">
+        <label className="text-xs text-[#705331]">
           حد التنبيه
-          <input aria-label={`حد تنبيه ${item.name}`} min="0" step="any" type="number" value={item.lowStockThreshold} onChange={(event) => onUpdate(item.id, { lowStockThreshold: Number(event.target.value) || 0 })} className="mt-1 w-full rounded-lg border-[#e5e5dc] px-2 py-1.5 text-sm" />
+          <input aria-label={`حد تنبيه ${item.name}`} min="0" step="any" type="number" value={item.lowStockThreshold} onChange={(event) => onUpdate(item.id, { lowStockThreshold: Number(event.target.value) || 0 })} className="mt-1 w-full rounded-lg border-[#E5E3B2] px-2 py-1.5 text-sm" />
         </label>
       </div>
-      <div className="mt-3 flex items-center justify-between gap-3 border-t border-[#eeede7] pt-3">
-        <label className="flex items-center gap-2 text-xs font-semibold text-[#625f54]">
+      <div className="mt-3 flex items-center justify-between gap-3 border-t border-[#E5E3B2] pt-3">
+        <label className="flex items-center gap-2 text-xs font-semibold text-[#705331]">
           <input type="checkbox" checked={item.trackStock} onChange={(event) => onUpdate(item.id, { trackStock: event.target.checked })} />
           خصم تلقائي مع الطلب
         </label>
-        <button type="button" onClick={onAdjust} className="shrink-0 rounded-lg bg-[#f4f6ef] px-3 py-2 text-xs font-semibold text-[#526b3a] hover:bg-[#e9efdf]">تعديل الرصيد</button>
+        <button type="button" onClick={onAdjust} className="shrink-0 rounded-lg bg-[#f4f6ef] px-3 py-2 text-xs font-semibold text-[#6B8136] hover:bg-[#e9efdf]">تعديل الرصيد</button>
       </div>
     </article>
   );
@@ -436,7 +436,7 @@ function RecipeIngredientForm({ ingredients, onAdd }: {
       <button type="button" disabled={!selectedItemId || !Number(quantity)} onClick={() => {
         onAdd(selectedItemId, Number(quantity));
         setQuantity('');
-      }} className="rounded-xl border border-[#dce3d2] px-3 py-2 text-sm font-semibold text-[#526b3a] disabled:opacity-40">إضافة للوصفة</button>
+      }} className="rounded-xl border border-[#c9d19e] px-3 py-2 text-sm font-semibold text-[#6B8136] disabled:opacity-40">إضافة للوصفة</button>
     </div>
   );
 }

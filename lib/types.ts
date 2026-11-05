@@ -1,5 +1,5 @@
 export type OrderStatus = 'NEW' | 'PREPARING' | 'READY' | 'COMPLETED' | 'CANCELLED';
-export type OrderType = 'DINE_IN' | 'TAKEAWAY';
+export type OrderType = 'DINE_IN' | 'TAKEAWAY' | 'DELIVERY';
 
 export type CatalogGroup = {
   id: string;
@@ -68,6 +68,8 @@ export type OrderRecord = {
   customerName?: string;
   customerPhone?: string;
   customerAddress?: string;
+  additionalAddressDetails?: string;
+  deliveryInstructions?: string;
   paymentMethod?: 'cash' | 'card';
   inventoryConsumption?: InventoryConsumption[];
 };

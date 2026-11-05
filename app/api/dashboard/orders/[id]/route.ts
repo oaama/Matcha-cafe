@@ -1,12 +1,11 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { getOrderRepository } from '@/lib/order-repository';
 import { applyOrderStatusTransition, getOrderStatusLabel } from '@/lib/store';
-import { isValidStaffSessionToken, STAFF_SESSION_COOKIE } from '@/lib/staff-auth';
+import { requireStaffRole } from '@/lib/staff-api';
 import { dashboardStatusSchema } from '@/lib/validation';
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  if (!isValidStaffSessionToken((await cookies()).get(STAFF_SESSION_COOKIE)?.value)) {
+  if (!await requireStaffRole()) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

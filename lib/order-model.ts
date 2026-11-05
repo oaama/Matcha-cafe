@@ -21,7 +21,7 @@ const orderItemSchema = new Schema<OrderRecord['items'][number]>({
 const orderSchema = new Schema<StoredOrder>({
   id: { type: String, required: true, unique: true },
   orderNumber: { type: String, required: true, unique: true },
-  type: { type: String, enum: ['DINE_IN', 'TAKEAWAY'], required: true },
+  type: { type: String, enum: ['DINE_IN', 'TAKEAWAY', 'DELIVERY'], required: true },
   status: { type: String, enum: ['NEW', 'PREPARING', 'READY', 'COMPLETED', 'CANCELLED'], required: true },
   tableNumber: String,
   createdAt: { type: String, required: true },
@@ -35,6 +35,8 @@ const orderSchema = new Schema<StoredOrder>({
   customerName: String,
   customerPhone: String,
   customerAddress: String,
+  additionalAddressDetails: String,
+  deliveryInstructions: String,
   paymentMethod: { type: String, enum: ['cash', 'card'] },
   inventoryConsumption: [{
     itemId: { type: String, required: true },

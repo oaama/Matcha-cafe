@@ -1,6 +1,7 @@
 @import '@fontsource/ibm-plex-sans-arabic/400.css';
 @import '@fontsource/readex-pro/400.css';
 @import '@fontsource/readex-pro/700.css';
+@import '@fontsource/alexandria/700.css';
 
 @tailwind base;
 @tailwind components;
@@ -8,13 +9,16 @@
 
 :root {
   color-scheme: light;
-  --bg: #f6f4ec;
+  --bg: #FCF5ED;
   --panel: #ffffff;
-  --muted: #6c6d5c;
-  --line: #e2e0d2;
-  --matcha: #6e8a3c;
-  --bean: #6b4a2e;
-  --focus-ring: rgba(110, 138, 60, 0.35);
+  --muted: #705331;
+  --line: #E5E3B2;
+  --matcha: #91A560;
+  --olive: #6B8136;
+  --bean: #705331;
+  --gold: #D9B46E;
+  --charcoal: #232122;
+  --focus-ring: rgba(107, 129, 54, 0.35);
 }
 
 html {
@@ -23,22 +27,22 @@ html {
 }
 
 body {
-  @apply bg-[#f6f4ec] text-[#2a2b22] antialiased;
+  @apply bg-[#FCF5ED] text-[#232122] antialiased;
   min-width: 320px;
   font-family: 'IBM Plex Sans Arabic', sans-serif;
   text-rendering: optimizeLegibility;
   background-image:
-    radial-gradient(ellipse at 8% 4%, rgba(210, 219, 190, 0.28), transparent 28rem),
-    radial-gradient(ellipse at 92% 22%, rgba(236, 224, 203, 0.22), transparent 26rem);
+    radial-gradient(ellipse at 8% 4%, rgba(229, 227, 178, 0.34), transparent 28rem),
+    radial-gradient(ellipse at 92% 22%, rgba(217, 180, 110, 0.14), transparent 26rem);
 }
 
 ::selection {
-  background: rgba(110, 138, 60, 0.2);
-  color: #2a2b22;
+  background: rgba(145, 165, 96, 0.3);
+  color: #232122;
 }
 
 h1, h2, h3, h4 {
-  font-family: 'Readex Pro', sans-serif;
+  font-family: 'Alexandria', 'Readex Pro', sans-serif;
 }
 
 button, input, select, textarea {
@@ -46,7 +50,7 @@ button, input, select, textarea {
 }
 
 input, textarea, select {
-  @apply rounded-xl border border-[#dfe4d2] bg-white px-3 py-2 outline-none transition-colors focus:border-matcha-500;
+  @apply rounded-xl border border-[#E5E3B2] bg-white px-3 py-2 outline-none transition-colors focus:border-matcha-500;
 }
 
 input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-visible {
@@ -64,7 +68,7 @@ button:disabled {
 
 .category-scroll {
   scrollbar-width: thin;
-  scrollbar-color: #d9ddce transparent;
+  scrollbar-color: #E5E3B2 transparent;
   scroll-padding-inline: 0.5rem;
 }
 
@@ -74,7 +78,7 @@ button:disabled {
 
 .category-scroll::-webkit-scrollbar-thumb {
   border-radius: 9999px;
-  background: #d9ddce;
+  background: #E5E3B2;
 }
 
 .motion-enter {
@@ -247,4 +251,61 @@ button:disabled {
 
 .badge {
   @apply inline-flex items-center rounded-full px-2 py-1 text-[10px] font-semibold;
+}
+
+.receipt-rule {
+  border-top: 1px dashed #705331;
+}
+
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+
+  .print-shell,
+  .print-shell * {
+    visibility: visible !important;
+  }
+
+  .print-shell {
+    position: absolute !important;
+    inset: 0 !important;
+    display: block !important;
+    padding: 0 !important;
+    background: white !important;
+  }
+
+  .print-shell > div {
+    display: block !important;
+    max-height: none !important;
+    max-width: none !important;
+    overflow: visible !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .print-shell > div > :not(:nth-child(3)) {
+    display: none !important;
+  }
+
+  .print-shell > div > :nth-child(3) {
+    display: block !important;
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+
+  .receipt {
+    width: 80mm;
+    margin: 0 auto;
+    padding: 3mm;
+    font-family: Arial, sans-serif;
+  }
+
+  .receipt-58 {
+    width: 58mm;
+  }
+
+  @page {
+    margin: 0;
+  }
 }

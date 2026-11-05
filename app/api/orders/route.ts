@@ -23,14 +23,22 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid order payload' }, { status: 400 });
     }
 
-    const { orderType, tableNumber, items, paymentMethod, notes, idempotencyKey } = parsed.data;
+    const {
+      orderType,
+      tableNumber,
+      items,
+      paymentMethod,
+      notes,
+      idempotencyKey,
+      customerName,
+      customerPhone,
+      customerAddress,
+      additionalAddressDetails,
+      deliveryInstructions,
+    } = parsed.data;
     const catalog = await getCatalog();
     const inventory = await getInventoryData(catalog.products);
     const productMap = new Map(catalog.products.map((product) => [product.id, product]));
-
-    if (orderType === 'DINE_IN' && !tableNumber?.trim()) {
-      return NextResponse.json({ error: 'Table number is required for dine-in orders.' }, { status: 400 });
-    }
 
     for (const item of items) {
       const product = productMap.get(item.productId);
@@ -53,9 +61,11 @@ export async function POST(request: Request) {
       type: orderType,
       status: 'NEW',
       tableNumber: orderType === 'DINE_IN' ? tableNumber?.trim() : undefined,
-      customerName: parsed.data.customerName,
-      customerPhone: parsed.data.customerPhone,
-      customerAddress: parsed.data.customerAddress,
+      customerName,
+      customerPhone,
+      customerAddress,
+      additionalAddressDetails,
+      deliveryInstructions,
       paymentMethod,
       createdAt: now,
       updatedAt: now,

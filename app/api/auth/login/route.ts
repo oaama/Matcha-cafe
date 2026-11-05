@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'تسجيل دخول فريق العمل غير مُعدّ على الخادم.' }, { status: 503 });
   }
 
-  let credentialsValid: boolean;
+  let credentialsValid: Awaited<ReturnType<typeof authenticateStaffCredentials>>;
   try {
     credentialsValid = await authenticateStaffCredentials(email, password);
   } catch (error) {
@@ -25,8 +25,8 @@ export async function POST(request: Request) {
   }
 
   if (credentialsValid) {
-    const response = NextResponse.json({ ok: true });
-    response.cookies.set(STAFF_SESSION_COOKIE, createStaffSessionToken(), {
+    const response = NextResponse.json({ ok: true, staff: credentialsValid });
+    response.cookies.set(STAFF_SESSION_COOKIE, createStaffSessionToken(credentialsValid), {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',

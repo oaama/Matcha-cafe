@@ -1,0 +1,23 @@
+MATCHA COFFEE AND PANCAKES — BRAND STARTER KIT
+
+Visual direction: Natural Modern / Soft Luxury.
+Use the supplied circular logo PNG as-is. Do not redraw, stretch, recolor, or alter its wording.
+
+COLOR PALETTE (HEX)
+Matcha Sage: #91A560 — Primary logo green
+Leaf Olive: #6B8136 — Leaf and accent green
+Soft Sage: #E5E3B2 — Soft secondary backgrounds
+Warm Cream: #FCF5ED — Main background
+Coffee Brown: #705331 — Coffee details and linework
+Soft Gold: #D9B46E — Small premium highlights
+Charcoal: #232122 — Headlines and strong text
+
+USAGE
+- Main backgrounds: Warm Cream #FCF5ED or white.
+- Main accents: Matcha Sage #91A560 and Leaf Olive #6B8136.
+- Use Coffee Brown #705331 and Soft Gold #D9B46E sparingly.
+- Use Charcoal #232122 for readable headlines.
+- Keep layouts airy, natural, premium, and uncluttered.
+- Prefer real café product photos.
+- Social sizes: feed 1080x1350; story/reel cover 1080x1920; square 1080x1080.
+- Add the original logo and final Arabic text manually in Canva/Photoshop after generating an AI background.

@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CatalogGroup, Category, Product } from '@/lib/types';
 import { calculateOrderTotal } from '@/lib/store';
@@ -49,11 +50,13 @@ export default function CustomerOrdering() {
   const [search, setSearch] = useState('');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartReady, setCartReady] = useState(false);
-  const [orderType, setOrderType] = useState<'DINE_IN' | 'TAKEAWAY'>('DINE_IN');
+  const [orderType, setOrderType] = useState<'DINE_IN' | 'TAKEAWAY' | 'DELIVERY'>('DINE_IN');
   const [tableNumber, setTableNumber] = useState('3');
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
+  const [additionalAddressDetails, setAdditionalAddressDetails] = useState('');
+  const [deliveryInstructions, setDeliveryInstructions] = useState('');
   const [loading, setLoading] = useState(true);
   const [orderStatus, setOrderStatus] = useState<OrderFeedback | null>(null);
   const [menuError, setMenuError] = useState(false);
@@ -233,13 +236,19 @@ export default function CustomerOrdering() {
       setOrderStatus({ message: 'من فضلك أدخل رقم الطاولة', type: 'error' });
       return;
     }
+    if (orderType === 'DELIVERY' && (!customerName.trim() || !customerPhone.trim() || !customerAddress.trim())) {
+      setOrderStatus({ message: 'من فضلك أدخل الاسم ورقم الهاتف وعنوان التوصيل', type: 'error' });
+      return;
+    }
 
     const fingerprint = JSON.stringify({
       orderType,
       tableNumber: orderType === 'DINE_IN' ? tableNumber.trim() : undefined,
       customerName,
       customerPhone,
-      customerAddress: orderType === 'TAKEAWAY' ? customerAddress : undefined,
+      customerAddress: orderType === 'DELIVERY' ? customerAddress : undefined,
+      additionalAddressDetails: orderType === 'DELIVERY' ? additionalAddressDetails : undefined,
+      deliveryInstructions: orderType === 'DELIVERY' ? deliveryInstructions : undefined,
       items: cart,
     });
     const submittedCart = JSON.stringify(cart);
@@ -250,8 +259,10 @@ export default function CustomerOrdering() {
       orderType,
       tableNumber: orderType === 'DINE_IN' ? tableNumber : undefined,
       customerName: customerName || 'ضيف',
-      customerPhone: customerPhone || '000000000',
-      customerAddress: orderType === 'TAKEAWAY' ? customerAddress || 'استلام من الكافيه' : undefined,
+      customerPhone: customerPhone || undefined,
+      customerAddress: orderType === 'DELIVERY' ? customerAddress : undefined,
+      additionalAddressDetails: orderType === 'DELIVERY' ? additionalAddressDetails : undefined,
+      deliveryInstructions: orderType === 'DELIVERY' ? deliveryInstructions : undefined,
       paymentMethod: 'cash',
       notes: '',
       items: cart.map((item) => ({
@@ -303,7 +314,7 @@ export default function CustomerOrdering() {
     return (
       <main aria-label="جارٍ تحميل المنيو" aria-busy="true" className="mx-auto min-h-screen w-full min-w-0 max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
         <div className="mb-6 h-16 animate-pulse rounded-2xl bg-white/80 motion-reduce:animate-none" />
-        <div className="mb-6 h-56 animate-pulse rounded-[1.75rem] bg-[#dfe6d0]/70 motion-reduce:animate-none" />
+        <div className="mb-6 h-56 animate-pulse rounded-[1.75rem] bg-[#E5E3B2]/70 motion-reduce:animate-none" />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {[0, 1, 2, 3, 4, 5].map((item) => <div key={item} className="h-48 animate-pulse rounded-2xl bg-white/80 motion-reduce:animate-none" />)}
         </div>
@@ -314,15 +325,15 @@ export default function CustomerOrdering() {
   if (menuError || !menu) {
     return (
       <main className="flex min-h-screen w-full min-w-0 items-center justify-center px-4 py-10">
-        <section role="alert" className="w-full max-w-md rounded-3xl border border-[#e8e6dc] bg-white p-7 text-center shadow-[0_12px_36px_rgba(44,43,35,.08)] sm:p-9">
+        <section role="alert" className="w-full max-w-md rounded-3xl border border-[#E5E3B2] bg-white p-7 text-center shadow-[0_12px_36px_rgba(44,43,35,.08)] sm:p-9">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-50 text-2xl text-rose-700" aria-hidden="true">!</div>
-          <h1 className="text-xl font-bold text-[#302b23]">تعذر تحميل المنيو</h1>
-          <p className="mt-2 text-sm leading-6 text-[#77766c]">تحقق من اتصالك وحاول مرة أخرى. لن تتمكن من إرسال طلب قبل تحميل الأصناف.</p>
+          <h1 className="text-xl font-bold text-[#232122]">تعذر تحميل المنيو</h1>
+          <p className="mt-2 text-sm leading-6 text-[#705331]">تحقق من اتصالك وحاول مرة أخرى. لن تتمكن من إرسال طلب قبل تحميل الأصناف.</p>
           <button type="button" onClick={() => {
             setMenuError(false);
             setLoading(true);
             setMenuLoadAttempt((attempt) => attempt + 1);
-          }} className="mt-5 w-full rounded-xl bg-[#435d32] px-4 py-3 font-semibold text-white transition hover:bg-[#344b27]">
+          }} className="mt-5 w-full rounded-xl bg-[#6B8136] px-4 py-3 font-semibold text-white transition hover:bg-[#5d702f]">
             إعادة المحاولة
           </button>
         </section>
@@ -332,17 +343,12 @@ export default function CustomerOrdering() {
 
   return (
     <main className="mx-auto min-h-screen w-full min-w-0 max-w-7xl px-4 pb-28 pt-4 sm:px-6 sm:pt-6 lg:px-8 lg:pb-10">
-      <header className="mb-5 flex items-center justify-between rounded-2xl border border-[#e9e6dc] bg-white/90 px-4 py-3 shadow-[0_8px_24px_rgba(44,43,35,.045)] backdrop-blur sm:mb-7 sm:px-6">
+      <header className="mb-5 flex items-center justify-between rounded-2xl border border-[#E5E3B2] bg-white/90 px-4 py-3 shadow-[0_8px_24px_rgba(44,43,35,.045)] backdrop-blur sm:mb-7 sm:px-6">
         <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#eaf0df] text-[#435d32]">
-            <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6" aria-hidden="true">
-              <path d="M5 8h13l-1 11H7L5 8Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
-              <path d="M18 10h1.2a2.8 2.8 0 1 1 0 5.6H17M8 5c0-1 1-1.2 1-2M12 5c0-1 1-1.2 1-2" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
-            </svg>
-          </div>
+        <Image src="/matcha-logo.png" alt="Matcha Coffee and Pancakes" width={52} height={52} className="h-12 w-12 rounded-full object-cover" priority />
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[.18em] text-[#888579]">MATCHA CAFÉ</p>
-            <h1 className="text-lg font-bold text-[#302b23] sm:text-xl">منيو اليوم</h1>
+            <p className="text-[11px] font-semibold uppercase tracking-[.18em] text-[#705331]">MATCHA CAFÉ</p>
+            <h1 className="text-lg font-bold text-[#232122] sm:text-xl">منيو اليوم</h1>
           </div>
         </div>
       </header>
@@ -424,7 +430,7 @@ export default function CustomerOrdering() {
         </div>
       </section>
 
-      <section id="customer-menu" className="mb-6 scroll-mt-4 rounded-[1.5rem] border border-[#e9e6dc] bg-white p-3 shadow-[0_8px_24px_rgba(44,43,35,.04)] sm:mb-8 sm:p-4">
+      <section id="customer-menu" className="mb-6 scroll-mt-4 rounded-[1.5rem] border border-[#E5E3B2] bg-white p-3 shadow-[0_8px_24px_rgba(44,43,35,.04)] sm:mb-8 sm:p-4">
         <div className="mb-3 flex items-center justify-between gap-3 px-1">
           <span className="shrink-0 rounded-full bg-[#f3f4ed] px-3 py-1.5 text-xs font-semibold text-[#687650]">{filteredProducts.length} صنف</span>
         </div>
@@ -436,12 +442,12 @@ export default function CustomerOrdering() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-xl border border-transparent bg-[#f7f6f2] py-3 pe-11 ps-4 text-sm placeholder:text-[#9b998f] transition focus:border-[#dfe4d2] focus:bg-white focus:ring-2 focus:ring-[#778f5a]/20"
+            className="w-full rounded-xl border border-transparent bg-[#FCF5ED] py-3 pe-11 ps-4 text-sm placeholder:text-[#705331] transition focus:border-[#E5E3B2] focus:bg-white focus:ring-2 focus:ring-[#91A560]/20"
             placeholder="بتدور على إيه؟"
             aria-label="ابحث في المنيو"
           />
           {search ? (
-            <button type="button" onClick={() => setSearch('')} className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full px-3 py-1.5 text-xs font-semibold text-[#77766c] hover:bg-[#eeede7]" aria-label="مسح البحث">
+            <button type="button" onClick={() => setSearch('')} className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full px-3 py-1.5 text-xs font-semibold text-[#705331] hover:bg-[#E5E3B2]" aria-label="مسح البحث">
               مسح
             </button>
           ) : null}
@@ -453,7 +459,7 @@ export default function CustomerOrdering() {
                 type="button"
                 onClick={() => setSelectedCategory(categoryId)}
                 aria-pressed={selectedCategory === categoryId}
-                className={`shrink-0 rounded-full px-4 py-2.5 text-sm font-semibold transition ${selectedCategory === categoryId ? 'bg-[#435d32] text-white shadow-sm' : 'bg-[#f5f4ef] text-[#676458] hover:bg-[#ecebe3]'}`}
+                className={`shrink-0 rounded-full px-4 py-2.5 text-sm font-semibold transition ${selectedCategory === categoryId ? 'bg-[#6B8136] text-white shadow-sm' : 'bg-[#FCF5ED] text-[#705331] hover:bg-[#ecebe3]'}`}
               >
                 {categoryId === 'all' ? 'كل المنيو' : (menu?.categories.find((c) => c.id === categoryId)?.ar ?? categoryId)}
               </button>
@@ -462,7 +468,7 @@ export default function CustomerOrdering() {
       </section>
 
       {orderStatus ? (
-        <div role={orderStatus.type === 'error' ? 'alert' : 'status'} aria-live="polite" className={`fixed inset-x-4 top-[max(5.5rem,calc(env(safe-area-inset-top)+5rem))] z-[60] mx-auto flex max-w-lg items-start justify-between gap-3 rounded-xl border px-4 py-3 text-sm leading-6 shadow-lg sm:top-6 ${orderStatus.type === 'success' ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : orderStatus.type === 'error' ? 'border-rose-200 bg-rose-50 text-rose-800' : 'border-[#e8e6dc] bg-white text-[#514d43]'}`}>
+        <div role={orderStatus.type === 'error' ? 'alert' : 'status'} aria-live="polite" className={`fixed inset-x-4 top-[max(5.5rem,calc(env(safe-area-inset-top)+5rem))] z-[60] mx-auto flex max-w-lg items-start justify-between gap-3 rounded-xl border px-4 py-3 text-sm leading-6 shadow-lg sm:top-6 ${orderStatus.type === 'success' ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : orderStatus.type === 'error' ? 'border-rose-200 bg-rose-50 text-rose-800' : 'border-[#E5E3B2] bg-white text-[#232122]'}`}>
           {orderStatus.message}
           <button type="button" onClick={() => setOrderStatus(null)} aria-label="إغلاق الرسالة" className="shrink-0 rounded-full px-2 font-bold opacity-70 hover:bg-black/5">×</button>
         </div>
@@ -478,7 +484,7 @@ export default function CustomerOrdering() {
               <section key={category.id} aria-labelledby={`category-${category.id}`}>
                 <div className="mb-4 flex items-end justify-between px-1">
                   <div>
-                    <h2 id={`category-${category.id}`} className="text-xl font-bold text-[#302b23] sm:text-2xl">{category.ar}</h2>
+                    <h2 id={`category-${category.id}`} className="text-xl font-bold text-[#232122] sm:text-2xl">{category.ar}</h2>
                   </div>
                   <span className="rounded-full border border-[#e9e9df] bg-white px-3 py-1.5 text-xs font-semibold text-[#6f705f]">{items.length} صنف</span>
                 </div>
@@ -499,15 +505,15 @@ export default function CustomerOrdering() {
                             {product.bestSeller ? <span className="rounded-full bg-[#fbf4e4] px-1.5 py-1 text-[8px] font-semibold leading-3 text-[#93733b] sm:px-2.5 sm:py-1.5 sm:text-[10px]">الأكثر طلبًا</span> : null}
                           </div>
                         </div>
-                        <h3 className="line-clamp-2 text-sm font-bold leading-5 text-[#343128] transition-colors group-hover:text-[#435d32] sm:text-base">{product.ar}</h3>
+                        <h3 className="line-clamp-2 text-sm font-bold leading-5 text-[#232122] transition-colors group-hover:text-[#6B8136] sm:text-base">{product.ar}</h3>
                         <p className="mt-1 line-clamp-2 text-[11px] leading-4 text-[#858378] sm:text-xs sm:leading-5">{product.descriptionAr}</p>
                       </div>
                       <div className="mt-3 flex flex-col items-stretch gap-2 border-t border-[#f0efe9] pt-2.5 sm:mt-4 sm:flex-row sm:items-center sm:justify-between sm:gap-2 sm:pt-3">
-                        <p className="text-base font-bold text-[#435d32] sm:text-lg">{getProductPrice(product)} <span className="text-[10px] font-medium text-[#77766c] sm:text-xs">ج.م</span>{product.offerPrice !== undefined ? <span className="ms-1 text-[10px] font-medium text-[#99978d] line-through sm:text-xs">{product.price}</span> : null}</p>
+                        <p className="text-base font-bold text-[#6B8136] sm:text-lg">{getProductPrice(product)} <span className="text-[10px] font-medium text-[#705331] sm:text-xs">ج.م</span>{product.offerPrice !== undefined ? <span className="ms-1 text-[10px] font-medium text-[#99978d] line-through sm:text-xs">{product.price}</span> : null}</p>
                         <button
                           type="button"
                           onClick={() => addToCart(product)}
-                          className="min-h-10 w-full rounded-full bg-[#edf1e7] px-2 py-2.5 text-[11px] font-bold text-[#435d32] transition hover:bg-[#435d32] hover:text-white sm:min-h-0 sm:w-auto sm:px-3.5 sm:text-xs"
+                          className="min-h-10 w-full rounded-full bg-[#edf1e7] px-2 py-2.5 text-[11px] font-bold text-[#6B8136] transition hover:bg-[#6B8136] hover:text-white sm:min-h-0 sm:w-auto sm:px-3.5 sm:text-xs"
                         >
                           <span className="sm:hidden">{product.groups.length ? 'خصص +' : 'أضف +'}</span>
                           <span className="hidden sm:inline">{product.groups.length ? 'خصص و أضف +' : 'أضف للسلة +'}</span>
@@ -531,17 +537,17 @@ export default function CustomerOrdering() {
           role={mobileCartOpen ? 'dialog' : undefined}
           aria-modal={mobileCartOpen ? true : undefined}
           aria-labelledby={mobileCartOpen ? 'customer-cart-title' : undefined}
-          className={`${mobileCartOpen ? 'fixed inset-x-0 bottom-0 z-50 max-h-[92dvh] overflow-y-auto rounded-t-[1.75rem] p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]' : 'hidden'} border border-[#e9e6dc] bg-white shadow-[0_12px_36px_rgba(43,43,34,.12)] lg:sticky lg:top-5 lg:z-auto lg:block lg:max-h-none lg:overflow-visible lg:rounded-3xl lg:p-5`}
+          className={`${mobileCartOpen ? 'fixed inset-x-0 bottom-0 z-50 max-h-[92dvh] overflow-y-auto rounded-t-[1.75rem] p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]' : 'hidden'} border border-[#E5E3B2] bg-white shadow-[0_12px_36px_rgba(43,43,34,.12)] lg:sticky lg:top-5 lg:z-auto lg:block lg:max-h-none lg:overflow-visible lg:rounded-3xl lg:p-5`}
         >
           <div className="mb-5 flex items-center justify-between">
             <div>
-              <h2 id="customer-cart-title" className="text-xl font-bold text-[#302b23]">طلبك</h2>
-              <p className="mt-1 text-sm text-[#77766c]">{cartItemCount} {cartItemCount === 1 ? 'صنف' : 'أصناف'} في السلة</p>
+              <h2 id="customer-cart-title" className="text-xl font-bold text-[#232122]">طلبك</h2>
+              <p className="mt-1 text-sm text-[#705331]">{cartItemCount} {cartItemCount === 1 ? 'صنف' : 'أصناف'} في السلة</p>
             </div>
             <button
               type="button"
               onClick={() => setMobileCartOpen(false)}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f3f1e9] text-xl text-[#514d43] lg:hidden"
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-[#FCF5ED] text-xl text-[#232122] lg:hidden"
               aria-label="إغلاق السلة"
             >
               ×
@@ -569,16 +575,16 @@ export default function CustomerOrdering() {
                   <div key={`${item.productId}-${index}`} className="rounded-2xl border border-[#efeee7] bg-white p-3">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="font-semibold text-[#343128]">{product.ar}</p>
-                        {optionText ? <p className="mt-1 text-xs leading-5 text-[#77766c]">{optionText}</p> : null}
-                        {item.notes ? <p className="mt-1 text-xs text-[#77766c]">{item.notes}</p> : null}
+                        <p className="font-semibold text-[#232122]">{product.ar}</p>
+                        {optionText ? <p className="mt-1 text-xs leading-5 text-[#705331]">{optionText}</p> : null}
+                        {item.notes ? <p className="mt-1 text-xs text-[#705331]">{item.notes}</p> : null}
                       </div>
-                      <p className="shrink-0 text-sm font-bold text-[#435d32]">{itemTotal.toFixed(2)} ج.م</p>
+                      <p className="shrink-0 text-sm font-bold text-[#6B8136]">{itemTotal.toFixed(2)} ج.م</p>
                     </div>
                     <div className="mt-3 flex items-center gap-3">
-                      <button type="button" onClick={() => updateCartQuantity(item.productId, -1, item.customizations, item.notes)} className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f3f1e9] text-lg" aria-label="تقليل الكمية">−</button>
+                      <button type="button" onClick={() => updateCartQuantity(item.productId, -1, item.customizations, item.notes)} className="flex h-8 w-8 items-center justify-center rounded-full bg-[#FCF5ED] text-lg" aria-label="تقليل الكمية">−</button>
                       <span className="min-w-4 text-center text-sm font-semibold">{item.quantity}</span>
-                      <button type="button" onClick={() => updateCartQuantity(item.productId, 1, item.customizations, item.notes)} className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f3f1e9] text-lg" aria-label="زيادة الكمية">+</button>
+                      <button type="button" onClick={() => updateCartQuantity(item.productId, 1, item.customizations, item.notes)} className="flex h-8 w-8 items-center justify-center rounded-full bg-[#FCF5ED] text-lg" aria-label="زيادة الكمية">+</button>
                     </div>
                   </div>
                 );
@@ -587,38 +593,66 @@ export default function CustomerOrdering() {
           )}
 
           <div className="mt-5 space-y-2 border-t border-dashed border-[#e4e2d8] pt-4 text-sm">
-            <div className="flex justify-between text-[#77766c]"><span>المجموع</span><span>{subtotal.toFixed(2)} ج.م</span></div>
-            {pricing.serviceEnabled ? <div className="flex justify-between text-[#77766c]"><span>الخدمة ({pricing.serviceRate}%)</span><span>{serviceFee.toFixed(2)} ج.م</span></div> : null}
-            {pricing.taxEnabled ? <div className="flex justify-between text-[#77766c]"><span>الضريبة ({pricing.taxRate}%)</span><span>{tax.toFixed(2)} ج.م</span></div> : null}
-            <div className="flex justify-between border-t border-[#efeee7] pt-3 text-base font-bold text-[#302b23]"><span>الإجمالي</span><span>{total.toFixed(2)} ج.م</span></div>
+            <div className="flex justify-between text-[#705331]"><span>المجموع</span><span>{subtotal.toFixed(2)} ج.م</span></div>
+            {pricing.serviceEnabled ? <div className="flex justify-between text-[#705331]"><span>الخدمة ({pricing.serviceRate}%)</span><span>{serviceFee.toFixed(2)} ج.م</span></div> : null}
+            {pricing.taxEnabled ? <div className="flex justify-between text-[#705331]"><span>الضريبة ({pricing.taxRate}%)</span><span>{tax.toFixed(2)} ج.م</span></div> : null}
+            <div className="flex justify-between border-t border-[#efeee7] pt-3 text-base font-bold text-[#232122]"><span>الإجمالي</span><span>{total.toFixed(2)} ج.م</span></div>
           </div>
 
           <div className="mt-5 space-y-3">
-            <div className="grid grid-cols-2 rounded-xl bg-[#f3f1e9] p-1">
-              <button type="button" onClick={() => setOrderType('DINE_IN')} className={`rounded-lg px-3 py-2.5 text-sm font-semibold transition ${orderType === 'DINE_IN' ? 'bg-white text-[#435d32] shadow-sm' : 'text-[#77766c]'}`}>داخل الكافيه</button>
-              <button type="button" onClick={() => setOrderType('TAKEAWAY')} className={`rounded-lg px-3 py-2.5 text-sm font-semibold transition ${orderType === 'TAKEAWAY' ? 'bg-white text-[#435d32] shadow-sm' : 'text-[#77766c]'}`}>تيك أواي</button>
+            <div className="grid grid-cols-3 rounded-xl bg-[#FCF5ED] p-1">
+              <button type="button" onClick={() => setOrderType('DINE_IN')} className={`rounded-lg px-3 py-2.5 text-sm font-semibold transition ${orderType === 'DINE_IN' ? 'bg-white text-[#6B8136] shadow-sm' : 'text-[#705331]'}`}>داخل الكافيه</button>
+              <button type="button" onClick={() => setOrderType('TAKEAWAY')} className={`rounded-lg px-3 py-2.5 text-sm font-semibold transition ${orderType === 'TAKEAWAY' ? 'bg-white text-[#6B8136] shadow-sm' : 'text-[#705331]'}`}>تيك أواي</button>
+              <button type="button" onClick={() => setOrderType('DELIVERY')} className={`rounded-lg px-3 py-2.5 text-sm font-semibold transition ${orderType === 'DELIVERY' ? 'bg-white text-[#6B8136] shadow-sm' : 'text-[#705331]'}`}>توصيل</button>
             </div>
             {orderType === 'DINE_IN' ? (
-              <label className="block text-sm font-medium text-[#514d43]">
+              <label className="block text-sm font-medium text-[#232122]">
                 رقم الترابيزة
                 <input value={tableNumber} onChange={(e) => setTableNumber(e.target.value)} placeholder="مثال: 3" className="mt-1.5 w-full" />
               </label>
-            ) : (
-              <label className="block text-sm font-medium text-[#514d43]">
+            ) : orderType === 'TAKEAWAY' ? (
+              <label className="block text-sm font-medium text-[#232122]">
                 طريقة الاستلام
-                <input value={customerAddress} onChange={(e) => setCustomerAddress(e.target.value)} placeholder="استلام من الكافيه" className="mt-1.5 w-full" />
+                <p className="mt-1.5 rounded-xl border border-[#E5E3B2] bg-[#FCF5ED] px-3 py-2.5 text-sm text-[#705331]">استلام من الكافيه — بدون طاولة أو عنوان توصيل</p>
               </label>
+            ) : (
+              <div className="space-y-3">
+                <label className="block text-sm font-medium text-[#232122]">
+                  عنوان التوصيل <span className="text-rose-600">*</span>
+                  <input required value={customerAddress} onChange={(e) => setCustomerAddress(e.target.value)} placeholder="الشارع والمنطقة" className="mt-1.5 w-full" />
+                </label>
+                <label className="block text-sm font-medium text-[#232122]">
+                  تفاصيل إضافية للعنوان
+                  <input value={additionalAddressDetails} onChange={(e) => setAdditionalAddressDetails(e.target.value)} placeholder="رقم المبنى، الدور، الشقة" className="mt-1.5 w-full" />
+                </label>
+                <label className="block text-sm font-medium text-[#232122]">
+                  تعليمات التوصيل
+                  <textarea value={deliveryInstructions} onChange={(e) => setDeliveryInstructions(e.target.value)} placeholder="أي تعليمات تساعد في الوصول" className="mt-1.5 min-h-20 w-full resize-y" />
+                </label>
+              </div>
             )}
             <div className="grid grid-cols-2 gap-2">
-              <input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="الاسم" aria-label="الاسم" />
-              <input value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} placeholder="رقم الهاتف" aria-label="رقم الهاتف" inputMode="tel" />
+              <input required={orderType === 'DELIVERY'} value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder={orderType === 'DELIVERY' ? 'الاسم *' : 'الاسم'} aria-label="الاسم" />
+              <input required={orderType === 'DELIVERY'} value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} placeholder={orderType === 'DELIVERY' ? 'رقم الهاتف *' : 'رقم الهاتف'} aria-label="رقم الهاتف" inputMode="tel" />
             </div>
-            <button type="button" onClick={submitOrder} disabled={submitting || cart.length === 0} className="w-full rounded-xl bg-[#435d32] px-4 py-3.5 font-semibold text-white shadow-[0_8px_20px_rgba(67,93,50,.18)] transition hover:bg-[#344b27] disabled:cursor-not-allowed disabled:opacity-45">
+            <button type="button" onClick={submitOrder} disabled={submitting || cart.length === 0} className="w-full rounded-xl bg-[#6B8136] px-4 py-3.5 font-semibold text-white shadow-[0_8px_20px_rgba(67,93,50,.18)] transition hover:bg-[#5d702f] disabled:cursor-not-allowed disabled:opacity-45">
               {submitting ? 'جارٍ إرسال الطلب…' : 'تأكيد الطلب'}
             </button>
           </div>
         </aside>
       </div>
+
+      <section aria-labelledby="contact-title" className="mt-8 rounded-[1.5rem] border border-[#E5E3B2] bg-white p-5 shadow-[0_8px_24px_rgba(44,43,35,.045)] sm:flex sm:items-center sm:justify-between sm:gap-6 sm:p-6">
+        <div>
+          <p className="text-xs font-semibold tracking-[.14em] text-[#705331]">MATCHA CAFÉ</p>
+          <h2 id="contact-title" className="mt-1 text-xl font-bold text-[#232122]">محتاج مساعدة؟ تواصل معنا</h2>
+          <p className="mt-1 text-sm text-[#705331]">نحن سعداء بخدمتك — اطلب الآن أو تواصل معنا مباشرة.</p>
+        </div>
+        <div className="mt-4 flex flex-wrap gap-2 sm:mt-0">
+          <a href="tel:01036618656" dir="ltr" className="inline-flex min-h-11 items-center rounded-xl border border-[#E5E3B2] px-4 py-2.5 text-sm font-semibold text-[#6B8136] transition hover:bg-[#FCF5ED]">01036618656</a>
+          <a href="https://maps.app.goo.gl/jYKaTj3xof2xcSoo6" target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center rounded-xl bg-[#6B8136] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#5d702f]">موقع الكافيه على الخريطة</a>
+        </div>
+      </section>
 
       {mobileCartOpen ? <button type="button" className="fixed inset-0 z-40 bg-[#15170f]/50 backdrop-blur-[2px] lg:hidden" aria-label="إغلاق السلة" onClick={() => setMobileCartOpen(false)} /> : null}
       <button
@@ -639,10 +673,10 @@ export default function CustomerOrdering() {
           <div role="dialog" aria-modal="true" aria-labelledby="customizing-title" className="my-auto max-h-[90dvh] w-full max-w-xl overflow-y-auto overscroll-contain rounded-t-[1.75rem] bg-white p-5 shadow-2xl sm:rounded-[1.75rem] sm:p-7">
             <div className="mb-4 flex items-center justify-between">
               <div>
-                <p className="text-xs font-semibold text-[#888579]">تخصيص طلبك</p>
+                <p className="text-xs font-semibold text-[#705331]">تخصيص طلبك</p>
                 <h3 id="customizing-title" className="mt-1 text-2xl font-bold text-[#6b4a2e]">{customizing.ar}</h3>
               </div>
-              <button type="button" onClick={() => setCustomizing(null)} aria-label="إغلاق نافذة التخصيص" className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f6f4ec] text-xl">×</button>
+              <button type="button" onClick={() => setCustomizing(null)} aria-label="إغلاق نافذة التخصيص" className="flex h-10 w-10 items-center justify-center rounded-full bg-[#FCF5ED] text-xl">×</button>
             </div>
             <div className="space-y-4">
               {customizing.groups.map((groupId) => {
@@ -665,7 +699,7 @@ export default function CustomerOrdering() {
                             }
                             return { ...prev, [groupId]: [index] };
                           })}
-                          className={`min-h-11 rounded-xl border px-3 py-2 text-sm transition ${(selectedOptions[groupId] ?? []).includes(index) ? 'border-[#6e8a3c] bg-[#edf5df] text-[#354a2c]' : 'border-[#dfe4d2] bg-white hover:bg-[#fafaf7]'}`}
+                          className={`min-h-11 rounded-xl border px-3 py-2 text-sm transition ${(selectedOptions[groupId] ?? []).includes(index) ? 'border-[#6B8136] bg-[#E5E3B2] text-[#232122]' : 'border-[#E5E3B2] bg-white hover:bg-[#FCF5ED]'}`}
                         >
                           {option.ar} {option.price ? `(+${option.price})` : ''}
                         </button>
@@ -682,11 +716,11 @@ export default function CustomerOrdering() {
 
               <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#efeee7] pt-4">
                 <div className="flex items-center gap-2">
-                  <button type="button" onClick={() => setQuantity((q) => Math.max(1, q - 1))} aria-label="تقليل الكمية" className="h-10 w-10 rounded-full bg-[#f6f4ec] text-lg">−</button>
+                  <button type="button" onClick={() => setQuantity((q) => Math.max(1, q - 1))} aria-label="تقليل الكمية" className="h-10 w-10 rounded-full bg-[#FCF5ED] text-lg">−</button>
                   <span aria-live="polite" className="min-w-6 text-center font-semibold tabular-nums">{quantity}</span>
-                  <button type="button" onClick={() => setQuantity((q) => q + 1)} aria-label="زيادة الكمية" className="h-10 w-10 rounded-full bg-[#f6f4ec] text-lg">+</button>
+                  <button type="button" onClick={() => setQuantity((q) => q + 1)} aria-label="زيادة الكمية" className="h-10 w-10 rounded-full bg-[#FCF5ED] text-lg">+</button>
                 </div>
-                <button type="button" onClick={finalizeAddToCart} className="min-h-11 flex-1 rounded-xl bg-[#435d32] px-5 py-3 font-semibold text-white transition hover:bg-[#344b27] sm:flex-none">إضافة {quantity} · {customizationTotal.toFixed(2)} ج.م</button>
+                <button type="button" onClick={finalizeAddToCart} className="min-h-11 flex-1 rounded-xl bg-[#6B8136] px-5 py-3 font-semibold text-white transition hover:bg-[#5d702f] sm:flex-none">إضافة {quantity} · {customizationTotal.toFixed(2)} ج.م</button>
               </div>
             </div>
           </div>

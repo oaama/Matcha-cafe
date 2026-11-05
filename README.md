@@ -4,11 +4,14 @@ This project rebuilds the original Matcha café menu into a QR ordering applicat
 
 ## Features
 
-- Mobile-first Arabic-first menu for dine-in and takeaway orders.
+- Mobile-first Arabic-first menu for dine-in, takeaway, and delivery orders.
 - Product catalog derived from the original HTML prototype.
 - Cart, customization, checkout, and confirmation flow.
 - MongoDB-backed order persistence and validation.
 - Staff dashboard for new, preparing, ready, and completed orders.
+- Contact actions for phone and Google Maps.
+- Confirmed receipt preview and browser printing for 58mm and 80mm paper.
+- Local role-based staff accounts, shift tracking, and admin user management.
 - Staff-managed menu catalog: create and edit products, prices and offers, display order, categories, option groups, and add-on prices; archive entries without removing historical order details.
 - Orders are persisted in MongoDB and shown in the cashier dashboard when refreshed.
 
@@ -25,13 +28,21 @@ Open `http://localhost:3000` for the customer menu and `http://localhost:3000/da
 
 For local development without a database, set `DATA_PROVIDER=mock` in `.env.local` (or omit it). The app uses in-memory data and does not need a MongoDB connection.
 
-For MongoDB-backed local development, set `DATA_PROVIDER=mongodb` and configure `MONGODB_URI`, `NEXTAUTH_SECRET`, `STAFF_EMAIL`, and `STAFF_PASSWORD` in `.env.local`. MongoDB mode requires the database host to be reachable and its DNS records to resolve; connection failures are reported instead of silently switching to non-persistent mock data. `.env.local` is excluded from Git. The first successful login using `STAFF_EMAIL` and `STAFF_PASSWORD` creates the initial staff account in MongoDB with a salted password hash. Staff accounts are then verified against the shared `staff_accounts` collection, so local and production use the same accounts when both connect to the same database. There is no public account-registration endpoint. Configure `STAFF_EMAIL` and `STAFF_PASSWORD` in the hosting environment only for first-account setup if the collection is empty; never commit real credentials.
+For MongoDB-backed local development, set `DATA_PROVIDER=mongodb` and configure `MONGODB_URI`, `NEXTAUTH_SECRET`, `STAFF_EMAIL`, and `STAFF_PASSWORD` in `.env.local`. MongoDB mode requires the database host to be reachable and its DNS records to resolve; connection failures are reported instead of silently switching to non-persistent mock data. `.env.local` is excluded from Git. The first successful login using `STAFF_EMAIL` and `STAFF_PASSWORD` creates the initial Admin account in MongoDB with a salted password hash. Staff accounts, shifts, expenses, orders, catalog, inventory, and pricing then use MongoDB repositories, so this is the same persistence path used by production. There is no public account-registration endpoint. Configure `STAFF_EMAIL` and `STAFF_PASSWORD` in the hosting environment only for first-account setup if the collection is empty; never commit real credentials.
 
 Without `DATA_PROVIDER=mongodb`, local development uses in-memory mock data. Orders and changes are lost when the server process restarts; mock storage cannot be selected in production. The dashboard checks for order updates every four seconds.
 
+In mock mode, the local demo accounts are:
+
+- Admin: `demo@local.test` / `demo1234`
+- Day employee: `day@local.test` / `day12345` (`Matcha_Day_AM`)
+- Night employee: `night@local.test` / `night12345` (`Matcha_Night_PM`)
+
+Mock accounts and shift records are held in memory and are lost when the server restarts. To test production persistence locally, use a separate development MongoDB database with `DATA_PROVIDER=mongodb`; never point local testing at production data. Browser receipt printing requires a configured system/browser printer; silent thermal printing is not available through a normal browser. Choose 58mm or 80mm in the receipt preview before confirming print.
+
 The menu is seeded in `lib/menu-data.ts`. Order storage is isolated behind `lib/order-repository.ts`.
 
-Menu changes are managed from the cashier dashboard. In local mock mode they last while the server process is running; with MongoDB the catalog is stored in the `cafe_settings` collection. Product and category removal is a reversible archive/hide action so existing orders keep their original item snapshots.
+Menu changes are managed from the cashier dashboard. In local mock mode they last while the server process is running; with MongoDB the catalog is stored in the `cafe_settings` collection. Product and category removal is a reversible archive/hide action so existing orders keep their original item snapshots. The Expenses section records electricity, water, food/raw materials, supplies, maintenance, rent, and other costs by date, shift, and employee in the `cafe_expenses` collection. Employees can record their own expenses; Admin can review and delete all records and manage staff profiles and passwords.
 
 ## Production build
 

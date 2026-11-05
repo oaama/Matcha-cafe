@@ -1,11 +1,10 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { getOrderRepository } from '@/lib/order-repository';
-import { isValidStaffSessionToken, STAFF_SESSION_COOKIE } from '@/lib/staff-auth';
+import { requireStaffRole } from '@/lib/staff-api';
 import { isMockDataMode } from '@/lib/data-mode';
 
 export async function GET() {
-  if (!isValidStaffSessionToken((await cookies()).get(STAFF_SESSION_COOKIE)?.value)) {
+  if (!await requireStaffRole()) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

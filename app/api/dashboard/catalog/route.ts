@@ -1,11 +1,10 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { getCatalog, saveCatalog } from '@/lib/catalog-repository';
-import { isValidStaffSessionToken, STAFF_SESSION_COOKIE } from '@/lib/staff-auth';
+import { requireStaffRole } from '@/lib/staff-api';
 import { catalogSchema } from '@/lib/validation';
 
 async function isStaff() {
-  return isValidStaffSessionToken((await cookies()).get(STAFF_SESSION_COOKIE)?.value);
+  return Boolean(await requireStaffRole(['ADMIN']));
 }
 
 export async function GET() {

@@ -1,8 +1,7 @@
 import ExcelJS from 'exceljs';
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { getCatalog } from '@/lib/catalog-repository';
-import { isValidStaffSessionToken, STAFF_SESSION_COOKIE } from '@/lib/staff-auth';
+import { requireStaffRole } from '@/lib/staff-api';
 import { getInventoryData, getInventoryMovements } from '@/lib/inventory-repository';
 import { getOrderRepository } from '@/lib/order-repository';
 
@@ -14,7 +13,7 @@ function parseDate(value: string | null, timezoneOffset = 0, endOfDay = false) {
 }
 
 export async function GET(request: Request) {
-  if (!isValidStaffSessionToken((await cookies()).get(STAFF_SESSION_COOKIE)?.value)) {
+  if (!await requireStaffRole(['ADMIN'])) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

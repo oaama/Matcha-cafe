@@ -13,15 +13,32 @@ export const orderItemSchema = z.object({
 });
 
 export const createOrderSchema = z.object({
-  orderType: z.enum(['DINE_IN', 'TAKEAWAY']),
+  orderType: z.enum(['DINE_IN', 'TAKEAWAY', 'DELIVERY']),
   tableNumber: z.string().trim().optional(),
   customerName: z.string().trim().min(1).max(120).optional(),
   customerPhone: z.string().trim().min(4).max(30).optional(),
   customerAddress: z.string().trim().max(250).optional(),
+  additionalAddressDetails: z.string().trim().max(250).optional(),
+  deliveryInstructions: z.string().trim().max(500).optional(),
   paymentMethod: z.enum(['cash', 'card']).optional().default('cash'),
   notes: z.string().max(250).optional(),
   items: z.array(orderItemSchema).min(1),
   idempotencyKey: z.string().trim().min(3).max(120).optional(),
+}).superRefine((order, context) => {
+  if (order.orderType === 'DINE_IN' && !order.tableNumber?.trim()) {
+    context.addIssue({ code: 'custom', path: ['tableNumber'], message: 'Table number is required for dine-in orders.' });
+  }
+  if (order.orderType === 'DELIVERY') {
+    if (!order.customerName?.trim()) {
+      context.addIssue({ code: 'custom', path: ['customerName'], message: 'Customer name is required for delivery orders.' });
+    }
+    if (!order.customerPhone?.trim()) {
+      context.addIssue({ code: 'custom', path: ['customerPhone'], message: 'Customer phone is required for delivery orders.' });
+    }
+    if (!order.customerAddress?.trim()) {
+      context.addIssue({ code: 'custom', path: ['customerAddress'], message: 'Delivery address is required.' });
+    }
+  }
 });
 
 export const dashboardStatusSchema = z.object({
