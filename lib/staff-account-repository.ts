@@ -74,10 +74,33 @@ async function bootstrapFirstStaffAccount(email: string, password: string) {
     return null;
   }
 
-  const existingAccount = await StaffAccountModel.findOne().select('_id').lean();
-  if (existingAccount) return false;
-
   const { salt, hash } = await createStaffPasswordHash(password);
+  const existingEmailAccount = await StaffAccountModel.findOne({ email: configuredEmail }).select('_id role').lean();
+  if (existingEmailAccount) {
+    if (existingEmailAccount.role !== 'ADMIN') return false;
+    await StaffAccountModel.updateOne(
+      { _id: existingEmailAccount._id },
+      { $set: { passwordHash: hash, passwordSalt: salt, active: true } },
+    );
+    return true;
+  }
+
+  const existingAdmin = await StaffAccountModel.findOne({ role: 'ADMIN' }).select('_id').lean();
+  if (existingAdmin) {
+    await StaffAccountModel.updateOne(
+      { _id: existingAdmin._id },
+      {
+        $set: {
+          email: configuredEmail,
+          passwordHash: hash,
+          passwordSalt: salt,
+          active: true,
+        },
+      },
+    );
+    return true;
+  }
+
   try {
     await StaffAccountModel.create({
       id: `staff-${Date.now()}`,
@@ -104,12 +127,12 @@ export async function verifyMongoStaffCredentials(email: string, password: strin
 
   await connectToDatabase();
 
+  await bootstrapFirstStaffAccount(normalizedEmail, password);
   let account = await StaffAccountModel.findOne({ email: normalizedEmail })
     .select('+passwordHash +passwordSalt')
     .lean();
 
   if (!account) {
-    await bootstrapFirstStaffAccount(normalizedEmail, password);
     account = await StaffAccountModel.findOne({ email: normalizedEmail })
       .select('+passwordHash +passwordSalt')
       .lean();
