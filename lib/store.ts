@@ -37,19 +37,43 @@ export function calculateOrderTotal(
     const product = productMap.get(item.productId);
     if (!product) continue;
     let itemTotal = getProductPrice(product) * item.quantity;
+    const customizationsByGroup = new Map<string, number[]>();
+
     for (const customization of item.customizations) {
       const group = groups[customization.groupId];
       const option = group?.options[customization.optionIndex];
-      if (group && option) {
-        itemTotal += option.price * item.quantity;
+      if (!group || !option) continue;
+      const current = customizationsByGroup.get(customization.groupId) ?? [];
+      current.push(customization.optionIndex);
+      customizationsByGroup.set(customization.groupId, current);
+    }
+
+    for (const groupId of product.groups) {
+      const group = groups[groupId];
+      if (!group) continue;
+      const selectedIndexes = customizationsByGroup.get(groupId) ?? [];
+      const effectiveIndexes = selectedIndexes.length > 0 ? selectedIndexes : getDefaultIndexes(group);
+
+      for (const optionIndex of effectiveIndexes) {
+        const option = group.options[optionIndex];
+        if (option) {
+          itemTotal += option.price * item.quantity;
+        }
       }
     }
+
     subtotal += itemTotal;
   }
 
   const serviceFee = pricing.serviceEnabled ? roundMoney(subtotal * pricing.serviceRate / 100) : 0;
   const tax = pricing.taxEnabled ? roundMoney((subtotal + serviceFee) * pricing.taxRate / 100) : 0;
   return { subtotal: roundMoney(subtotal), serviceFee, tax, total: roundMoney(subtotal + serviceFee + tax) };
+}
+
+function getDefaultIndexes(group: CatalogGroup) {
+  return group.options
+    .map((option, optionIndex) => (option.default ? optionIndex : -1))
+    .filter((optionIndex) => optionIndex >= 0);
 }
 
 export function validateProductSelections(
@@ -81,7 +105,11 @@ export function validateProductSelections(
   for (const groupId of product.groups) {
     const group = groupMap[groupId];
     if (!group) continue;
-    const selectedIndexes = selected.get(groupId) ?? [];
+    let selectedIndexes = selected.get(groupId) ?? [];
+    if (selectedIndexes.length === 0) {
+      selectedIndexes = getDefaultIndexes(group);
+    }
+
     if (group.required && selectedIndexes.length === 0) {
       return { valid: false, error: `Missing required option: ${group.ar}` };
     }

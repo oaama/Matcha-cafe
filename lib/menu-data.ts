@@ -2,7 +2,7 @@ import { CatalogGroup, Category, Product } from './types';
 
 export const optionGroups: Record<string, CatalogGroup> = {
   sugar: {
-    id: 'sugar', ar: 'السكر', en: 'Sugar', required: true, multi: false,
+    id: 'sugar', ar: 'السكر', en: 'Sugar', required: false, multi: false,
     options: [
       { ar: 'بدون سكر', en: 'No sugar', price: 0, default: true },
       { ar: 'قليل', en: 'Light', price: 0 },

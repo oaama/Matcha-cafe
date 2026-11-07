@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { calculateOrderTotal, SERVICE_FEE_RATE, TAX_RATE, validateProductSelections } from './store';
 import { menuSeed } from './menu-data';
 import { createStaffSessionToken, hasStaffCredentials, isValidStaffSessionToken, verifyStaffCredentials } from './staff-auth';
+import { endShift, listShifts, startShift } from './shift-repository';
 import { clearMockOrders, getOrderRepository } from './order-repository';
 import { clearMockPricingSettings, getPricingSettings, updatePricingSettings } from './pricing-settings';
 import { clearMockCatalog, getCatalog, saveCatalog } from './catalog-repository';
@@ -93,6 +94,45 @@ describe('catalog validation', () => {
       { groupId: 'extras', optionIndex: 0 },
       { groupId: 'extras', optionIndex: 0 },
     ]).valid).toBe(false);
+  });
+
+  it('accepts required groups with a default option when no explicit selection is sent', () => {
+    const product = menuSeed.products.find((item) => item.id === 'matcha-2')!;
+    expect(validateProductSelections(product, []).valid).toBe(true);
+  });
+
+  it('includes default option prices in totals when the selection is omitted', () => {
+    const group = {
+      id: 'default-price', ar: 'الحجم', en: 'Size', required: true, multi: false,
+      options: [
+        { ar: 'عادي', en: 'Regular', price: 7, default: true },
+        { ar: 'كبير', en: 'Large', price: 5 },
+      ],
+    };
+    const product = { ...menuSeed.products[0], groups: ['default-price'] };
+    const totals = calculateOrderTotal([{ productId: product.id, quantity: 1, customizations: [] }], undefined, [product], { 'default-price': group });
+    expect(totals.subtotal).toBe(product.price + 7);
+  });
+});
+
+describe('shift tracking', () => {
+  it('creates separate shift records and ends the active one with a duration', async () => {
+    const store = (globalThis as { matchaMockShiftStore?: { shifts: Array<{ employeeId: string }> } }).matchaMockShiftStore ??= { shifts: [] };
+    store.shifts = [];
+
+    const first = await startShift({ employeeId: 'employee-a', username: 'Employee A', shiftType: 'DAY' });
+    const second = await startShift({ employeeId: 'employee-b', username: 'Employee B', shiftType: 'NIGHT' });
+    const list = await listShifts();
+
+    expect(first.created).toBe(true);
+    expect(second.created).toBe(true);
+    expect(list.length).toBe(2);
+
+    const ended = await endShift('employee-a');
+    expect(ended).not.toBeNull();
+    expect(ended?.endedAt).toBeDefined();
+    expect(typeof ended?.totalMinutes).toBe('number');
+    expect((await listShifts()).some((shift) => shift.employeeId === 'employee-a' && shift.endedAt)).toBe(true);
   });
 });
 

@@ -115,11 +115,33 @@ export default function CashierDashboard() {
     };
   }, [fetchOrders]);
 
+  const refreshShiftSummary = useCallback(async () => {
+    if (!loggedIn) return;
+    try {
+      const response = await fetch('/api/dashboard/shift');
+      const data = await response.json() as { active?: ShiftRecord | null; shifts?: ShiftRecord[]; error?: string };
+      if (!response.ok) {
+        if (data.error) setError(data.error);
+        return;
+      }
+      if (staff?.role === 'ADMIN') {
+        setShiftRows(data.shifts ?? []);
+      } else {
+        setActiveShift(data.active ?? null);
+      }
+    } catch {
+      setError('تعذر تحديث سجل الشيفتات');
+    }
+  }, [loggedIn, staff?.role]);
+
   useEffect(() => {
     if (!loggedIn) return;
-    const interval = window.setInterval(() => void fetchOrders(), 4000);
+    const interval = window.setInterval(() => {
+      void fetchOrders();
+      void refreshShiftSummary();
+    }, 4000);
     return () => window.clearInterval(interval);
-  }, [fetchOrders, loggedIn]);
+  }, [fetchOrders, loggedIn, refreshShiftSummary]);
 
   useEffect(() => {
     if (!loggedIn || staff?.role !== 'ADMIN') {
@@ -168,6 +190,7 @@ export default function CashierDashboard() {
       setActiveShift(data.activeShift ?? null);
       setLoggedIn(true);
       await fetchOrders();
+      await refreshShiftSummary();
     } catch {
       setError('تعذر الاتصال بالخادم أثناء تسجيل الدخول. تحقق من اتصال الإنترنت وحاول مرة أخرى.');
     } finally {
@@ -249,6 +272,9 @@ export default function CashierDashboard() {
       return;
     }
     setActiveShift(action === 'start' ? data.shift ?? null : null);
+    if (staff?.role === 'ADMIN') {
+      await refreshShiftSummary();
+    }
     setShiftMessage(action === 'start' ? 'بدأ الشيفت بتوقيت الخادم.' : `انتهى الشيفت بإجمالي ${data.shift?.totalMinutes ?? 0} دقيقة.`);
   };
 
