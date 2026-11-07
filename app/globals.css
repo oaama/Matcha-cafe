@@ -98,6 +98,92 @@ button:disabled {
   animation: slow-float 8s ease-in-out infinite;
 }
 
+.logo-splash {
+  display: grid;
+  min-height: 100svh;
+  width: 100%;
+  place-items: center;
+  overflow: hidden;
+  padding: 2rem 1rem;
+  background:
+    radial-gradient(ellipse at 50% 38%, rgba(229, 227, 178, .56), transparent 22rem),
+    #FCF5ED;
+}
+
+.logo-splash__content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.1rem;
+}
+
+.logo-splash__mark {
+  position: relative;
+  width: min(62vw, 15rem);
+  aspect-ratio: 1;
+  filter: drop-shadow(0 16px 24px rgba(48, 54, 37, .1));
+}
+
+.logo-splash__image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  clip-path: circle(0% at 50% 50%);
+  animation: splash-logo-reveal 1.25s cubic-bezier(.2, .75, .25, 1) both, splash-logo-float 3s 1.25s ease-in-out infinite;
+}
+
+.logo-splash__outline {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  transform: rotate(-90deg);
+}
+
+.logo-splash__outline-path {
+  fill: none;
+  stroke: #6B8136;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-dasharray: 723;
+  stroke-dashoffset: 723;
+  animation: splash-logo-outline 1.35s cubic-bezier(.2, .75, .25, 1) forwards;
+}
+
+.logo-splash__copy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .3rem;
+  color: #705331;
+  font-size: .9rem;
+  animation: splash-copy-enter 500ms 350ms ease-out both;
+}
+
+.logo-splash__copy .brand-name {
+  color: #6B8136;
+  font-size: .8rem;
+  letter-spacing: .16em;
+}
+
+.logo-splash__progress {
+  width: 5rem;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 9999px;
+  background: rgba(107, 129, 54, .16);
+}
+
+.logo-splash__progress span {
+  display: block;
+  width: 40%;
+  height: 100%;
+  border-radius: inherit;
+  background: #6B8136;
+  animation: splash-progress 1.2s ease-in-out infinite;
+}
+
 .login-cup {
   filter: drop-shadow(0 24px 30px rgba(48, 54, 37, .12));
 }
@@ -105,11 +191,11 @@ button:disabled {
 .login-cup-body {
   position: absolute;
   z-index: 0;
-  inset: 17px 20px 28px;
+  inset: 17px 14px 28px;
   border: 1px solid rgba(255, 255, 255, .9);
   border-radius: 2rem 2rem 2.5rem 2.5rem;
   background: linear-gradient(180deg, #fffefa 0%, #fff 72%, #f7f0e5 100%);
-  clip-path: polygon(0 0, 100% 0, 94% 91%, 87% 100%, 13% 100%, 6% 91%);
+  clip-path: polygon(0 0, 100% 0, 99% 94%, 97% 100%, 3% 100%, 1% 94%);
   box-shadow: inset 0 0 0 1px rgba(210, 193, 166, .18);
 }
 
@@ -234,6 +320,47 @@ button:disabled {
   }
 }
 
+@keyframes splash-logo-reveal {
+  to {
+    clip-path: circle(75% at 50% 50%);
+  }
+}
+
+@keyframes splash-logo-outline {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes splash-logo-float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes splash-copy-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes splash-progress {
+  from {
+    transform: translateX(250%);
+  }
+  to {
+    transform: translateX(-250%);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -245,8 +372,20 @@ button:disabled {
   }
 
   .hero-coffee-cup,
-  .coffee-steam {
+  .coffee-steam,
+  .logo-splash__image,
+  .logo-splash__outline-path,
+  .logo-splash__copy,
+  .logo-splash__progress span {
     animation: none;
+  }
+
+  .logo-splash__image {
+    clip-path: none;
+  }
+
+  .logo-splash__outline-path {
+    stroke-dashoffset: 0;
   }
 }
 

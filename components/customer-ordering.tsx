@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CatalogGroup, Category, Product } from '@/lib/types';
 import { calculateOrderTotal } from '@/lib/store';
 import { DEFAULT_PRICING_SETTINGS, getProductPrice, type PricingSettings } from '@/lib/pricing';
+import LogoSplash from './logo-splash';
 
 type MenuResponse = {
   categories: Category[];
@@ -311,15 +312,7 @@ export default function CustomerOrdering() {
     : 0;
 
   if (loading) {
-    return (
-      <main aria-label="جارٍ تحميل المنيو" aria-busy="true" className="mx-auto min-h-screen w-full min-w-0 max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        <div className="mb-6 h-16 animate-pulse rounded-2xl bg-white/80 motion-reduce:animate-none" />
-        <div className="mb-6 h-56 animate-pulse rounded-[1.75rem] bg-[#E5E3B2]/70 motion-reduce:animate-none" />
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {[0, 1, 2, 3, 4, 5].map((item) => <div key={item} className="h-48 animate-pulse rounded-2xl bg-white/80 motion-reduce:animate-none" />)}
-        </div>
-      </main>
-    );
+    return <LogoSplash />;
   }
 
   if (menuError || !menu) {

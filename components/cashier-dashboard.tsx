@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import { useCallback, useEffect, useState } from 'react';
+import LogoSplash from './logo-splash';
 import { DEFAULT_PRICING_SETTINGS, type PricingSettings } from '@/lib/pricing';
 import type { OrderRecord } from '@/lib/types';
 import type { ShiftRecord, StaffIdentity } from '@/lib/staff-types';
@@ -132,7 +133,7 @@ export default function CashierDashboard() {
     } catch {
       setError('تعذر تحديث سجل الشيفتات');
     }
-  }, [loggedIn, staff?.role]);
+  }, [loggedIn, staff]);
 
   useEffect(() => {
     if (!loggedIn) return;
@@ -289,32 +290,28 @@ export default function CashierDashboard() {
 
   if (!loggedIn) {
     if (sessionChecking) {
-      return (
-        <main className="flex min-h-screen w-full min-w-0 items-center justify-center px-4" aria-busy="true">
-          <span className="h-8 w-8 animate-spin rounded-full border-2 border-[#6B8136]/25 border-t-[#6B8136]" aria-label="جارٍ التحقق من جلسة الدخول" />
-        </main>
-      );
+      return <LogoSplash />;
     }
 
     return (
-      <main className="relative flex min-h-screen w-full min-w-0 items-center justify-center overflow-hidden px-4 py-10 sm:p-6">
+      <main className="relative flex min-h-[calc(100svh-3.125rem)] w-full min-w-0 items-center justify-center overflow-hidden px-4 py-6 sm:p-6">
         <div aria-hidden="true" className="pointer-events-none absolute -right-24 -top-28 h-80 w-80 rounded-full border border-[#91A560]/15 motion-float" />
         <div aria-hidden="true" className="pointer-events-none absolute -bottom-32 -left-24 h-96 w-96 rounded-full bg-[#E5E3B2]/55 blur-3xl" />
         <div className="login-cup relative isolate w-full max-w-md px-0 pb-7 sm:px-5">
           <div aria-hidden="true" className="login-cup-handle" />
           <div aria-hidden="true" className="login-cup-body" />
           <div aria-hidden="true" className="login-cup-rim" />
-          <div className="relative z-10 px-6 pb-8 pt-9 sm:px-8 sm:pb-10">
-            <div className="mb-7 flex items-center gap-3">
-              <Image src="/matcha-logo.png" alt="Matcha Coffee and Pancakes" width={64} height={64} className="h-14 w-14 rounded-full object-cover" priority />
+          <div className="relative z-10 px-5 pb-6 pt-7 sm:px-8 sm:pb-8 sm:pt-8">
+            <div className="mb-5 flex min-w-0 items-center gap-3">
+              <Image src="/matcha-logo.png" alt="Matcha Coffee and Pancakes" width={48} height={48} className="h-12 w-12 shrink-0 rounded-full object-cover" priority />
               <div>
                 <p className="brand-name text-[11px] tracking-[.16em] text-[#705331]">MATCHA CAFÉ</p>
               </div>
             </div>
-            <h1 className="text-2xl font-bold leading-relaxed text-[#232122] sm:text-3xl">دخول الكاشير</h1>
+            <h1 className="text-xl font-bold leading-relaxed text-[#232122] sm:text-2xl">دخول الكاشير</h1>
 
             <form
-              className="mt-7 space-y-4"
+              className="mt-5 space-y-3"
               onSubmit={(event) => {
                 event.preventDefault();
                 void login();
@@ -329,7 +326,7 @@ export default function CashierDashboard() {
                   value={auth.email}
                   onChange={(e) => setAuth({ ...auth, email: e.target.value })}
                   placeholder="name@example.com"
-                  className="mt-2 w-full rounded-xl border-[#E5E3B2] bg-[#fbfbf8] py-3 placeholder:text-[#aaa99f] focus:bg-white"
+                  className="mt-2 w-full rounded-xl border-[#E5E3B2] bg-[#fbfbf8] py-2.5 placeholder:text-[#aaa99f] focus:bg-white"
                 />
               </label>
               <label className="block text-sm font-semibold text-[#232122]">
@@ -341,14 +338,14 @@ export default function CashierDashboard() {
                   value={auth.password}
                   onChange={(e) => setAuth({ ...auth, password: e.target.value })}
                   placeholder="أدخل كلمة المرور"
-                  className="mt-2 w-full rounded-xl border-[#E5E3B2] bg-[#fbfbf8] py-3 placeholder:text-[#aaa99f] focus:bg-white"
+                  className="mt-2 w-full rounded-xl border-[#E5E3B2] bg-[#fbfbf8] py-2.5 placeholder:text-[#aaa99f] focus:bg-white"
                 />
               </label>
               {error ? <p role="alert" className="rounded-xl border border-rose-100 bg-rose-50 px-3 py-2.5 text-sm leading-6 text-rose-700 motion-enter">{error}</p> : null}
               <button
                 type="submit"
                 disabled={loginSubmitting}
-                className="group flex w-full items-center justify-center gap-2 rounded-xl bg-[#6B8136] px-4 py-3.5 font-bold text-white shadow-[0_8px_20px_rgba(67,93,50,.2)] transition duration-200 hover:-translate-y-0.5 hover:bg-[#5d702f] hover:shadow-[0_12px_24px_rgba(67,93,50,.25)] disabled:cursor-wait disabled:opacity-70"
+                className="group flex w-full items-center justify-center gap-2 rounded-xl bg-[#6B8136] px-4 py-3 font-bold text-white shadow-[0_8px_20px_rgba(67,93,50,.2)] transition duration-200 hover:-translate-y-0.5 hover:bg-[#5d702f] hover:shadow-[0_12px_24px_rgba(67,93,50,.25)] disabled:cursor-wait disabled:opacity-70"
               >
                 {loginSubmitting ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" aria-hidden="true" /> : null}
                 {loginSubmitting ? 'جارٍ تسجيل الدخول…' : 'تسجيل الدخول'}
