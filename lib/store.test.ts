@@ -3,13 +3,14 @@ import { calculateOrderTotal, SERVICE_FEE_RATE, TAX_RATE, validateProductSelecti
 import { menuSeed } from './menu-data';
 import { createStaffSessionToken, hasStaffCredentials, isValidStaffSessionToken, verifyStaffCredentials } from './staff-auth';
 import { endShift, listShifts, startShift } from './shift-repository';
-import { formatShiftDuration, getShiftDurationMinutes } from './shift-time';
+import { formatShiftDuration, getShiftDurationMinutes, getShiftBusinessDate, getShiftsCoveringTimestamp, shiftEndedToday } from './shift-time';
+import { getShiftReportOrders } from './shift-attribution';
 import { clearMockOrders, getOrderRepository } from './order-repository';
 import { clearMockExpenses, createExpense, listExpenses } from './expense-repository';
 import { clearMockPricingSettings, getPricingSettings, updatePricingSettings } from './pricing-settings';
 import { clearMockCatalog, getCatalog, saveCatalog } from './catalog-repository';
 import { catalogSchema } from './validation';
-import { clearMockInventory, getInventoryData, saveInventorySettings } from './inventory-repository';
+import { adjustInventory, clearMockInventory, getInventoryData, saveInventorySettings } from './inventory-repository';
 import { createStaffPasswordHash, verifyStaffPassword } from './staff-account-repository';
 import { isAuthorizedCronRequest } from './cron-auth';
 import type { OrderRecord } from './types';
@@ -123,29 +124,72 @@ describe('shift tracking', () => {
     expect(getShiftDurationMinutes({ startedAt: '2026-11-09T12:00:00.000Z' }, now)).toBe(3);
     expect(getShiftDurationMinutes({ startedAt: '2026-11-09T12:00:00.000Z', endedAt: '2026-11-09T12:02:59.000Z' }, now)).toBe(2);
     expect(getShiftDurationMinutes({ startedAt: 'invalid' }, now)).toBeNull();
-    expect(formatShiftDuration(125)).toBe('2 س 5 د');
+    expect(formatShiftDuration(45)).toBe('45 دقيقة');
+    expect(formatShiftDuration(60)).toBe('ساعة');
+    expect(formatShiftDuration(125)).toBe('ساعتان و5 دقائق');
+    expect(formatShiftDuration(405)).toBe('6 ساعات و45 دقيقة');
+    expect(getShiftBusinessDate('2026-11-09T21:59:00.000Z')).toBe('2026-11-09');
+    expect(getShiftBusinessDate('2026-11-09T22:00:00.000Z')).toBe('2026-11-10');
+    expect(shiftEndedToday({ endedAt: '2026-11-09T21:59:00.000Z' }, Date.parse('2026-11-09T18:00:00.000Z'))).toBe(true);
+    const shifts = [
+      { id: 'shift-a', employeeId: 'employee-a', username: 'Employee A', shiftType: 'DAY' as const, startedAt: '2026-11-09T08:00:00.000Z', endedAt: '2026-11-09T16:00:00.000Z' },
+      { id: 'shift-b', employeeId: 'employee-b', username: 'Employee B', shiftType: 'DAY' as const, startedAt: '2026-11-09T12:00:00.000Z', endedAt: '2026-11-09T20:00:00.000Z' },
+    ];
+    expect(getShiftsCoveringTimestamp(shifts, '2026-11-09T10:00:00.000Z').map((shift) => shift.id)).toEqual(['shift-a']);
+    expect(getShiftsCoveringTimestamp(shifts, '2026-11-09T14:00:00.000Z').map((shift) => shift.id)).toEqual(['shift-a', 'shift-b']);
+    expect(getShiftsCoveringTimestamp([
+      { id: 'active', employeeId: 'employee-c', username: 'Employee C', shiftType: 'NIGHT', startedAt: '2026-11-09T20:00:00.000Z' },
+    ], '2026-11-09T21:00:00.000Z').map((shift) => shift.id)).toEqual(['active']);
+    const report = getShiftReportOrders([
+      { id: 'linked', status: 'COMPLETED' as const, shiftId: 'shift-a', updatedAt: '2026-11-09T10:00:00.000Z' },
+      { id: 'legacy', status: 'COMPLETED' as const, updatedAt: '2026-11-09T10:00:00.000Z' },
+      { id: 'known-employee-legacy', status: 'COMPLETED' as const, employeeId: 'employee-a', updatedAt: '2026-11-09T14:00:00.000Z' },
+      { id: 'ambiguous', status: 'COMPLETED' as const, updatedAt: '2026-11-09T14:00:00.000Z' },
+      { id: 'other-employee', status: 'COMPLETED' as const, employeeId: 'employee-b', updatedAt: '2026-11-09T10:00:00.000Z' },
+      { id: 'open', status: 'NEW' as const, updatedAt: '2026-11-09T10:00:00.000Z' },
+    ], shifts[0], shifts);
+    expect(report.orders.map((order) => order.id)).toEqual(['linked', 'legacy', 'known-employee-legacy']);
+    expect(report.unattributedOrderCount).toBe(1);
   });
 
   it('creates separate shift records and ends the active one with a duration', async () => {
     const store = (globalThis as { matchaMockShiftStore?: { shifts: Array<{ employeeId: string }> } }).matchaMockShiftStore ??= { shifts: [] };
     store.shifts = [];
 
-    const first = await startShift({ employeeId: 'employee-a', username: 'Employee A', shiftType: 'DAY' });
-    const second = await startShift({ employeeId: 'employee-b', username: 'Employee B', shiftType: 'NIGHT' });
+    const first = await startShift(
+      { employeeId: 'employee-a', username: 'Employee A', shiftType: 'DAY' },
+      new Date('2026-11-09T08:00:00.000Z'),
+    );
+    const second = await startShift(
+      { employeeId: 'employee-b', username: 'Employee B', shiftType: 'NIGHT' },
+      new Date('2026-11-09T08:00:00.000Z'),
+    );
     const list = await listShifts();
 
     expect(first.created).toBe(true);
     expect(second.created).toBe(true);
     expect(list.length).toBe(2);
 
-    const ended = await endShift('employee-a');
+    const ended = await endShift('employee-a', new Date('2026-11-09T14:45:00.000Z'));
     expect(ended).not.toBeNull();
     expect(ended?.endedAt).toBeDefined();
     expect(typeof ended?.totalMinutes).toBe('number');
     expect((await listShifts()).some((shift) => shift.employeeId === 'employee-a' && shift.endedAt)).toBe(true);
 
-    const nextShift = await startShift({ employeeId: 'employee-a', username: 'Employee A', shiftType: 'DAY' });
+    const sameDayShift = await startShift(
+      { employeeId: 'employee-a', username: 'Employee A', shiftType: 'DAY' },
+      new Date('2026-11-09T16:00:00.000Z'),
+    );
+    expect(sameDayShift.created).toBe(false);
+    expect(sameDayShift.shift).toBeNull();
+    expect(sameDayShift.completedToday).toBe(true);
+
+    const nextShift = await startShift(
+      { employeeId: 'employee-a', username: 'Employee A', shiftType: 'DAY' },
+      new Date('2026-11-10T08:00:00.000Z'),
+    );
     expect(nextShift.created).toBe(true);
+    if (!first.shift || !nextShift.shift) throw new Error('Expected shifts to be created');
     expect(nextShift.shift.id).not.toBe(first.shift.id);
     expect((await listShifts('employee-a')).map((shift) => shift.id)).toEqual([nextShift.shift.id, first.shift.id]);
   });
@@ -233,6 +277,7 @@ describe('mock order repository', () => {
     const product = menuSeed.products[0];
     const inventory = await getInventoryData([product]);
     const productStock = inventory.items.find((item) => item.productId === product.id)!;
+    expect(productStock.trackStock).toBe(false);
     const ingredient = {
       id: 'ingredient:test-milk',
       type: 'ingredient' as const,
@@ -243,11 +288,10 @@ describe('mock order repository', () => {
       trackStock: true,
     };
     await saveInventorySettings([
-      ...inventory.items.map((item) => item.id === productStock.id
-        ? { ...item, quantity: 3, trackStock: true }
-        : item),
+      ...inventory.items,
       ingredient,
     ], [{ productId: product.id, ingredients: [{ itemId: ingredient.id, quantity: 2 }] }]);
+    await adjustInventory(productStock.id, 3, 'رصيد افتتاحي');
 
     const now = new Date().toISOString();
     const order: OrderRecord = {
@@ -273,6 +317,8 @@ describe('mock order repository', () => {
     const repository = getOrderRepository();
 
     try {
+      let saved = await getInventoryData([product]);
+      expect(saved.items.find((item) => item.id === productStock.id)).toMatchObject({ quantity: 3, trackStock: true });
       const created = await repository.createWithInventory(order, 'inventory-idempotency');
       expect(created.created).toBe(true);
       expect(created.order.inventoryConsumption).toEqual([
@@ -280,7 +326,7 @@ describe('mock order repository', () => {
         { itemId: ingredient.id, quantity: 4 },
       ]);
       expect(await repository.createWithInventory({ ...order, id: 'duplicate-inventory-order' }, 'inventory-idempotency')).toMatchObject({ created: false });
-      let saved = await getInventoryData([product]);
+      saved = await getInventoryData([product]);
       expect(saved.items.find((item) => item.id === productStock.id)?.quantity).toBe(1);
       expect(saved.items.find((item) => item.id === ingredient.id)?.quantity).toBe(6);
 
@@ -288,6 +334,10 @@ describe('mock order repository', () => {
       saved = await getInventoryData([product]);
       expect(saved.items.find((item) => item.id === productStock.id)?.quantity).toBe(3);
       expect(saved.items.find((item) => item.id === ingredient.id)?.quantity).toBe(10);
+
+      await saveInventorySettings(saved.items.map((item) => item.id === productStock.id ? { ...item, trackStock: false } : item), saved.recipes);
+      saved = await getInventoryData([product]);
+      expect(saved.items.find((item) => item.id === productStock.id)?.trackStock).toBe(true);
 
       await saveInventorySettings(saved.items.map((item) => item.id === ingredient.id ? { ...item, quantity: 3 } : item), saved.recipes);
       await expect(repository.createWithInventory({ ...order, id: 'insufficient-stock-order' }, 'insufficient-stock-key'))

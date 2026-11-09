@@ -104,6 +104,9 @@ export async function getInventoryData(products: Product[]) {
         trackStock: false,
       });
     }
+    for (const item of mockStore.items) {
+      if (item.quantity > 0 || item.lowStockThreshold > 0) item.trackStock = true;
+    }
     return {
       items: structuredClone(mockStore.items),
       recipes: structuredClone(mockStore.recipes),
@@ -113,6 +116,13 @@ export async function getInventoryData(products: Product[]) {
 
   const { connectToDatabase } = await import('./database');
   await connectToDatabase();
+  await InventoryItemModel.updateMany(
+    {
+      $or: [{ quantity: { $gt: 0 } }, { lowStockThreshold: { $gt: 0 } }],
+      trackStock: { $ne: true },
+    },
+    { $set: { trackStock: true } },
+  );
   if (products.length) {
     await InventoryItemModel.bulkWrite(products.map((product) => ({
       updateOne: {
@@ -175,6 +185,7 @@ export async function adjustInventory(itemId: string, delta: number, note?: stri
     if (!item) throw new InventoryItemNotFoundError();
     if (item.quantity + delta < 0) throw new InventoryStockError(`الكمية المتاحة من «${item.name}» لا تكفي للخصم`);
     item.quantity += delta;
+    if (delta > 0) item.trackStock = true;
     mockStore.movements.unshift({
       id: newId(),
       itemId,
@@ -196,7 +207,7 @@ export async function adjustInventory(itemId: string, delta: number, note?: stri
     await session.withTransaction(async () => {
       updated = await InventoryItemModel.findOneAndUpdate(
         { id: itemId, ...(delta < 0 ? { quantity: { $gte: -delta } } : {}) },
-        { $inc: { quantity: delta } },
+        { $inc: { quantity: delta }, ...(delta > 0 ? { $set: { trackStock: true } } : {}) },
         { new: true, session },
       ).lean() as InventoryItem | null;
       if (!updated) {

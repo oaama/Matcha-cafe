@@ -3,7 +3,8 @@ import { getOrderRepository } from '@/lib/order-repository';
 import { applyOrderStatusTransition, getOrderStatusLabel } from '@/lib/store';
 import { requireStaffRole } from '@/lib/staff-api';
 import { dashboardStatusSchema } from '@/lib/validation';
-import { getActiveShift } from '@/lib/shift-repository';
+import { getActiveShift, listShifts } from '@/lib/shift-repository';
+import { getShiftsCoveringTimestamp } from '@/lib/shift-time';
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const staff = await requireStaffRole();
@@ -32,6 +33,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     }
 
     let attribution: { shiftId: string; employeeId: string; employeeName: string } | undefined;
+    let shiftAttributionWarning: string | undefined;
+    const updatedAt = new Date().toISOString();
     if (staff.role === 'EMPLOYEE') {
       const activeShift = await getActiveShift(staff.id);
       if (!activeShift) {
@@ -40,15 +43,25 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       if (nextStatus === 'COMPLETED' && !order.shiftId) {
         attribution = { shiftId: activeShift.id, employeeId: staff.id, employeeName: staff.username };
       }
+    } else if (nextStatus === 'COMPLETED' && !order.shiftId) {
+      const coveringShifts = getShiftsCoveringTimestamp(await listShifts(), updatedAt);
+      if (coveringShifts.length === 1) {
+        const [shift] = coveringShifts;
+        attribution = { shiftId: shift.id, employeeId: shift.employeeId, employeeName: shift.username };
+      } else {
+        shiftAttributionWarning = coveringShifts.length
+          ? 'تم إكمال الطلب، لكن لم يُربط بشيفت لأن أكثر من موظف كان يعمل في الوقت نفسه.'
+          : 'تم إكمال الطلب، لكن لم يكن هناك شيفت موظف نشط لربطه بالتقرير.';
+      }
     }
 
-    const updatedOrder = await repository.updateStatus(id, currentStatus, nextStatus, new Date().toISOString(), attribution);
+    const updatedOrder = await repository.updateStatus(id, currentStatus, nextStatus, updatedAt, attribution);
 
     if (!updatedOrder) {
       return NextResponse.json({ error: 'Order status changed; reload and try again' }, { status: 409 });
     }
 
-    return NextResponse.json({ ok: true, order: updatedOrder });
+    return NextResponse.json({ ok: true, order: updatedOrder, shiftAttributionWarning });
   } catch (error) {
     console.error('Unable to update order:', error);
     return NextResponse.json({ error: 'Unable to update order' }, { status: 500 });

@@ -10,6 +10,7 @@ type ShiftReceiptData = {
   shift: ShiftRecord;
   orders: OrderRecord[];
   expenses: ExpenseRecord[];
+  unattributedOrderCount: number;
 };
 
 function formatDate(value: string) {
@@ -107,6 +108,11 @@ export default function ShiftReceipt({ shift, onClose }: { shift: ShiftRecord; o
               </div>
 
               <div className="receipt-rule my-3" />
+              {data.unattributedOrderCount > 0 ? (
+                <p className="mb-2 rounded-lg bg-amber-50 p-2 text-[10px] leading-5 text-amber-900 print:bg-transparent">
+                  يوجد {data.unattributedOrderCount} طلب مكتمل تزامن مع أكثر من شيفت، ولم يُحتسب لتجنب نسبته لموظف غير صحيح.
+                </p>
+              ) : null}
               <div className="flex justify-between gap-2 text-xs font-bold">
                 <span>الطلبات المكتملة ({data.orders.length})</span><span>{money(totals.sales)}</span>
               </div>

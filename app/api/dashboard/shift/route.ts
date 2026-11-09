@@ -17,6 +17,9 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => ({})) as { action?: string };
   if (body.action === 'start') {
     const result = await startShift({ employeeId: staff.id, username: staff.username, shiftType: staff.shiftType });
+    if (result.completedToday) {
+      return NextResponse.json({ error: 'انتهى شيفتك اليوم، تقدر تبدأ شيفت جديد بكرة.', completedToday: true }, { status: 409 });
+    }
     return NextResponse.json(result, { status: result.created ? 201 : 409 });
   }
   if (body.action === 'end') {

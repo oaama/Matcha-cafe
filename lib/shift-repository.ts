@@ -2,7 +2,7 @@ import mongoose, { Schema } from 'mongoose';
 import { getDataProvider } from './data-mode';
 import { connectToDatabase } from './database';
 import type { ShiftRecord } from './staff-types';
-import { getShiftDurationMinutes } from './shift-time';
+import { getShiftDurationMinutes, shiftEndedToday } from './shift-time';
 
 type MockShiftStore = { shifts: ShiftRecord[] };
 declare global {
@@ -22,6 +22,7 @@ const shiftSchema = new Schema<ShiftRecord>({
   totalMinutes: Number,
 }, { versionKey: false, collection: 'staff_shifts' });
 shiftSchema.index({ employeeId: 1 }, { unique: true, partialFilterExpression: { endedAt: { $exists: false } } });
+shiftSchema.index({ employeeId: 1, endedAt: -1 });
 const ShiftModel = (mongoose.models.StaffShift as mongoose.Model<ShiftRecord> | undefined)
   ?? mongoose.model<ShiftRecord>('StaffShift', shiftSchema);
 
@@ -35,10 +36,24 @@ export async function getActiveShift(employeeId: string) {
   return ShiftModel.findOne({ employeeId, endedAt: { $exists: false } }).lean() as unknown as ShiftRecord | null;
 }
 
-export async function startShift(input: Omit<ShiftRecord, 'id' | 'startedAt'>) {
+async function getLatestEndedShift(employeeId: string) {
+  if (isMock()) return mockStore.shifts
+    .filter((shift) => shift.employeeId === employeeId && shift.endedAt)
+    .sort((left, right) => Date.parse(right.endedAt!) - Date.parse(left.endedAt!))[0] ?? null;
+  await connectToDatabase();
+  return ShiftModel.findOne({ employeeId, endedAt: { $exists: true } })
+    .sort({ endedAt: -1 })
+    .lean() as unknown as ShiftRecord | null;
+}
+
+export async function startShift(input: Omit<ShiftRecord, 'id' | 'startedAt'>, now = new Date()) {
   const active = await getActiveShift(input.employeeId);
   if (active) return { shift: active, created: false };
-  const shift: ShiftRecord = { ...input, id: `shift-${crypto.randomUUID()}`, startedAt: new Date().toISOString() };
+  const latestEnded = await getLatestEndedShift(input.employeeId);
+  if (latestEnded && shiftEndedToday(latestEnded, now)) {
+    return { shift: null, created: false, completedToday: true };
+  }
+  const shift: ShiftRecord = { ...input, id: `shift-${crypto.randomUUID()}`, startedAt: now.toISOString() };
   if (isMock()) {
     mockStore.shifts.unshift(shift);
     return { shift, created: true };
@@ -56,10 +71,10 @@ export async function startShift(input: Omit<ShiftRecord, 'id' | 'startedAt'>) {
   }
 }
 
-export async function endShift(employeeId: string) {
+export async function endShift(employeeId: string, now = new Date()) {
   const shift = await getActiveShift(employeeId);
   if (!shift) return null;
-  const endedAt = new Date();
+  const endedAt = now;
   const totalMinutes = getShiftDurationMinutes({ startedAt: shift.startedAt, endedAt: endedAt.toISOString() });
   if (totalMinutes === null) throw new Error(`Invalid start time for shift ${shift.id}`);
   const update = { endedAt: endedAt.toISOString(), totalMinutes };

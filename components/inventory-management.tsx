@@ -70,8 +70,10 @@ export default function InventoryManagement() {
     .filter((item) => !search.trim() || item.name.toLowerCase().includes(search.trim().toLowerCase())), [allIngredients, search]);
   const recipeProducts = useMemo(() => products.filter((product) => !search.trim()
     || product.ar.toLowerCase().includes(search.trim().toLowerCase())), [products, search]);
-  const lowStockCount = items.filter((item) => item.trackStock && item.quantity <= item.lowStockThreshold).length;
-  const trackedCount = items.filter((item) => item.trackStock).length;
+  const isStockTracked = (item: InventoryItem) => item.trackStock || item.quantity > 0 || item.lowStockThreshold > 0;
+  const lowStockCount = items.filter((item) => isStockTracked(item) && item.quantity <= item.lowStockThreshold).length;
+  const trackedCount = items.filter(isStockTracked).length;
+  const uninitializedCount = items.filter((item) => !isStockTracked(item)).length;
 
   const saveSettings = async (nextItems = items, nextRecipes = recipes) => {
     setSaving(true);
@@ -226,10 +228,10 @@ export default function InventoryManagement() {
         <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
           <div>
             <h2 id="inventory-heading" className="text-xl font-bold text-[#232122]">إدارة المخزون</h2>
-            <p className="mt-1 text-sm text-[#705331]">تابع رصيد الأصناف والخامات، وحدد وصفة كل منتج عشان يتخصم استهلاكها مع الطلب.</p>
+            <p className="mt-1 text-sm text-[#705331]">سجّل الرصيد الافتتاحي للصنف مرة واحدة؛ بعدها يُخصم تلقائيًا مع كل طلب ويظهر عند انخفاضه.</p>
           </div>
           <span className={`rounded-full px-3 py-1.5 text-xs font-semibold ${lowStockCount ? 'bg-amber-50 text-amber-800' : 'bg-[#f4f6ef] text-[#66764e]'}`}>
-            {lowStockCount ? `${lowStockCount} محتاج مراجعة` : trackedCount ? 'الأرصدة المتابعة تمام' : 'ابدأ بتفعيل متابعة المخزون'}
+            {lowStockCount ? `${lowStockCount} محتاج مراجعة` : uninitializedCount ? `${uninitializedCount} رصيد غير مُسجل` : trackedCount ? 'الأرصدة المتابعة تمام' : 'لا توجد أصناف بالمخزون'}
           </span>
         </div>
 
@@ -269,7 +271,7 @@ export default function InventoryManagement() {
                   <InventoryCard key={item.id} item={item} onAdjust={() => setAdjustment({ itemId: item.id, quantity: '', note: '', direction: 1 })} onUpdate={updateItem} />
                 ))}
               </div>
-              <p className="mt-2 text-xs leading-5 text-[#89877c]">متابعة رصيد الصنف مقفولة افتراضيًا؛ فعّلها للصنف اللي ليه كمية محدودة. الأصناف المفعّلة بتتخصم تلقائيًا مع كل طلب.</p>
+              <p className="mt-2 text-xs leading-5 text-[#89877c]">مافيش تفعيل يدوي مطلوب: أول ما تضيف رصيد للصنف، يدخل المتابعة ويتخصم تلقائيًا مع الطلب. الأصناف اللي رصيدها صفر وغير مُسجل تفضل متاحة للبيع لحد تسجيل رصيدها.</p>
             </div>
 
             <div className="mb-6">
@@ -387,7 +389,8 @@ function InventoryCard({ item, onAdjust, onUpdate }: {
   onAdjust: () => void;
   onUpdate: (itemId: string, patch: Partial<InventoryItem>) => void;
 }) {
-  const low = item.trackStock && item.quantity <= item.lowStockThreshold;
+  const stockTracked = item.trackStock || item.quantity > 0 || item.lowStockThreshold > 0;
+  const low = stockTracked && item.quantity <= item.lowStockThreshold;
   return (
     <article className="rounded-2xl border border-[#E5E3B2] bg-white p-4">
       <div className="flex items-start justify-between gap-3">
@@ -395,8 +398,8 @@ function InventoryCard({ item, onAdjust, onUpdate }: {
           <h4 className="font-bold text-[#403d33]">{item.name}</h4>
           <p className="mt-1 text-sm text-[#705331]">{item.quantity} {item.unit}</p>
         </div>
-        <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${low ? 'bg-amber-50 text-amber-800' : item.trackStock ? 'bg-[#f4f6ef] text-[#66764e]' : 'bg-[#f4f3ef] text-[#705331]'}`}>
-          {low ? 'مخزون قليل' : item.trackStock ? 'متابَع' : 'غير متابَع'}
+        <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${low ? 'bg-amber-50 text-amber-800' : stockTracked ? 'bg-[#f4f6ef] text-[#66764e]' : 'bg-[#f4f3ef] text-[#705331]'}`}>
+          {low ? 'مخزون قليل' : stockTracked ? 'متابَع تلقائيًا' : 'الرصيد غير مُسجل'}
         </span>
       </div>
       <div className="mt-3 grid grid-cols-[1fr_1fr] gap-2">
@@ -410,10 +413,7 @@ function InventoryCard({ item, onAdjust, onUpdate }: {
         </label>
       </div>
       <div className="mt-3 flex items-center justify-between gap-3 border-t border-[#E5E3B2] pt-3">
-        <label className="flex items-center gap-2 text-xs font-semibold text-[#705331]">
-          <input type="checkbox" checked={item.trackStock} onChange={(event) => onUpdate(item.id, { trackStock: event.target.checked })} />
-          خصم تلقائي مع الطلب
-        </label>
+        <span className="text-xs font-semibold text-[#705331]">{stockTracked ? 'الخصم التلقائي مفعّل' : 'أضف الرصيد لتفعيل الخصم'}</span>
         <button type="button" onClick={onAdjust} className="shrink-0 rounded-lg bg-[#f4f6ef] px-3 py-2 text-xs font-semibold text-[#6B8136] hover:bg-[#e9efdf]">تعديل الرصيد</button>
       </div>
     </article>
