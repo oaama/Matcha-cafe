@@ -2,6 +2,7 @@ import mongoose, { Schema } from 'mongoose';
 import { getDataProvider } from './data-mode';
 import { connectToDatabase } from './database';
 import type { ShiftRecord } from './staff-types';
+import { getShiftDurationMinutes } from './shift-time';
 
 type MockShiftStore = { shifts: ShiftRecord[] };
 declare global {
@@ -59,7 +60,8 @@ export async function endShift(employeeId: string) {
   const shift = await getActiveShift(employeeId);
   if (!shift) return null;
   const endedAt = new Date();
-  const totalMinutes = Math.max(0, Math.round((endedAt.getTime() - new Date(shift.startedAt).getTime()) / 60_000));
+  const totalMinutes = getShiftDurationMinutes({ startedAt: shift.startedAt, endedAt: endedAt.toISOString() });
+  if (totalMinutes === null) throw new Error(`Invalid start time for shift ${shift.id}`);
   const update = { endedAt: endedAt.toISOString(), totalMinutes };
   if (isMock()) {
     Object.assign(shift, update);
@@ -73,8 +75,16 @@ export async function endShift(employeeId: string) {
   ).lean() as unknown as ShiftRecord | null;
 }
 
-export async function listShifts() {
-  if (isMock()) return mockStore.shifts.map((shift) => ({ ...shift }));
+export async function listShifts(employeeId?: string) {
+  if (isMock()) return mockStore.shifts
+    .filter((shift) => !employeeId || shift.employeeId === employeeId)
+    .map((shift) => ({ ...shift }));
   await connectToDatabase();
-  return ShiftModel.find().sort({ startedAt: -1 }).lean() as unknown as ShiftRecord[];
+  return ShiftModel.find(employeeId ? { employeeId } : {}).sort({ startedAt: -1 }).lean() as unknown as ShiftRecord[];
+}
+
+export async function getShiftById(id: string) {
+  if (isMock()) return mockStore.shifts.find((shift) => shift.id === id) ?? null;
+  await connectToDatabase();
+  return ShiftModel.findOne({ id }).lean() as unknown as ShiftRecord | null;
 }

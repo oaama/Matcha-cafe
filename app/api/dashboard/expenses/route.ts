@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireStaffRole } from '@/lib/staff-api';
 import { createExpense, deleteExpense, listExpenses, updateExpense } from '@/lib/expense-repository';
+import { getActiveShift } from '@/lib/shift-repository';
 
 const categories = ['ELECTRICITY', 'WATER', 'FOOD', 'SUPPLIES', 'MAINTENANCE', 'RENT', 'OTHER'] as const;
 const expenseSchema = z.object({
@@ -31,9 +32,14 @@ export async function POST(request: Request) {
   const parsed = expenseSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: 'بيانات المصروف غير صحيحة' }, { status: 400 });
   try {
+    const activeShift = staff.role === 'EMPLOYEE' ? await getActiveShift(staff.id) : null;
+    if (staff.role === 'EMPLOYEE' && !activeShift) {
+      return NextResponse.json({ error: 'ابدأ الشيفت قبل تسجيل المصروف.' }, { status: 409 });
+    }
     const expense = await createExpense({
       ...parsed.data,
-      shiftType: parsed.data.shiftType ?? staff.shiftType,
+      shiftType: staff.role === 'EMPLOYEE' ? staff.shiftType : parsed.data.shiftType ?? staff.shiftType,
+      shiftId: activeShift?.id,
       employeeId: staff.id,
       username: staff.username,
     });

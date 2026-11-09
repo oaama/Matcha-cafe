@@ -3,7 +3,9 @@ import { calculateOrderTotal, SERVICE_FEE_RATE, TAX_RATE, validateProductSelecti
 import { menuSeed } from './menu-data';
 import { createStaffSessionToken, hasStaffCredentials, isValidStaffSessionToken, verifyStaffCredentials } from './staff-auth';
 import { endShift, listShifts, startShift } from './shift-repository';
+import { formatShiftDuration, getShiftDurationMinutes } from './shift-time';
 import { clearMockOrders, getOrderRepository } from './order-repository';
+import { clearMockExpenses, createExpense, listExpenses } from './expense-repository';
 import { clearMockPricingSettings, getPricingSettings, updatePricingSettings } from './pricing-settings';
 import { clearMockCatalog, getCatalog, saveCatalog } from './catalog-repository';
 import { catalogSchema } from './validation';
@@ -116,6 +118,14 @@ describe('catalog validation', () => {
 });
 
 describe('shift tracking', () => {
+  it('calculates elapsed whole minutes from server timestamps for active and ended shifts', () => {
+    const now = Date.parse('2026-11-09T12:03:59.000Z');
+    expect(getShiftDurationMinutes({ startedAt: '2026-11-09T12:00:00.000Z' }, now)).toBe(3);
+    expect(getShiftDurationMinutes({ startedAt: '2026-11-09T12:00:00.000Z', endedAt: '2026-11-09T12:02:59.000Z' }, now)).toBe(2);
+    expect(getShiftDurationMinutes({ startedAt: 'invalid' }, now)).toBeNull();
+    expect(formatShiftDuration(125)).toBe('2 س 5 د');
+  });
+
   it('creates separate shift records and ends the active one with a duration', async () => {
     const store = (globalThis as { matchaMockShiftStore?: { shifts: Array<{ employeeId: string }> } }).matchaMockShiftStore ??= { shifts: [] };
     store.shifts = [];
@@ -133,6 +143,11 @@ describe('shift tracking', () => {
     expect(ended?.endedAt).toBeDefined();
     expect(typeof ended?.totalMinutes).toBe('number');
     expect((await listShifts()).some((shift) => shift.employeeId === 'employee-a' && shift.endedAt)).toBe(true);
+
+    const nextShift = await startShift({ employeeId: 'employee-a', username: 'Employee A', shiftType: 'DAY' });
+    expect(nextShift.created).toBe(true);
+    expect(nextShift.shift.id).not.toBe(first.shift.id);
+    expect((await listShifts('employee-a')).map((shift) => shift.id)).toEqual([nextShift.shift.id, first.shift.id]);
   });
 });
 
@@ -163,10 +178,48 @@ describe('mock order repository', () => {
       expect(await repository.create({ ...order, id: 'duplicate' }, 'test-idempotency')).toEqual({ order, created: false });
       expect((await repository.list()).map((item) => item.id)).toEqual([order.id]);
       expect(await repository.updateStatus(order.id, 'NEW', 'PREPARING', now)).toMatchObject({ status: 'PREPARING' });
-      expect(await repository.getById(order.id)).toMatchObject({ status: 'PREPARING' });
+      expect(await repository.updateStatus(order.id, 'PREPARING', 'COMPLETED', now, {
+        shiftId: 'shift-a',
+        employeeId: 'employee-a',
+        employeeName: 'Employee A',
+      })).toMatchObject({ status: 'COMPLETED', shiftId: 'shift-a', employeeId: 'employee-a' });
+      expect(await repository.getById(order.id)).toMatchObject({ status: 'COMPLETED', shiftId: 'shift-a' });
       expect(await repository.updateStatus(order.id, 'NEW', 'CANCELLED', now)).toBeNull();
     } finally {
       clearMockOrders();
+      if (previousProvider === undefined) delete process.env.DATA_PROVIDER;
+      else process.env.DATA_PROVIDER = previousProvider;
+    }
+  });
+
+  it('associates expenses with a single shift in mock mode', async () => {
+    const previousProvider = process.env.DATA_PROVIDER;
+    process.env.DATA_PROVIDER = 'mock';
+    clearMockExpenses();
+    try {
+      const shiftExpense = await createExpense({
+        amount: 25,
+        category: 'SUPPLIES',
+        description: 'مستلزمات الشيفت',
+        expenseDate: '2026-11-09',
+        shiftType: 'DAY',
+        employeeId: 'employee-a',
+        shiftId: 'shift-a',
+        username: 'Employee A',
+      });
+      await createExpense({
+        amount: 15,
+        category: 'WATER',
+        description: 'مياه الشيفت الثاني',
+        expenseDate: '2026-11-09',
+        shiftType: 'DAY',
+        employeeId: 'employee-a',
+        shiftId: 'shift-b',
+        username: 'Employee A',
+      });
+      expect(await listExpenses({ shiftId: 'shift-a' })).toEqual([shiftExpense]);
+    } finally {
+      clearMockExpenses();
       if (previousProvider === undefined) delete process.env.DATA_PROVIDER;
       else process.env.DATA_PROVIDER = previousProvider;
     }

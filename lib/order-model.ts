@@ -38,6 +38,9 @@ const orderSchema = new Schema<StoredOrder>({
   additionalAddressDetails: String,
   deliveryInstructions: String,
   paymentMethod: { type: String, enum: ['cash', 'card'] },
+  shiftId: { type: String, index: true },
+  employeeId: String,
+  employeeName: String,
   inventoryConsumption: [{
     itemId: { type: String, required: true },
     quantity: { type: Number, required: true },

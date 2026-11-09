@@ -7,6 +7,7 @@ import {
   STAFF_SESSION_DURATION_SECONDS,
 } from '@/lib/staff-auth';
 import { startShift } from '@/lib/shift-repository';
+import type { ShiftRecord } from '@/lib/staff-types';
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => ({}));
@@ -26,19 +27,20 @@ export async function POST(request: Request) {
   }
 
   if (credentialsValid) {
-    let activeShift = null;
+    let activeShift: ShiftRecord | null = null;
     if (credentialsValid.role === 'EMPLOYEE') {
       try {
-        activeShift = (await startShift({
+        ({ shift: activeShift } = await startShift({
           employeeId: credentialsValid.id,
           username: credentialsValid.username,
           shiftType: credentialsValid.shiftType,
-        })).shift;
+        }));
       } catch (error) {
         console.error('Unable to start staff shift after login:', error);
-        return NextResponse.json({ error: 'تعذر بدء الشيفت تلقائيًا. حاول تسجيل الدخول مرة أخرى.' }, { status: 503 });
+        return NextResponse.json({ error: 'تعذر بدء الشيفت بعد تسجيل الدخول.' }, { status: 503 });
       }
     }
+
     const response = NextResponse.json({ ok: true, staff: credentialsValid, activeShift });
     response.cookies.set(STAFF_SESSION_COOKIE, createStaffSessionToken(credentialsValid), {
       httpOnly: true,

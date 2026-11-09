@@ -7,7 +7,13 @@ export interface OrderRepository {
   createWithInventory(order: OrderRecord, idempotencyKey?: string): Promise<{ order: OrderRecord; created: boolean }>;
   list(): Promise<OrderRecord[]>;
   getById(id: string): Promise<OrderRecord | null>;
-  updateStatus(id: string, currentStatus: OrderStatus, nextStatus: OrderStatus, updatedAt: string): Promise<OrderRecord | null>;
+  updateStatus(
+    id: string,
+    currentStatus: OrderStatus,
+    nextStatus: OrderStatus,
+    updatedAt: string,
+    attribution?: { shiftId: string; employeeId: string; employeeName: string },
+  ): Promise<OrderRecord | null>;
 }
 
 type MockOrderStore = {
@@ -64,12 +70,13 @@ const mockRepository: OrderRepository = {
     const order = mockStore.orders.find((item) => item.id === id);
     return order ? structuredClone(order) : null;
   },
-  async updateStatus(id, currentStatus, nextStatus, updatedAt) {
+  async updateStatus(id, currentStatus, nextStatus, updatedAt, attribution) {
     const order = mockStore.orders.find((item) => item.id === id && item.status === currentStatus);
     if (!order) return null;
     if (nextStatus === 'CANCELLED' && currentStatus !== 'CANCELLED') await restoreInventoryForOrder(order);
     order.status = nextStatus;
     order.updatedAt = updatedAt;
+    if (attribution && nextStatus === 'COMPLETED' && !order.shiftId) Object.assign(order, attribution);
     return structuredClone(order);
   },
 };
@@ -160,16 +167,18 @@ const mongoRepository: OrderRepository = {
     await connectToDatabase();
     return await OrderModel.findOne({ id }).lean() as OrderRecord | null;
   },
-  async updateStatus(id, currentStatus, nextStatus, updatedAt) {
+  async updateStatus(id, currentStatus, nextStatus, updatedAt, attribution) {
     const [{ connectToDatabase }, { OrderModel }] = await Promise.all([
       import('./database'),
       import('./order-model'),
     ]);
     const connection = await connectToDatabase();
+    const set: Partial<OrderRecord> = { status: nextStatus, updatedAt };
+    if (attribution && nextStatus === 'COMPLETED') Object.assign(set, attribution);
     if (nextStatus !== 'CANCELLED') {
       return await OrderModel.findOneAndUpdate(
         { id, status: currentStatus },
-        { $set: { status: nextStatus, updatedAt } },
+        { $set: set },
         { new: true },
       ).select('-_id -__v -idempotencyKey').lean() as OrderRecord | null;
     }
@@ -181,7 +190,7 @@ const mongoRepository: OrderRepository = {
     if (!existingOrder.inventoryConsumption?.length) {
       return await OrderModel.findOneAndUpdate(
         { id, status: currentStatus },
-        { $set: { status: nextStatus, updatedAt } },
+        { $set: set },
         { new: true },
       ).select('-_id -__v -idempotencyKey').lean() as OrderRecord | null;
     }

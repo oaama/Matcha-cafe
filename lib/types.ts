@@ -71,6 +71,9 @@ export type OrderRecord = {
   additionalAddressDetails?: string;
   deliveryInstructions?: string;
   paymentMethod?: 'cash' | 'card';
+  shiftId?: string;
+  employeeId?: string;
+  employeeName?: string;
   inventoryConsumption?: InventoryConsumption[];
 };
 

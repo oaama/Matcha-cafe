@@ -449,6 +449,11 @@ button:disabled {
     width: 58mm;
   }
 
+  .receipt-shift {
+    width: 80mm;
+    text-align: right;
+  }
+
   @page {
     margin: 0;
   }

@@ -6,12 +6,14 @@ import LogoSplash from './logo-splash';
 import { DEFAULT_PRICING_SETTINGS, type PricingSettings } from '@/lib/pricing';
 import type { OrderRecord } from '@/lib/types';
 import type { ShiftRecord, StaffIdentity } from '@/lib/staff-types';
+import { formatShiftDuration, getShiftDurationMinutes } from '@/lib/shift-time';
 import MenuManagement from './menu-management';
 import InventoryManagement from './inventory-management';
 import ReceiptPrint from './receipt-print';
 import UserManagement from './user-management';
 import ExpenseManagement from './expense-management';
 import CashierOrder from './cashier-order';
+import ShiftReceipt from './shift-receipt';
 
 type OrderRow = OrderRecord;
 
@@ -45,6 +47,7 @@ export default function CashierDashboard() {
   const [busyOrderId, setBusyOrderId] = useState<string | null>(null);
   const [demoMode, setDemoMode] = useState(false);
   const [loginSubmitting, setLoginSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [orderFilter, setOrderFilter] = useState<OrderFilter>('ALL');
   const [pricingSettings, setPricingSettings] = useState<PricingSettings>({ ...DEFAULT_PRICING_SETTINGS });
   const [savedPricingSettings, setSavedPricingSettings] = useState<PricingSettings>({ ...DEFAULT_PRICING_SETTINGS });
@@ -57,6 +60,9 @@ export default function CashierDashboard() {
   const [shiftRows, setShiftRows] = useState<ShiftRecord[]>([]);
   const [shiftMessage, setShiftMessage] = useState('');
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [receiptShift, setReceiptShift] = useState<ShiftRecord | null>(null);
+  const [clockNow, setClockNow] = useState(() => Date.now());
+  const [shiftSaving, setShiftSaving] = useState(false);
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -94,10 +100,16 @@ export default function CashierDashboard() {
           setActiveShift(session.activeShift ?? null);
           setLoggedIn(true);
           void fetchOrders();
-          void fetch('/api/dashboard/shift').then((response) => response.json() as Promise<{ active?: ShiftRecord | null; shifts?: ShiftRecord[] }>).then((data) => {
-            setActiveShift(data.active ?? null);
-            if (data.shifts) setShiftRows(data.shifts);
-          });
+          void fetch('/api/dashboard/shift')
+            .then(async (response) => {
+              const data = await response.json() as { active?: ShiftRecord | null; shifts?: ShiftRecord[]; error?: string };
+              if (!response.ok) throw new Error(data.error || 'تعذر تحميل سجل الشيفتات');
+              setActiveShift(data.active ?? null);
+              setShiftRows(data.shifts ?? []);
+            })
+            .catch((shiftError: unknown) => {
+              if (active) setError(shiftError instanceof Error ? shiftError.message : 'تعذر تحميل سجل الشيفتات');
+            });
         } else {
           setLoading(false);
         }
@@ -125,11 +137,8 @@ export default function CashierDashboard() {
         if (data.error) setError(data.error);
         return;
       }
-      if (staff?.role === 'ADMIN') {
-        setShiftRows(data.shifts ?? []);
-      } else {
-        setActiveShift(data.active ?? null);
-      }
+      setShiftRows(data.shifts ?? []);
+      if (staff?.role === 'EMPLOYEE') setActiveShift(data.active ?? null);
     } catch {
       setError('تعذر تحديث سجل الشيفتات');
     }
@@ -143,6 +152,11 @@ export default function CashierDashboard() {
     }, 4000);
     return () => window.clearInterval(interval);
   }, [fetchOrders, loggedIn, refreshShiftSummary]);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => setClockNow(Date.now()), 30_000);
+    return () => window.clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     if (!loggedIn || staff?.role !== 'ADMIN') {
@@ -191,9 +205,13 @@ export default function CashierDashboard() {
       setActiveShift(data.activeShift ?? null);
       setLoggedIn(true);
       await fetchOrders();
-      await refreshShiftSummary();
-    } catch {
-      setError('تعذر الاتصال بالخادم أثناء تسجيل الدخول. تحقق من اتصال الإنترنت وحاول مرة أخرى.');
+      const shiftResponse = await fetch('/api/dashboard/shift');
+      const shiftData = await shiftResponse.json() as { active?: ShiftRecord | null; shifts?: ShiftRecord[]; error?: string };
+      if (!shiftResponse.ok) throw new Error(shiftData.error || 'تعذر تحميل الشيفتات');
+      setActiveShift(shiftData.active ?? null);
+      setShiftRows(shiftData.shifts ?? []);
+    } catch (loginError) {
+      setError(loginError instanceof Error ? loginError.message : 'تعذر الاتصال بالخادم أثناء تسجيل الدخول. تحقق من اتصال الإنترنت وحاول مرة أخرى.');
     } finally {
       setLoginSubmitting(false);
     }
@@ -249,6 +267,21 @@ export default function CashierDashboard() {
   };
 
   const logout = async () => {
+    if (staff?.role === 'EMPLOYEE' && activeShift) {
+      try {
+        const shiftResponse = await fetch('/api/dashboard/shift', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'end' }),
+        });
+        const shiftData = await shiftResponse.json() as { shift?: ShiftRecord; error?: string };
+        if (!shiftResponse.ok) throw new Error(shiftData.error || 'تعذر إنهاء الشيفت قبل تسجيل الخروج');
+        setActiveShift(null);
+      } catch (logoutError) {
+        setError(logoutError instanceof Error ? logoutError.message : 'تعذر إنهاء الشيفت قبل تسجيل الخروج');
+        return;
+      }
+    }
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
     } catch {
@@ -261,22 +294,34 @@ export default function CashierDashboard() {
   };
 
   const updateShift = async (action: 'start' | 'end') => {
+    if (shiftSaving) return;
+    setShiftSaving(true);
     setShiftMessage('');
-    const response = await fetch('/api/dashboard/shift', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action }),
-    });
-    const data = await response.json() as { shift?: ShiftRecord; error?: string };
-    if (!response.ok) {
-      setShiftMessage(data.error || 'تعذر تحديث الشيفت');
-      return;
+    try {
+      const shiftResponse = await fetch('/api/dashboard/shift', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action }),
+      });
+      const data = await shiftResponse.json() as { shift?: ShiftRecord; error?: string };
+      if (!shiftResponse.ok || !data.shift) {
+        setShiftMessage(data.error || 'تعذر تحديث الشيفت');
+        return;
+      }
+      setActiveShift(action === 'start' ? data.shift : null);
+      const summaryResponse = await fetch('/api/dashboard/shift');
+      const summary = await summaryResponse.json() as { shifts?: ShiftRecord[]; error?: string };
+      if (!summaryResponse.ok) {
+        setShiftMessage(summary.error || 'تعذر تحديث سجل الشيفتات');
+        return;
+      }
+      setShiftRows(summary.shifts ?? []);
+      setShiftMessage(action === 'start' ? 'بدأ الشيفت بتوقيت الخادم.' : `انتهى الشيفت بإجمالي ${formatShiftDuration(data.shift.totalMinutes ?? 0)}.`);
+    } catch (shiftError) {
+      setShiftMessage(shiftError instanceof Error ? shiftError.message : 'تعذر الاتصال بالخادم أثناء تحديث الشيفت');
+    } finally {
+      setShiftSaving(false);
     }
-    setActiveShift(action === 'start' ? data.shift ?? null : null);
-    if (staff?.role === 'ADMIN') {
-      await refreshShiftSummary();
-    }
-    setShiftMessage(action === 'start' ? 'بدأ الشيفت بتوقيت الخادم.' : `انتهى الشيفت بإجمالي ${data.shift?.totalMinutes ?? 0} دقيقة.`);
   };
 
   const orderCounts = {
@@ -287,6 +332,23 @@ export default function CashierDashboard() {
   };
   const visibleOrders = orderFilter === 'ALL' ? orders : orders.filter((order) => order.status === orderFilter);
   const pricingHasChanges = JSON.stringify(pricingSettings) !== JSON.stringify(savedPricingSettings);
+  const navigationItems: Array<{ section: DashboardSection; title: string; icon: string }> = staff?.role === 'ADMIN'
+    ? [
+      { section: 'orders', title: 'الطلبات', icon: '▤' },
+      { section: 'new-order', title: 'إنشاء طلب', icon: '＋' },
+      { section: 'expenses', title: 'المصروفات', icon: '◈' },
+      { section: 'menu', title: 'إدارة المنيو', icon: '☷' },
+      { section: 'inventory', title: 'المخزون والتقارير', icon: '▦' },
+      { section: 'settings', title: 'الإعدادات والرسوم', icon: '⚙' },
+      { section: 'shifts', title: 'الشيفتات', icon: '◷' },
+      { section: 'users', title: 'المستخدمون', icon: '♙' },
+    ]
+    : [
+      { section: 'orders', title: 'الطلبات', icon: '▤' },
+      { section: 'new-order', title: 'إنشاء طلب', icon: '＋' },
+      { section: 'expenses', title: 'المصروفات', icon: '◈' },
+      { section: 'shifts', title: 'شيفتاتي', icon: '◷' },
+    ];
 
   if (!loggedIn) {
     if (sessionChecking) {
@@ -294,102 +356,168 @@ export default function CashierDashboard() {
     }
 
     return (
-      <main className="relative flex min-h-[calc(100svh-3.125rem)] w-full min-w-0 items-center justify-center overflow-hidden px-4 py-6 sm:p-6">
-        <div aria-hidden="true" className="pointer-events-none absolute -right-24 -top-28 h-80 w-80 rounded-full border border-[#91A560]/15 motion-float" />
+      <main className="relative flex min-h-[calc(100svh-3.125rem)] w-full min-w-0 items-center justify-center overflow-hidden px-4 py-7 sm:px-6 sm:py-10">
+        <div aria-hidden="true" className="pointer-events-none absolute -right-24 -top-28 h-80 w-80 rounded-full border border-[#91A560]/20 motion-float" />
         <div aria-hidden="true" className="pointer-events-none absolute -bottom-32 -left-24 h-96 w-96 rounded-full bg-[#E5E3B2]/55 blur-3xl" />
-        <div className="login-cup relative isolate w-full max-w-md px-0 pb-7 sm:px-5">
-          <div aria-hidden="true" className="login-cup-handle" />
-          <div aria-hidden="true" className="login-cup-body" />
-          <div aria-hidden="true" className="login-cup-rim" />
-          <div className="relative z-10 px-5 pb-6 pt-7 sm:px-8 sm:pb-8 sm:pt-8">
-            <div className="mb-5 flex min-w-0 items-center gap-3">
-              <Image src="/matcha-logo.png" alt="Matcha Coffee and Pancakes" width={48} height={48} className="h-12 w-12 shrink-0 rounded-full object-cover" priority />
+        <div className="relative grid w-full max-w-5xl overflow-hidden rounded-[2rem] border border-white/80 bg-white shadow-[0_28px_90px_rgba(52,69,39,.14)] md:min-h-[36rem] md:grid-cols-2">
+          <section className="relative isolate flex min-h-56 flex-col justify-between overflow-hidden bg-gradient-to-br from-[#176f68] via-[#286f62] to-[#536f3c] px-6 py-7 text-white sm:px-10 sm:py-9 md:min-h-full md:px-12 md:py-12">
+            <div aria-hidden="true" className="pointer-events-none absolute -left-20 -top-24 h-64 w-64 rounded-full border border-white/10" />
+            <div aria-hidden="true" className="pointer-events-none absolute -bottom-28 -right-16 h-72 w-72 rounded-full bg-white/5 blur-2xl" />
+            <div className="relative flex items-center gap-3">
+              <Image src="/matcha-logo.png" alt="Matcha Coffee and Pancakes" width={54} height={54} className="h-12 w-12 rounded-2xl border border-white/25 object-cover shadow-lg sm:h-14 sm:w-14" priority />
               <div>
-                <p className="brand-name text-[11px] tracking-[.16em] text-[#705331]">MATCHA CAFÉ</p>
+                <p className="brand-name text-sm tracking-[.12em]">MATCHA CAFÉ</p>
+                <p className="mt-1 text-xs text-white/70">مساحة فريق العمل</p>
               </div>
             </div>
-            <h1 className="text-xl font-bold leading-relaxed text-[#232122] sm:text-2xl">دخول الكاشير</h1>
+            <div className="relative mt-8 md:mt-0">
+              <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-medium text-white/90">
+                <span aria-hidden="true" className="h-2 w-2 rounded-full bg-[#dbe9a2]" />
+                لوحة إدارة الكافيه
+              </span>
+              <h2 className="mt-4 max-w-md text-2xl font-bold leading-relaxed sm:text-3xl">كل شيفت يبدأ بخطوة بسيطة</h2>
+              <p className="mt-2 max-w-sm text-sm leading-7 text-white/75">سجّل دخولك لمتابعة الطلبات وإدارة شيفتك ومصروفاتك.</p>
+            </div>
+            <div className="relative mt-7 hidden items-center gap-2 text-xs text-white/75 sm:flex md:mt-12">
+              <span className="rounded-lg border border-white/15 bg-white/10 px-3 py-2">الطلبات</span>
+              <span aria-hidden="true" className="text-white/40">·</span>
+              <span className="rounded-lg border border-white/15 bg-white/10 px-3 py-2">الشيفتات</span>
+              <span aria-hidden="true" className="text-white/40">·</span>
+              <span className="rounded-lg border border-white/15 bg-white/10 px-3 py-2">المصروفات</span>
+            </div>
+          </section>
 
-            <form
-              className="mt-5 space-y-3"
-              onSubmit={(event) => {
-                event.preventDefault();
-                void login();
-              }}
-            >
-              <label className="block text-sm font-semibold text-[#232122]">
-                البريد الإلكتروني
-                <input
-                  type="email"
-                  autoComplete="username"
-                  required
-                  value={auth.email}
-                  onChange={(e) => setAuth({ ...auth, email: e.target.value })}
-                  placeholder="name@example.com"
-                  className="mt-2 w-full rounded-xl border-[#E5E3B2] bg-[#fbfbf8] py-2.5 placeholder:text-[#aaa99f] focus:bg-white"
-                />
-              </label>
-              <label className="block text-sm font-semibold text-[#232122]">
-                كلمة المرور
-                <input
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  value={auth.password}
-                  onChange={(e) => setAuth({ ...auth, password: e.target.value })}
-                  placeholder="أدخل كلمة المرور"
-                  className="mt-2 w-full rounded-xl border-[#E5E3B2] bg-[#fbfbf8] py-2.5 placeholder:text-[#aaa99f] focus:bg-white"
-                />
-              </label>
-              {error ? <p role="alert" className="rounded-xl border border-rose-100 bg-rose-50 px-3 py-2.5 text-sm leading-6 text-rose-700 motion-enter">{error}</p> : null}
-              <button
-                type="submit"
-                disabled={loginSubmitting}
-                className="group flex w-full items-center justify-center gap-2 rounded-xl bg-[#6B8136] px-4 py-3 font-bold text-white shadow-[0_8px_20px_rgba(67,93,50,.2)] transition duration-200 hover:-translate-y-0.5 hover:bg-[#5d702f] hover:shadow-[0_12px_24px_rgba(67,93,50,.25)] disabled:cursor-wait disabled:opacity-70"
+          <section className="flex items-center px-6 py-8 sm:px-10 sm:py-10 md:px-12">
+            <div className="mx-auto w-full max-w-md">
+              <p className="text-sm font-semibold text-[#6B8136]">مرحبًا بعودتك</p>
+              <h1 className="mt-2 text-2xl font-bold leading-relaxed text-[#232122] sm:text-3xl">تسجيل الدخول</h1>
+              <p className="mt-2 text-sm leading-6 text-[#705331]">أدخل بيانات حساب الموظف أو المدير للمتابعة.</p>
+
+              <form
+                className="mt-7 space-y-5"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void login();
+                }}
               >
-                {loginSubmitting ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" aria-hidden="true" /> : null}
-                {loginSubmitting ? 'جارٍ تسجيل الدخول…' : 'تسجيل الدخول'}
-                {!loginSubmitting ? <span aria-hidden="true" className="transition-transform group-hover:-translate-x-1">←</span> : null}
-              </button>
-            </form>
-          </div>
-          <div aria-hidden="true" className="login-cup-saucer" />
+                <label className="block text-sm font-semibold text-[#232122]">
+                  البريد الإلكتروني
+                  <input
+                    type="email"
+                    dir="ltr"
+                    autoComplete="username"
+                    required
+                    value={auth.email}
+                    onChange={(e) => setAuth({ ...auth, email: e.target.value })}
+                    placeholder="name@example.com"
+                    className="mt-2 w-full rounded-xl border-[#d9dfc7] bg-[#fbfcf8] px-4 py-3 text-left placeholder:text-[#a6a99b] focus:bg-white focus:ring-4 focus:ring-[#91A560]/10"
+                  />
+                </label>
+                <label className="block text-sm font-semibold text-[#232122]">
+                  كلمة المرور
+                  <span className="relative mt-2 block">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      dir="ltr"
+                      autoComplete="current-password"
+                      required
+                      value={auth.password}
+                      onChange={(e) => setAuth({ ...auth, password: e.target.value })}
+                      placeholder="أدخل كلمة المرور"
+                      className="w-full rounded-xl border-[#d9dfc7] bg-[#fbfcf8] py-3 pl-20 pr-4 text-left placeholder:text-[#a6a99b] focus:bg-white focus:ring-4 focus:ring-[#91A560]/10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((visible) => !visible)}
+                      aria-label={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 rounded-lg px-2 py-1 text-xs font-semibold text-[#58704a] hover:bg-[#edf2e4]"
+                    >
+                      {showPassword ? 'إخفاء' : 'إظهار'}
+                    </button>
+                  </span>
+                </label>
+                {error ? <p role="alert" className="rounded-xl border border-rose-100 bg-rose-50 px-3 py-2.5 text-sm leading-6 text-rose-700 motion-enter">{error}</p> : null}
+                <button
+                  type="submit"
+                  disabled={loginSubmitting}
+                  className="group flex w-full items-center justify-center gap-2 rounded-xl bg-[#6B8136] px-4 py-3.5 font-bold text-white shadow-[0_8px_20px_rgba(67,93,50,.2)] transition duration-200 hover:-translate-y-0.5 hover:bg-[#5d702f] hover:shadow-[0_12px_24px_rgba(67,93,50,.25)] disabled:cursor-wait disabled:opacity-70"
+                >
+                  {loginSubmitting ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" aria-hidden="true" /> : null}
+                  {loginSubmitting ? 'جارٍ تسجيل الدخول…' : 'دخول لوحة التحكم'}
+                  {!loginSubmitting ? <span aria-hidden="true" className="transition-transform group-hover:-translate-x-1">←</span> : null}
+                </button>
+                <p className="text-center text-xs leading-5 text-[#8b8b7b]">الدخول مخصص لحسابات فريق Matcha Café.</p>
+              </form>
+            </div>
+          </section>
         </div>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen w-full min-w-0 px-4 py-6 sm:px-6 lg:px-10">
-      <div className="mx-auto max-w-7xl">
-        <header className="mb-7 flex flex-wrap items-center justify-between gap-4 rounded-[1.5rem] border border-[#E5E3B2] bg-white/90 p-4 shadow-[0_8px_24px_rgba(44,43,35,.045)] backdrop-blur motion-enter sm:p-5">
-          <div className="flex items-center gap-3">
-          <Image src="/matcha-logo.png" alt="Matcha Coffee and Pancakes" width={64} height={64} className="h-14 w-14 rounded-full object-cover" priority />
-            <div>
-              <p className="brand-name text-[11px] tracking-[.14em] text-[#705331]">MATCHA CAFÉ</p>
-              <h1 className="mt-0.5 text-xl font-bold text-[#232122] sm:text-2xl">لوحة الكاشير</h1>
-            </div>
+    <div className="dashboard-shell min-h-screen w-full min-w-0 bg-[#f1f8f6]">
+      <header className="sticky top-0 z-30 flex min-h-[4.5rem] flex-wrap items-center justify-between gap-3 border-b border-[#dbe7e3] bg-[#f7fbf9]/95 px-4 py-2.5 backdrop-blur sm:px-6 lg:px-8">
+        <div className="flex items-center gap-3">
+          <Image src="/matcha-logo.png" alt="Matcha Coffee and Pancakes" width={44} height={44} className="h-10 w-10 rounded-full object-cover" priority />
+          <div>
+            <p className="brand-name text-sm tracking-[.08em] text-[#176f68]">MATCHA CAFÉ</p>
+            {staff ? <p className="text-xs text-[#647b77]">{staff.username}</p> : null}
           </div>
-          <div className="flex items-center gap-2">
-            {staff ? <span className="hidden rounded-xl bg-[#FCF5ED] px-3 py-2 text-sm font-semibold text-[#705331] sm:inline-block">{staff.username}</span> : null}
-            {staff?.role === 'EMPLOYEE' && activeShift ? <button type="button" onClick={() => void updateShift('end')} className="rounded-xl bg-[#6B8136] px-3 py-2.5 text-sm font-semibold text-white">مغادرة الشفت</button> : null}
-            <div className="flex items-center gap-2">
-              <button onClick={logout} className="rounded-xl border border-[#E5E3B2] bg-white px-4 py-2.5 text-sm font-semibold text-[#705331] transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700">
-                تسجيل الخروج
-              </button>
-            </div>
-          </div>
-        </header>
+        </div>
+        <div className="flex items-center gap-2">
+          {staff?.role === 'EMPLOYEE' ? (
+            activeShift ? (
+              <>
+                <span className="hidden rounded-xl bg-[#e5f5f1] px-3 py-2.5 text-xs font-semibold text-[#176f68] sm:inline-flex">
+                  الشيفت الحالي · {formatShiftDuration(getShiftDurationMinutes(activeShift, clockNow))}
+                </span>
+                <button type="button" disabled={shiftSaving} onClick={() => void updateShift('end')} className="rounded-xl bg-[#176f68] px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-[#115b56] disabled:opacity-60">{shiftSaving ? 'جارٍ إنهاء الشيفت…' : 'إنهاء الشيفت'}</button>
+              </>
+            ) : <button type="button" disabled={shiftSaving} onClick={() => void updateShift('start')} className="rounded-xl bg-[#176f68] px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-[#115b56] disabled:opacity-60">{shiftSaving ? 'جارٍ بدء الشيفت…' : 'بدء الشيفت'}</button>
+          ) : null}
+          <button onClick={logout} className="rounded-xl border border-[#cbd9d5] bg-white px-4 py-2.5 text-sm font-semibold text-[#315d58] transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700">
+            تسجيل الخروج
+          </button>
+        </div>
+      </header>
 
-        <button type="button" onClick={() => setDrawerOpen(true)} className="mb-6 inline-flex items-center gap-2 rounded-xl border border-[#E5E3B2] bg-white/90 px-4 py-3 text-sm font-semibold text-[#705331] shadow-[0_4px_16px_rgba(44,43,35,.06)]">
-          <span className="text-lg" aria-hidden="true">☰</span> أقسام لوحة التحكم
-        </button>
-        {drawerOpen ? <div className="fixed inset-0 z-50 bg-[#232122]/35 backdrop-blur-[1px]" onClick={() => setDrawerOpen(false)}>
-          <aside className="h-full w-72 max-w-[85vw] bg-white p-5 shadow-2xl" onClick={(event) => event.stopPropagation()}>
-            <div className="mb-6 flex items-center justify-between"><h2 className="text-lg font-bold text-[#232122]">أقسام الداشبورد</h2><button type="button" onClick={() => setDrawerOpen(false)} className="rounded-lg px-2 py-1 text-xl text-[#705331]" aria-label="إغلاق القائمة">×</button></div>
+      <div className="mx-auto flex min-h-[calc(100svh-4.5rem)] w-full max-w-[1600px] gap-4 px-2 py-3 sm:px-4 lg:gap-6 lg:px-6 lg:py-5">
+        <aside className="hidden w-[17rem] shrink-0 self-start rounded-[1.5rem] border border-[#dbe7e3] bg-white/80 p-3 shadow-[0_4px_18px_rgba(29,73,68,.04)] xl:sticky xl:top-[5.75rem] xl:block">
+          <p className="px-3 pb-2 pt-3 text-xs font-semibold text-[#80918d]">الرئيسية</p>
+          <nav aria-label="أقسام لوحة التحكم" className="space-y-2">
+            {navigationItems.map(({ section, title, icon }) => (
+              <button
+                key={section}
+                type="button"
+                aria-pressed={dashboardSection === section}
+                onClick={() => setDashboardSection(section)}
+                className={`flex w-full items-center gap-3 rounded-xl border px-3 py-3 text-start text-sm font-semibold transition ${dashboardSection === section ? 'border-[#4b9b91] bg-[#d8f3ee] text-[#176f68]' : 'border-transparent text-[#566b67] hover:border-[#dbe7e3] hover:bg-[#f4f9f7]'}`}
+              >
+                <span aria-hidden="true" className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/80 text-base">{icon}</span>
+                {title}
+              </button>
+            ))}
+          </nav>
+        </aside>
+
+        <main className="min-w-0 flex-1 rounded-[1.5rem] border border-[#dbe7e3] bg-[#f8fcfa] p-3 shadow-[0_5px_22px_rgba(29,73,68,.045)] sm:p-5 lg:p-7">
+          <section className="dashboard-hero mb-6 flex flex-wrap items-center justify-between gap-5 rounded-[1.35rem] bg-gradient-to-l from-[#56766f] to-[#18756d] px-5 py-5 text-white shadow-sm sm:px-7 sm:py-6">
+            <div>
+              <h1 className="text-2xl font-bold sm:text-3xl">لوحة الكاشير</h1>
+              {staff ? <p className="mt-1 text-sm text-white/75">{staff.username}</p> : null}
+            </div>
+            <button type="button" onClick={() => setDrawerOpen(true)} className="inline-flex items-center gap-2 rounded-xl border border-white/25 bg-white/15 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/25 xl:hidden">
+              <span className="text-lg" aria-hidden="true">☰</span> أقسام لوحة التحكم
+            </button>
+          </section>
+
+        {drawerOpen ? <div className="fixed inset-0 z-50 bg-[#183a36]/40 backdrop-blur-[1px] xl:hidden" onClick={() => setDrawerOpen(false)}>
+          <aside className="me-auto h-full w-72 max-w-[85vw] overflow-y-auto bg-white p-5 shadow-2xl" onClick={(event) => event.stopPropagation()}>
+            <div className="mb-6 flex items-center justify-between"><h2 className="text-lg font-bold text-[#232122]">أقسام الداشبورد</h2><button type="button" onClick={() => setDrawerOpen(false)} className="rounded-lg px-2 py-1 text-xl text-[#315d58]" aria-label="إغلاق القائمة">×</button></div>
             <nav aria-label="أقسام لوحة التحكم" className="space-y-2">
-              {((staff?.role === 'ADMIN' ? [['orders', 'الطلبات'], ['new-order', 'إنشاء طلب'], ['expenses', 'المصروفات'], ['menu', 'إدارة المنيو'], ['inventory', 'المخزون والتقارير'], ['settings', 'الإعدادات والرسوم'], ['shifts', 'الشيفتات'], ['users', 'المستخدمون']] : [['orders', 'الطلبات'], ['new-order', 'إنشاء طلب'], ['expenses', 'المصروفات']]) as Array<[DashboardSection, string]>).map(([section, title]) => (
-                <button key={section} type="button" aria-pressed={dashboardSection === section} onClick={() => { setDashboardSection(section); setDrawerOpen(false); }} className={`w-full rounded-xl px-4 py-3 text-start text-sm font-semibold transition ${dashboardSection === section ? 'bg-[#6B8136] text-white shadow-sm' : 'text-[#705331] hover:bg-[#FCF5ED]'}`}>{title}</button>
+              {navigationItems.map(({ section, title, icon }) => (
+                <button key={section} type="button" aria-pressed={dashboardSection === section} onClick={() => { setDashboardSection(section); setDrawerOpen(false); }} className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-start text-sm font-semibold transition ${dashboardSection === section ? 'bg-[#176f68] text-white shadow-sm' : 'text-[#315d58] hover:bg-[#edf6f3]'}`}><span aria-hidden="true">{icon}</span>{title}</button>
               ))}
             </nav>
           </aside>
@@ -405,27 +533,32 @@ export default function CashierDashboard() {
         {error ? <p role="alert" className="mb-5 rounded-xl border border-rose-100 bg-rose-50 p-3.5 text-sm text-rose-700 motion-enter">{error}</p> : null}
 
         {dashboardSection === 'orders' ? <>
-        <section aria-label="ملخص الطلبات" className="mb-7 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+        <section aria-label="ملخص الطلبات" className="mb-7 grid grid-cols-2 gap-3 xl:grid-cols-4 xl:gap-4">
           {[
             { label: 'طلبات جديدة', count: orderCounts.NEW, tone: 'bg-amber-50 text-amber-800', marker: 'bg-amber-400' },
             { label: 'قيد التجهيز', count: orderCounts.PREPARING, tone: 'bg-sky-50 text-sky-800', marker: 'bg-sky-400' },
             { label: 'جاهزة للاستلام', count: orderCounts.READY, tone: 'bg-emerald-50 text-emerald-800', marker: 'bg-emerald-500' },
             { label: 'إجمالي الطلبات', count: orders.length, tone: 'bg-[#f2f3ec] text-[#536342]', marker: 'bg-[#819661]' },
           ].map((stat, index) => (
-            <div key={stat.label} style={{ animationDelay: `${index * 70}ms` }} className="rounded-2xl border border-[#E5E3B2] bg-white p-4 shadow-[0_5px_18px_rgba(44,43,35,.035)] motion-enter motion-fill-both sm:p-5">
+            <div key={stat.label} style={{ animationDelay: `${index * 70}ms` }} className="rounded-2xl border border-[#e0eae7] bg-white p-4 shadow-[0_5px_18px_rgba(29,73,68,.055)] motion-enter motion-fill-both sm:p-5">
               <div className="flex items-center justify-between gap-2">
-                <p className="text-xs font-semibold text-[#705331] sm:text-sm">{stat.label}</p>
-                <span className={`h-2 w-2 rounded-full ${stat.marker}`} />
+                <p className="text-xs font-semibold text-[#647b77] sm:text-sm">{stat.label}</p>
+                <span aria-hidden="true" className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-[#e5f5f1] text-sm text-[#176f68]">▤<span className={`absolute -left-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-white ${stat.marker}`} /></span>
               </div>
-              <p className={`mt-3 inline-flex min-w-11 items-center justify-center rounded-xl px-3 py-1.5 text-2xl font-bold tabular-nums ${stat.tone}`}>{stat.count}</p>
+              <p className="mt-3 text-3xl font-bold tabular-nums text-[#232a28]">{stat.count}</p>
             </div>
           ))}
         </section>
 
         </> : null}
 
-        {dashboardSection === 'new-order' ? <CashierOrder onCreated={() => void fetchOrders()} /> : null}
-        {dashboardSection === 'expenses' && staff ? <ExpenseManagement staff={staff} /> : null}
+        {dashboardSection === 'new-order' && staff?.role === 'EMPLOYEE' && !activeShift ? (
+          <section className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-900">
+            ابدأ الشيفت أولًا عشان الطلبات والمبيعات تتسجل على شيفتك.
+            <button type="button" onClick={() => void updateShift('start')} disabled={shiftSaving} className="mt-3 block rounded-xl bg-[#176f68] px-4 py-2.5 font-semibold text-white disabled:opacity-60">بدء الشيفت</button>
+          </section>
+        ) : dashboardSection === 'new-order' ? <CashierOrder onCreated={() => void fetchOrders()} /> : null}
+        {dashboardSection === 'expenses' && staff ? <ExpenseManagement staff={staff} activeShift={activeShift} /> : null}
         {dashboardSection === 'menu' ? <MenuManagement /> : null}
         {dashboardSection === 'inventory' ? <InventoryManagement /> : null}
 
@@ -520,18 +653,38 @@ export default function CashierDashboard() {
           )}
         </section> : null}
 
-        {dashboardSection === 'shifts' && staff?.role === 'ADMIN' ? <section className="rounded-[1.5rem] border border-[#E5E3B2] bg-white/75 p-4 shadow-[0_10px_30px_rgba(44,43,35,.045)] sm:p-6">
-          <h2 className="text-xl font-bold text-[#232122]">سجل الشيفتات</h2>
-          <div className="mt-5 overflow-x-auto">
-            <table className="w-full min-w-[700px] text-right text-sm">
-              <thead className="border-b border-[#E5E3B2] text-xs text-[#705331]"><tr><th className="px-3 py-3">الموظف</th><th className="px-3 py-3">الوردية</th><th className="px-3 py-3">البداية</th><th className="px-3 py-3">النهاية</th><th className="px-3 py-3">المدة</th><th className="px-3 py-3">الحالة</th></tr></thead>
-              <tbody>{shiftRows.map((shift) => <tr key={shift.id} className="border-b border-[#E5E3B2]"><td className="px-3 py-3 font-semibold">{shift.username}</td><td className="px-3 py-3">{shift.shiftType === 'DAY' ? 'نهاري' : 'ليلي'}</td><td className="px-3 py-3" dir="ltr">{new Date(shift.startedAt).toLocaleString('ar-EG')}</td><td className="px-3 py-3" dir="ltr">{shift.endedAt ? new Date(shift.endedAt).toLocaleString('ar-EG') : '-'}</td><td className="px-3 py-3">{shift.totalMinutes ?? '-'} دقيقة</td><td className="px-3 py-3">{shift.endedAt ? 'مكتمل' : 'نشط'}</td></tr>)}</tbody>
-            </table>
+        {dashboardSection === 'shifts' && staff ? <section className="rounded-[1.5rem] border border-[#e0eae7] bg-white/85 p-4 shadow-[0_10px_30px_rgba(29,73,68,.05)] sm:p-6">
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-xl font-bold text-[#232a28]">{staff.role === 'ADMIN' ? 'سجل الشيفتات' : 'شيفتاتي'}</h2>
+              <p className="mt-1 text-sm text-[#647b77]">كل شيفت له ساعات ومبيعات ومصروفات وإيصال مستقل.</p>
+            </div>
+            {staff.role === 'EMPLOYEE' && !activeShift ? <button type="button" onClick={() => void updateShift('start')} disabled={shiftSaving} className="rounded-xl bg-[#176f68] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60">بدء شيفت جديد</button> : null}
           </div>
+          {shiftRows.length === 0 ? <p className="rounded-xl bg-[#f1f8f6] p-5 text-sm text-[#647b77]">لا توجد شيفتات مسجلة حتى الآن.</p> : (
+            <div className="grid gap-3 xl:grid-cols-2">
+              {shiftRows.map((shift) => (
+                <article key={shift.id} className="min-w-0 rounded-2xl border border-[#e0eae7] bg-white p-4 shadow-[0_3px_14px_rgba(29,73,68,.035)] sm:p-5">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <h3 className="truncate font-bold text-[#232a28]">{shift.username} · {shift.shiftType === 'DAY' ? 'نهاري' : 'ليلي'}</h3>
+                      <p className="mt-1 text-xs text-[#647b77]">بداية الشيفت: {new Date(shift.startedAt).toLocaleString('ar-EG')}</p>
+                      <p className="mt-1 text-xs text-[#647b77]">النهاية: {shift.endedAt ? new Date(shift.endedAt).toLocaleString('ar-EG') : 'شيفت نشط'}</p>
+                    </div>
+                    <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${shift.endedAt ? 'bg-[#f1f3ef] text-[#647b77]' : 'bg-[#d8f3ee] text-[#176f68]'}`}>{shift.endedAt ? 'مكتمل' : 'نشط'}</span>
+                  </div>
+                  <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-[#e8efec] pt-3">
+                    <p className="text-sm font-semibold text-[#315d58]">مدة الشيفت: {formatShiftDuration(getShiftDurationMinutes(shift, clockNow))}</p>
+                    <button type="button" onClick={() => setReceiptShift(shift)} className="rounded-xl border border-[#b8d7d1] bg-[#f1f8f6] px-4 py-2.5 text-sm font-semibold text-[#176f68] transition hover:bg-[#d8f3ee]">عرض وطباعة الإيصال</button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
         </section> : null}
         {dashboardSection === 'users' && staff?.role === 'ADMIN' ? <UserManagement /> : null}
 
-        {dashboardSection === 'orders' ? <section aria-labelledby="orders-heading" className="rounded-[1.5rem] border border-[#E5E3B2] bg-white/75 p-4 shadow-[0_10px_30px_rgba(44,43,35,.045)] sm:p-6">
+        {dashboardSection === 'orders' ? <section aria-labelledby="orders-heading" className="rounded-[1.5rem] border border-[#e0eae7] bg-white/85 p-4 shadow-[0_10px_30px_rgba(29,73,68,.05)] sm:p-6">
           <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
             <div>
               <h2 id="orders-heading" className="text-xl font-bold text-[#232122]">الطلبات</h2>
@@ -572,7 +725,7 @@ export default function CashierDashboard() {
             </div>
           ) : (
             <>
-              <div className="hidden overflow-x-auto rounded-xl border border-[#e9e7df] sm:block">
+              <div className="hidden overflow-x-auto rounded-xl border border-[#e9e7df] 2xl:block">
                 <table className="w-full min-w-[970px] border-collapse text-right text-sm">
                   <thead className="bg-[#f6f7f2] text-xs text-[#6c6d5c]">
                     <tr>
@@ -605,13 +758,13 @@ export default function CashierDashboard() {
                           <p className="mt-1 text-[11px] text-[#89877c]">المجموع {order.subtotal.toFixed(2)}{order.serviceFee ? ` · خدمة ${order.serviceFee.toFixed(2)}` : ''}{order.tax ? ` · ضريبة ${order.tax.toFixed(2)}` : ''}</p>
                         </td>
                         <td className="px-4 py-4"><span className={`whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-semibold ${statusStyles[order.status]}`}>{statusLabels[order.status]}</span></td>
-                        <td className="space-y-2 px-4 py-4"><OrderActions order={order} busy={busyOrderId === order.id} onStatus={(status) => void updateStatus(order.id, status)} /><button type="button" onClick={() => setReceiptOrder(order)} className="w-full rounded-lg border border-[#E5E3B2] px-3 py-2 text-xs font-semibold text-[#6B8136] hover:bg-[#FCF5ED]">طباعة الإيصال</button></td>
+                        <td className="space-y-2 px-4 py-4"><OrderActions order={order} busy={busyOrderId === order.id} shiftRequired={staff?.role === 'EMPLOYEE' && !activeShift} onStatus={(status) => void updateStatus(order.id, status)} /><button type="button" onClick={() => setReceiptOrder(order)} className="w-full rounded-lg border border-[#E5E3B2] px-3 py-2 text-xs font-semibold text-[#6B8136] hover:bg-[#FCF5ED]">طباعة الإيصال</button></td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-              <div className="space-y-3 sm:hidden">
+              <div className="space-y-3 2xl:hidden">
                 {visibleOrders.map((order) => (
                   <article key={order.id} className="rounded-2xl border border-[#e9e7df] bg-white p-4 shadow-[0_3px_14px_rgba(44,43,35,.035)]">
                     <div className="flex items-start justify-between gap-2">
@@ -632,7 +785,7 @@ export default function CashierDashboard() {
                       <span className="text-xs text-[#705331]">إجمالي الطلب</span>
                       <span className="font-bold text-[#6B8136]">{order.total.toFixed(2)} ج.م</span>
                     </div>
-                    <OrderActions order={order} busy={busyOrderId === order.id} onStatus={(status) => void updateStatus(order.id, status)} />
+                    <OrderActions order={order} busy={busyOrderId === order.id} shiftRequired={staff?.role === 'EMPLOYEE' && !activeShift} onStatus={(status) => void updateStatus(order.id, status)} />
                     <button type="button" onClick={() => setReceiptOrder(order)} className="mt-2 w-full rounded-lg border border-[#E5E3B2] px-3 py-2 text-xs font-semibold text-[#6B8136] hover:bg-[#FCF5ED]">طباعة الإيصال</button>
                   </article>
                 ))}
@@ -641,8 +794,10 @@ export default function CashierDashboard() {
             </>
           )}
         </section> : null}
+        {receiptShift ? <ShiftReceipt shift={receiptShift} onClose={() => setReceiptShift(null)} /> : null}
+        </main>
       </div>
-    </main>
+    </div>
   );
 }
 
@@ -665,9 +820,10 @@ function OrderItems({ order }: { order: OrderRow }) {
   );
 }
 
-function OrderActions({ order, busy, onStatus }: {
+function OrderActions({ order, busy, shiftRequired, onStatus }: {
   order: OrderRow;
   busy: boolean;
+  shiftRequired: boolean;
   onStatus: (status: string) => void;
 }) {
   const nextAction: Partial<Record<OrderRow['status'], { status: string; label: string; className: string }>> = {
@@ -678,8 +834,9 @@ function OrderActions({ order, busy, onStatus }: {
   const action = nextAction[order.status];
   return (
     <div className="flex flex-wrap gap-2">
-      {action ? <button disabled={busy} onClick={() => onStatus(action.status)} className={`flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition disabled:cursor-wait disabled:opacity-50 ${action.className}`}>{busy ? 'جارٍ التحديث…' : action.label}</button> : null}
-      {order.status !== 'COMPLETED' && order.status !== 'CANCELLED' ? <button disabled={busy} onClick={() => onStatus('CANCELLED')} className="rounded-lg border border-rose-100 px-3 py-2 text-xs font-semibold text-rose-700 transition hover:bg-rose-50 disabled:opacity-50">إلغاء</button> : null}
+      {action ? <button disabled={busy || shiftRequired} onClick={() => onStatus(action.status)} className={`flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${action.className}`}>{busy ? 'جارٍ التحديث…' : action.label}</button> : null}
+      {order.status !== 'COMPLETED' && order.status !== 'CANCELLED' ? <button disabled={busy || shiftRequired} onClick={() => onStatus('CANCELLED')} className="rounded-lg border border-rose-100 px-3 py-2 text-xs font-semibold text-rose-700 transition hover:bg-rose-50 disabled:opacity-50">إلغاء</button> : null}
+      {shiftRequired ? <p className="w-full text-xs text-[#8a6a22]">ابدأ الشيفت لتسجيل حركة الطلب.</p> : null}
     </div>
   );
 }

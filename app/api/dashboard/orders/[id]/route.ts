@@ -3,9 +3,11 @@ import { getOrderRepository } from '@/lib/order-repository';
 import { applyOrderStatusTransition, getOrderStatusLabel } from '@/lib/store';
 import { requireStaffRole } from '@/lib/staff-api';
 import { dashboardStatusSchema } from '@/lib/validation';
+import { getActiveShift } from '@/lib/shift-repository';
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  if (!await requireStaffRole()) {
+  const staff = await requireStaffRole();
+  if (!staff) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -29,7 +31,18 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       return NextResponse.json({ error: `Invalid status transition from ${getOrderStatusLabel(currentStatus)} to ${getOrderStatusLabel(nextStatus)}` }, { status: 400 });
     }
 
-    const updatedOrder = await repository.updateStatus(id, currentStatus, nextStatus, new Date().toISOString());
+    let attribution: { shiftId: string; employeeId: string; employeeName: string } | undefined;
+    if (staff.role === 'EMPLOYEE') {
+      const activeShift = await getActiveShift(staff.id);
+      if (!activeShift) {
+        return NextResponse.json({ error: 'ابدأ الشيفت قبل متابعة الطلبات.' }, { status: 409 });
+      }
+      if (nextStatus === 'COMPLETED' && !order.shiftId) {
+        attribution = { shiftId: activeShift.id, employeeId: staff.id, employeeName: staff.username };
+      }
+    }
+
+    const updatedOrder = await repository.updateStatus(id, currentStatus, nextStatus, new Date().toISOString(), attribution);
 
     if (!updatedOrder) {
       return NextResponse.json({ error: 'Order status changed; reload and try again' }, { status: 409 });

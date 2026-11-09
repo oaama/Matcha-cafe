@@ -30,6 +30,7 @@ export type ExpenseRecord = {
   expenseDate: string;
   shiftType: ShiftType;
   employeeId: string;
+  shiftId?: string;
   username: string;
   createdAt: string;
 };

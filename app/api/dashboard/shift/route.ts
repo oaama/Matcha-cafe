@@ -1,17 +1,19 @@
 import { NextResponse } from 'next/server';
-import { requireStaffRole } from '@/lib/staff-api';
+import { getRequestStaff, requireStaffRole } from '@/lib/staff-api';
 import { endShift, getActiveShift, listShifts, startShift } from '@/lib/shift-repository';
 
 export async function GET() {
   const staff = await requireStaffRole();
   if (!staff) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (staff.role === 'ADMIN') return NextResponse.json({ shifts: await listShifts(), active: null });
-  return NextResponse.json({ active: await getActiveShift(staff.id), shifts: [] });
+  const [active, shifts] = await Promise.all([getActiveShift(staff.id), listShifts(staff.id)]);
+  return NextResponse.json({ active, shifts });
 }
 
 export async function POST(request: Request) {
-  const staff = await requireStaffRole(['EMPLOYEE']);
+  const staff = await getRequestStaff();
   if (!staff) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (staff.role !== 'EMPLOYEE') return NextResponse.json({ error: 'غير مسموح بهذا الإجراء' }, { status: 403 });
   const body = await request.json().catch(() => ({})) as { action?: string };
   if (body.action === 'start') {
     const result = await startShift({ employeeId: staff.id, username: staff.username, shiftType: staff.shiftType });

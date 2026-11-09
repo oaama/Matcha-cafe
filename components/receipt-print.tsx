@@ -67,7 +67,7 @@ export default function ReceiptPrint({ order, onClose }: ReceiptPrintProps) {
             <div className="space-y-1 text-start text-xs">
               <p><strong>رقم الطلب:</strong> <span dir="ltr">{order.orderNumber}</span></p>
               <p><strong>التاريخ:</strong> {formatDate(order.createdAt)}</p>
-              <p><strong>الموظف:</strong> الكاشير</p>
+              <p><strong>الموظف:</strong> {order.employeeName ?? 'الكاشير'}</p>
               <p><strong>النوع:</strong> {orderTypeLabel(order)}</p>
               {order.customerName ? <p><strong>الاسم:</strong> {order.customerName}</p> : null}
               {order.customerPhone ? <p><strong>الهاتف:</strong> <span dir="ltr">{order.customerPhone}</span></p> : null}

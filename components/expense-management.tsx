@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { ExpenseCategory, ExpenseRecord, StaffIdentity, ShiftType } from '@/lib/staff-types';
+import type { ExpenseCategory, ExpenseRecord, ShiftRecord, StaffIdentity, ShiftType } from '@/lib/staff-types';
 
 const categoryLabels: Record<ExpenseCategory, string> = {
   ELECTRICITY: 'كهرباء',
@@ -13,7 +13,7 @@ const categoryLabels: Record<ExpenseCategory, string> = {
   OTHER: 'أخرى',
 };
 
-export default function ExpenseManagement({ staff }: { staff: StaffIdentity }) {
+export default function ExpenseManagement({ staff, activeShift }: { staff: StaffIdentity; activeShift: ShiftRecord | null }) {
   const today = new Date().toISOString().slice(0, 10);
   const [date, setDate] = useState(today);
   const [expenses, setExpenses] = useState<ExpenseRecord[]>([]);
@@ -70,15 +70,15 @@ export default function ExpenseManagement({ staff }: { staff: StaffIdentity }) {
   return (
     <section className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-3 rounded-[1.5rem] border border-[#E5E3B2] bg-white/75 p-5">
-        <div><h2 className="text-xl font-bold text-[#232122]">أجندة المصروفات</h2><p className="mt-1 text-sm text-[#705331]">تابع مصروفات اليوم والشفت وسجل كل حركة.</p></div>
+        <div><h2 className="text-xl font-bold text-[#232122]">أجندة المصروفات</h2><p className="mt-1 text-sm text-[#705331]">تابع مصروفات اليوم والشفت وسجل كل حركة.</p>{staff.role === 'EMPLOYEE' ? <p className="mt-1 text-xs text-[#647b77]">{activeShift ? `سيُسجل المصروف على شيفت ${activeShift.shiftType === 'DAY' ? 'النهار' : 'الليل'} الحالي.` : 'ابدأ الشيفت قبل تسجيل المصروف.'}</p> : null}</div>
         <label className="text-sm font-semibold text-[#705331]">اليوم<input type="date" value={date} onChange={(event) => setDate(event.target.value)} className="mt-1 block rounded-xl border-[#E5E3B2]" /></label>
       </div>
       <form onSubmit={create} className="grid gap-3 rounded-[1.5rem] border border-[#E5E3B2] bg-white/75 p-5 sm:grid-cols-2 lg:grid-cols-5">
         <input required min="0.01" step="0.01" type="number" placeholder="المبلغ" value={form.amount} onChange={(event) => setForm({ ...form, amount: event.target.value })} />
         <select value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value as ExpenseCategory })}>{Object.entries(categoryLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select>
         <input required placeholder="البيان / السبب" value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} />
-        <select value={form.shiftType} onChange={(event) => setForm({ ...form, shiftType: event.target.value as ShiftType })}><option value="DAY">نهاري</option><option value="NIGHT">ليلي</option></select>
-        <button type="submit" className="rounded-xl bg-[#6B8136] px-4 py-2.5 font-semibold text-white">تسجيل مصروف</button>
+        {staff.role === 'ADMIN' ? <select aria-label="الشيفت" value={form.shiftType} onChange={(event) => setForm({ ...form, shiftType: event.target.value as ShiftType })}><option value="DAY">نهاري</option><option value="NIGHT">ليلي</option></select> : null}
+        <button type="submit" disabled={staff.role === 'EMPLOYEE' && !activeShift} className="rounded-xl bg-[#6B8136] px-4 py-2.5 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50">تسجيل مصروف</button>
         {message ? <p className="text-sm text-[#6B8136] sm:col-span-2 lg:col-span-5">{message}</p> : null}
         {error ? <p role="alert" className="text-sm text-rose-700 sm:col-span-2 lg:col-span-5">{error}</p> : null}
       </form>
