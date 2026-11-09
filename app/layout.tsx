@@ -18,9 +18,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="ar" dir="rtl">
       <body className="flex min-h-screen flex-col">
         {children}
-        <footer className="mt-auto px-4 py-4 text-center text-xs text-[#705331]">
+        <footer className="mt-auto px-4 py-4 text-center text-xs leading-5 text-[#705331]">
           <span dir="ltr" className="inline-block font-semibold tracking-wide text-[#6B8136]">
-            Developed by HEXA PLUS <span aria-hidden="true">·</span> Technical Lead: Eng. Angluos Rezq
+            <span className="block sm:inline">Developed by HEXA PLUS</span>
+            <span aria-hidden="true" className="hidden sm:inline"> · </span>
+            <span className="block sm:inline">Technical Lead: Eng. Angluos Rezq</span>
           </span>
         </footer>
       </body>

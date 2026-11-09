@@ -36,6 +36,12 @@ body {
     radial-gradient(ellipse at 92% 22%, rgba(217, 180, 110, 0.14), transparent 26rem);
 }
 
+@media (max-width: 639px) {
+  body:has(.customer-ordering-page) > footer {
+    padding-bottom: max(5rem, calc(4rem + env(safe-area-inset-bottom)));
+  }
+}
+
 ::selection {
   background: rgba(145, 165, 96, 0.3);
   color: #232122;

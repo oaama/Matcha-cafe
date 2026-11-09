@@ -335,7 +335,7 @@ export default function CustomerOrdering() {
   }
 
   return (
-    <main className="mx-auto min-h-screen w-full min-w-0 max-w-7xl px-4 pb-28 pt-4 sm:px-6 sm:pt-6 lg:px-8 lg:pb-10">
+    <main className="customer-ordering-page mx-auto min-h-screen w-full min-w-0 max-w-7xl px-4 pb-28 pt-4 sm:px-6 sm:pt-6 lg:px-8 lg:pb-10">
       <header className="mb-5 flex items-center justify-between rounded-2xl border border-[#E5E3B2] bg-white/90 px-4 py-3 shadow-[0_8px_24px_rgba(44,43,35,.045)] backdrop-blur sm:mb-7 sm:px-6">
         <div className="flex items-center gap-3">
         <Image src="/matcha-logo.png" alt="Matcha Coffee and Pancakes" width={52} height={52} className="h-12 w-12 rounded-full object-cover" priority />

@@ -8,6 +8,7 @@ type MenuResponse = { categories: Category[]; products: Product[] };
 
 export default function CashierOrder({ onCreated }: { onCreated: () => void }) {
   const [products, setProducts] = useState<Product[]>([]);
+  const [search, setSearch] = useState('');
   const [items, setItems] = useState<Array<{ productId: string; quantity: number }>>([]);
   const [orderType, setOrderType] = useState<'DINE_IN' | 'TAKEAWAY' | 'DELIVERY'>('DINE_IN');
   const [tableNumber, setTableNumber] = useState('');
@@ -32,6 +33,10 @@ export default function CashierOrder({ onCreated }: { onCreated: () => void }) {
   }, []);
 
   const productsById = useMemo(() => new Map(products.map((product) => [product.id, product])), [products]);
+  const filteredProducts = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return products.filter((product) => !query || `${product.ar} ${product.en}`.toLowerCase().includes(query));
+  }, [products, search]);
   const total = items.reduce((sum, item) => sum + (productsById.get(item.productId) ? getProductPrice(productsById.get(item.productId)!) * item.quantity : 0), 0);
 
   const addItem = (productId: string) => {
@@ -96,16 +101,28 @@ export default function CashierOrder({ onCreated }: { onCreated: () => void }) {
         <h2 className="text-xl font-bold text-[#232122]">إنشاء طلب من الكاشير</h2>
         <p className="mt-1 text-sm text-[#705331]">سجّل طلب العميل مباشرة من نفس مسار الطلبات.</p>
       </div>
-      <form onSubmit={submit} className="grid gap-5 lg:grid-cols-[1.3fr_.7fr]">
-        <div className="rounded-[1.5rem] border border-[#E5E3B2] bg-white/75 p-5">
+      <form onSubmit={submit} className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,.7fr)]">
+        <div className="min-w-0 rounded-[1.5rem] border border-[#E5E3B2] bg-white/75 p-4 sm:p-5">
+          <label className="mb-3 block">
+            <span className="sr-only">ابحث عن صنف في المنيو</span>
+            <input
+              type="search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="ابحث عن صنف..."
+              aria-label="ابحث عن صنف في المنيو"
+              className="w-full"
+            />
+          </label>
           <div className="grid gap-3 sm:grid-cols-2">
-            {loading ? <p className="text-sm text-[#705331]">جارٍ تحميل المنيو…</p> : products.map((product) => {
+            {loading ? <p className="text-sm text-[#705331]">جارٍ تحميل المنيو…</p> : filteredProducts.map((product) => {
               const quantity = items.find((item) => item.productId === product.id)?.quantity ?? 0;
-              return <button key={product.id} type="button" onClick={() => addItem(product.id)} className={`flex items-center justify-between rounded-xl border px-3 py-3 text-right transition ${quantity ? 'border-[#6B8136] bg-[#f3f6ec]' : 'border-[#E5E3B2] bg-white hover:bg-[#FCF5ED]'}`}><span><strong className="block">{product.ar}</strong><span className="text-xs text-[#705331]">{getProductPrice(product).toFixed(2)} ج.م</span></span>{quantity ? <span className="rounded-full bg-[#6B8136] px-2 py-1 text-xs text-white">{quantity}</span> : <span className="text-[#6B8136]">+ إضافة</span>}</button>;
+              return <button key={product.id} type="button" onClick={() => addItem(product.id)} className={`flex min-w-0 items-center justify-between gap-2 rounded-xl border px-3 py-3 text-right transition ${quantity ? 'border-[#6B8136] bg-[#f3f6ec]' : 'border-[#E5E3B2] bg-white hover:bg-[#FCF5ED]'}`}><span className="min-w-0 break-words"><strong className="block">{product.ar}</strong><span className="text-xs text-[#705331]">{getProductPrice(product).toFixed(2)} ج.م</span></span>{quantity ? <span className="shrink-0 rounded-full bg-[#6B8136] px-2 py-1 text-xs text-white">{quantity}</span> : <span className="shrink-0 text-[#6B8136]">+ إضافة</span>}</button>;
             })}
+            {!loading && filteredProducts.length === 0 ? <p className="text-sm text-[#705331] sm:col-span-2">ملقيناش صنف بالاسم ده. جرّب كلمة تانية.</p> : null}
           </div>
         </div>
-        <div className="space-y-3 rounded-[1.5rem] border border-[#E5E3B2] bg-white/75 p-5">
+        <div className="min-w-0 space-y-3 rounded-[1.5rem] border border-[#E5E3B2] bg-white/75 p-4 sm:p-5">
           <div className="flex gap-2">{([['DINE_IN', 'داخلي'], ['TAKEAWAY', 'تيك أواي'], ['DELIVERY', 'توصيل']] as const).map(([value, label]) => <button key={value} type="button" onClick={() => setOrderType(value)} className={`flex-1 rounded-xl px-2 py-2 text-sm font-semibold ${orderType === value ? 'bg-[#6B8136] text-white' : 'bg-[#FCF5ED] text-[#705331]'}`}>{label}</button>)}</div>
           {items.map((item) => <div key={item.productId} className="flex items-center justify-between gap-2 text-sm"><span>{productsById.get(item.productId)?.ar}</span><input aria-label={`كمية ${productsById.get(item.productId)?.ar}`} type="number" min="0" value={item.quantity} onChange={(event) => changeQuantity(item.productId, Number(event.target.value))} className="w-20" /></div>)}
           {orderType === 'DINE_IN' ? <input required placeholder="رقم الطاولة" value={tableNumber} onChange={(event) => setTableNumber(event.target.value)} /> : null}
