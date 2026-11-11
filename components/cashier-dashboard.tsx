@@ -395,7 +395,7 @@ export default function CashierDashboard() {
             <div aria-hidden="true" className="pointer-events-none absolute -left-20 -top-24 h-64 w-64 rounded-full border border-white/10" />
             <div aria-hidden="true" className="pointer-events-none absolute -bottom-28 -right-16 h-72 w-72 rounded-full bg-white/5 blur-2xl" />
             <div className="relative flex items-center gap-3">
-              <Image src="/matcha-logo.png" alt="Matcha Coffee and Pancakes" width={54} height={54} className="h-12 w-12 rounded-2xl border border-white/25 object-cover shadow-lg sm:h-14 sm:w-14" priority />
+              <Image src="/matcha-logo.png" alt="Matcha Coffee and Pancakes" width={54} height={54} className="h-12 w-12 rounded-full object-contain sm:h-14 sm:w-14" priority />
               <div>
                 <p className="brand-name text-sm tracking-[.12em]">MATCHA CAFÉ</p>
                 <p className="mt-1 text-xs text-white/70">مساحة فريق العمل</p>
@@ -714,7 +714,7 @@ export default function CashierDashboard() {
                         {shift.endedAt ? (
                           <>
                             <button type="button" onClick={() => setReceiptShift(shift)} className="rounded-xl border border-[#b8d7d1] bg-[#f1f8f6] px-4 py-2.5 text-sm font-semibold text-[#176f68] transition hover:bg-[#d8f3ee]">عرض وطباعة التقرير</button>
-                            {shiftEndedToday(shift, clockNow) && !shiftRows.some((row) => row.employeeId === shift.employeeId && !row.endedAt) ? (
+                            {!shiftRows.some((row) => row.employeeId === shift.employeeId && Date.parse(row.startedAt) > Date.parse(shift.startedAt)) ? (
                               <button type="button" onClick={() => void restoreShift(shift)} disabled={restoringShiftId !== null} className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-800 transition hover:bg-amber-100 disabled:opacity-60">
                                 {restoringShiftId === shift.id ? 'جارٍ استعادة الشيفت…' : 'استعادة الشيفت'}
                               </button>
@@ -731,7 +731,7 @@ export default function CashierDashboard() {
             </div>
           )}
         </section> : null}
-        {dashboardSection === 'users' && staff?.role === 'ADMIN' ? <UserManagement /> : null}
+        {dashboardSection === 'users' && staff?.role === 'ADMIN' ? <UserManagement currentStaffId={staff.id} /> : null}
         {dashboardSection === 'customers' ? <CustomerManagement /> : null}
 
         {dashboardSection === 'orders' ? <section aria-labelledby="orders-heading" className="rounded-[1.5rem] border border-[#e0eae7] bg-white/85 p-4 shadow-[0_10px_30px_rgba(29,73,68,.05)] sm:p-6">

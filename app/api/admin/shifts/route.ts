@@ -19,8 +19,8 @@ export async function PATCH(request: Request) {
     const status = result.reason === 'not-found' ? 404 : 409;
     const error = result.reason === 'not-found'
       ? 'الشيفت غير موجود.'
-      : result.reason === 'not-ended-today'
-        ? 'لا يمكن استعادة شيفت من يوم سابق.'
+      : result.reason === 'not-latest'
+        ? 'لا يمكن استعادة الشيفت لوجود شيفت أحدث للموظف.'
         : result.reason === 'employee-has-active-shift'
           ? 'لدى الموظف شيفت نشط بالفعل.'
           : 'الشيفت نشط بالفعل.';

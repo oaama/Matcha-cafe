@@ -92,8 +92,8 @@ The menu's initial catalog is defined in `lib/menu-data.ts`. Order, shift, inven
 ## Staff and operations
 
 - An employee's assigned day or night shift starts automatically after successful login. Refreshing the dashboard restores the current shift.
-- Ending a shift or logging out closes that employee's shift for the Cairo business day; another shift can begin the following day.
-- If an employee's shift was ended or logged out by mistake, an Admin can reactivate that same shift from today's shift record, provided the employee has no other active shift. The shift keeps its original ID and day/night assignment; its report adds the work periods while excluding the time between closing and reactivation.
+- Ending a shift closes it for the Cairo business day; another shift can begin the following day. Logging out only ends the login session and leaves an active shift open.
+- If an employee's shift was ended by mistake, an Admin can reactivate the employee's latest ended shift from the shift record, provided the employee has no active shift. Older shifts cannot be reactivated after a newer shift has started. The shift keeps its original ID and day/night assignment; its report adds the work periods while excluding the time between closing and reactivation.
 - Completed orders are attributed to the employee and shift that completes them. Admin-completed orders are assigned only when exactly one employee shift matches the completion time.
 - Admins can view and print a separate report for each completed shift; employees can print reports for their own shifts only. Ambiguous legacy orders are not misattributed and are flagged; historical expenses without a shift ID are not retroactively assigned.
 - A customer phone number is required with every new order. The customer directory groups order history by normalized phone number and lets signed-in staff track follow-up status, notes, and the last contact time. Existing orders with phone numbers are included.

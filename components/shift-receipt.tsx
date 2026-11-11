@@ -67,9 +67,12 @@ export default function ShiftReceipt({ shift, onClose }: { shift: ShiftRecord; o
     };
   }, [data]);
 
-  const printReceipt = () => {
+  const printReceipt = async () => {
     setPrintError('');
     try {
+      await document.fonts.load('400 12px "Readex Pro"', 'إيصال الشيفت والمبيعات');
+      await document.fonts.load('700 12px "Readex Pro"', 'إجمالي المبيعات');
+      await document.fonts.ready;
       window.print();
     } catch {
       setPrintError('تعذر فتح نافذة الطباعة. تحقق من إعدادات المتصفح والطابعة.');

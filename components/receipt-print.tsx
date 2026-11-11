@@ -26,9 +26,12 @@ export default function ReceiptPrint({ order, onClose }: ReceiptPrintProps) {
   const [paperWidth, setPaperWidth] = useState<'58mm' | '80mm'>('80mm');
   const [printError, setPrintError] = useState('');
 
-  const printReceipt = () => {
+  const printReceipt = async () => {
     setPrintError('');
     try {
+      await document.fonts.load('400 12px "Readex Pro"', 'إيصال الطلب والعميل');
+      await document.fonts.load('700 12px "Readex Pro"', 'إجمالي المبيعات');
+      await document.fonts.ready;
       window.print();
     } catch {
       setPrintError('تعذر فتح نافذة الطباعة. تحقق من إعدادات المتصفح والطابعة.');

@@ -448,7 +448,17 @@ button:disabled {
     width: 80mm;
     margin: 0 auto;
     padding: 3mm;
-    font-family: Arial, sans-serif;
+    color: #000;
+    font-family: 'Readex Pro', sans-serif;
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.65;
+    text-rendering: auto;
+  }
+
+  .receipt [class~="text-[10px]"] {
+    font-size: 11px !important;
+    line-height: 1.55;
   }
 
   .receipt-58 {

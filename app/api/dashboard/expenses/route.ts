@@ -56,13 +56,24 @@ export async function PATCH(request: Request) {
   if (!body?.id) return NextResponse.json({ error: 'معرف المصروف مطلوب' }, { status: 400 });
   const parsed = expenseSchema.partial().safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: 'بيانات المصروف غير صحيحة' }, { status: 400 });
-  const expense = await updateExpense(body.id, parsed.data);
-  return expense ? NextResponse.json({ expense }) : NextResponse.json({ error: 'المصروف غير موجود' }, { status: 404 });
+  try {
+    const expense = await updateExpense(body.id, parsed.data);
+    return expense ? NextResponse.json({ expense }) : NextResponse.json({ error: 'المصروف غير موجود' }, { status: 404 });
+  } catch (error) {
+    console.error('Unable to update expense:', error);
+    return NextResponse.json({ error: 'تعذر تحديث المصروف' }, { status: 500 });
+  }
 }
 
 export async function DELETE(request: Request) {
   if (!await requireStaffRole(['ADMIN'])) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   const id = new URL(request.url).searchParams.get('id');
-  if (!id || !await deleteExpense(id)) return NextResponse.json({ error: 'المصروف غير موجود' }, { status: 404 });
-  return NextResponse.json({ ok: true });
+  if (!id) return NextResponse.json({ error: 'معرف المصروف مطلوب' }, { status: 400 });
+  try {
+    if (!await deleteExpense(id)) return NextResponse.json({ error: 'المصروف غير موجود' }, { status: 404 });
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error('Unable to delete expense:', error);
+    return NextResponse.json({ error: 'تعذر حذف المصروف' }, { status: 500 });
+  }
 }

@@ -41,20 +41,20 @@ export async function getActiveShift(employeeId: string) {
   return ShiftModel.findOne({ employeeId, endedAt: { $exists: false } }).lean() as unknown as ShiftRecord | null;
 }
 
-async function getLatestEndedShift(employeeId: string) {
+async function getLatestShift(employeeId: string) {
   if (isMock()) return mockStore.shifts
-    .filter((shift) => shift.employeeId === employeeId && shift.endedAt)
-    .sort((left, right) => Date.parse(right.endedAt!) - Date.parse(left.endedAt!))[0] ?? null;
+    .filter((shift) => shift.employeeId === employeeId)
+    .sort((left, right) => Date.parse(right.startedAt) - Date.parse(left.startedAt))[0] ?? null;
   await connectToDatabase();
-  return ShiftModel.findOne({ employeeId, endedAt: { $exists: true } })
-    .sort({ endedAt: -1 })
+  return ShiftModel.findOne({ employeeId })
+    .sort({ startedAt: -1 })
     .lean() as unknown as ShiftRecord | null;
 }
 
 export async function startShift(input: Omit<ShiftRecord, 'id' | 'startedAt'>, now = new Date()) {
   const active = await getActiveShift(input.employeeId);
   if (active) return { shift: active, created: false };
-  const latestEnded = await getLatestEndedShift(input.employeeId);
+  const latestEnded = await getLatestShift(input.employeeId);
   if (latestEnded && shiftEndedToday(latestEnded, now)) {
     return { shift: null, created: false, completedToday: true };
   }
@@ -111,8 +111,9 @@ export async function reactivateShift(id: string, now = new Date()) {
   const shift = await getShiftById(id);
   if (!shift) return { shift: null, reason: 'not-found' as const };
   if (!shift.endedAt) return { shift: null, reason: 'already-active' as const };
-  if (!shiftEndedToday(shift, now)) return { shift: null, reason: 'not-ended-today' as const };
   if (await getActiveShift(shift.employeeId)) return { shift: null, reason: 'employee-has-active-shift' as const };
+  const latestShift = await getLatestShift(shift.employeeId);
+  if (latestShift?.id !== shift.id) return { shift: null, reason: 'not-latest' as const };
 
   const periods: ShiftPeriod[] = shift.periods?.length
     ? shift.periods.map((period) => ({ ...period }))

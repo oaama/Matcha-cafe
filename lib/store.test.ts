@@ -6,11 +6,12 @@ import { endShift, getActiveShift, listShifts, reactivateShift, startShift } fro
 import { formatShiftDuration, getShiftDurationMinutes, getShiftBusinessDate, getShiftsCoveringTimestamp, shiftEndedToday } from './shift-time';
 import { getShiftReportOrders } from './shift-attribution';
 import { clearMockOrders, getOrderRepository } from './order-repository';
-import { clearMockExpenses, createExpense, listExpenses } from './expense-repository';
+import { clearMockExpenses, createExpense, deleteExpense, listExpenses, updateExpense } from './expense-repository';
 import { clearMockPricingSettings, getPricingSettings, updatePricingSettings } from './pricing-settings';
 import { clearMockCatalog, getCatalog, saveCatalog } from './catalog-repository';
 import { catalogSchema, createOrderSchema } from './validation';
 import { adjustInventory, clearMockInventory, getInventoryData, saveInventorySettings } from './inventory-repository';
+import { deleteStaffAccount, listStaffAccounts, createStaffAccount, updateStaffAccount } from './staff-user-repository';
 import { createStaffPasswordHash, verifyStaffPassword } from './staff-account-repository';
 import { isAuthorizedCronRequest } from './cron-auth';
 import { buildCustomerDirectory, clearMockCustomerFollowUps, normalizeCustomerPhone, updateCustomerFollowUp } from './customer-repository';
@@ -307,8 +308,34 @@ describe('shift tracking', () => {
     const conflict = await reactivateShift(started.shift.id, new Date('2026-11-10T08:00:00.000Z'));
     expect(conflict).toMatchObject({ shift: null, reason: 'already-active' });
     expect(await endShift('employee-restore', new Date('2026-11-09T17:00:00.000Z'))).toMatchObject({ totalMinutes: 525 });
-    expect(await reactivateShift(started.shift.id, new Date('2026-11-10T08:00:00.000Z')))
-      .toMatchObject({ shift: null, reason: 'not-ended-today' });
+    const restoredNextDay = await reactivateShift(started.shift.id, new Date('2026-11-10T08:00:00.000Z'));
+    expect(restoredNextDay.shift).toMatchObject({ id: started.shift.id, shiftType: 'NIGHT' });
+    expect(restoredNextDay.shift?.periods).toHaveLength(3);
+    expect(getShiftDurationMinutes(restoredNextDay.shift!, Date.parse('2026-11-10T09:00:00.000Z'))).toBe(585);
+  });
+
+  it('only lets admins reactivate the employee latest ended shift', async () => {
+    const store = (globalThis as { matchaMockShiftStore?: { shifts: Array<{ employeeId: string }> } }).matchaMockShiftStore ??= { shifts: [] };
+    store.shifts = [];
+
+    const first = await startShift(
+      { employeeId: 'employee-latest', username: 'Employee Latest', shiftType: 'DAY' },
+      new Date('2026-11-09T08:00:00.000Z'),
+    );
+    if (!first.shift) throw new Error('Expected initial shift to start');
+    await endShift('employee-latest', new Date('2026-11-09T10:00:00.000Z'));
+
+    const next = await startShift(
+      { employeeId: 'employee-latest', username: 'Employee Latest', shiftType: 'NIGHT' },
+      new Date('2026-11-10T08:00:00.000Z'),
+    );
+    if (!next.shift) throw new Error('Expected next shift to start');
+    await endShift('employee-latest', new Date('2026-11-10T10:00:00.000Z'));
+
+    expect(await reactivateShift(first.shift.id, new Date('2026-11-10T11:00:00.000Z')))
+      .toMatchObject({ shift: null, reason: 'not-latest' });
+    expect((await reactivateShift(next.shift.id, new Date('2026-11-10T11:00:00.000Z'))).shift)
+      .toMatchObject({ id: next.shift.id });
   });
 });
 
@@ -379,6 +406,13 @@ describe('mock order repository', () => {
         username: 'Employee A',
       });
       expect(await listExpenses({ shiftId: 'shift-a' })).toEqual([shiftExpense]);
+      expect(await updateExpense(shiftExpense.id, { amount: 30, description: 'مستلزمات معدلة' })).toMatchObject({
+        amount: 30,
+        description: 'مستلزمات معدلة',
+      });
+      expect(await deleteExpense(shiftExpense.id)).toBe(true);
+      expect(await listExpenses({ shiftId: 'shift-a' })).toEqual([]);
+      expect(await deleteExpense(shiftExpense.id)).toBe(false);
     } finally {
       clearMockExpenses();
       if (previousProvider === undefined) delete process.env.DATA_PROVIDER;
@@ -548,6 +582,38 @@ describe('catalog management', () => {
 });
 
 describe('staff sessions', () => {
+  it('creates, edits, lists, and deletes mock staff accounts', async () => {
+    const previousProvider = process.env.DATA_PROVIDER;
+    process.env.DATA_PROVIDER = 'mock';
+    const username = `test-${crypto.randomUUID()}`;
+    const email = `${username}@local.test`;
+
+    try {
+      const created = await createStaffAccount({
+        username,
+        email,
+        password: 'Test-password-123',
+        role: 'EMPLOYEE',
+        shiftType: 'DAY',
+      });
+      expect(await listStaffAccounts()).toContainEqual(created);
+
+      const updated = await updateStaffAccount(created.id, {
+        username: `${username}-edited`,
+        role: 'ADMIN',
+        shiftType: 'NIGHT',
+        password: 'Test-password-456',
+      });
+      expect(updated).toMatchObject({ username: `${username}-edited`, role: 'ADMIN', shiftType: 'NIGHT' });
+      expect(await deleteStaffAccount(created.id)).toBe(true);
+      expect(await listStaffAccounts()).not.toContainEqual(updated);
+      expect(await deleteStaffAccount(created.id)).toBe(false);
+    } finally {
+      if (previousProvider === undefined) delete process.env.DATA_PROVIDER;
+      else process.env.DATA_PROVIDER = previousProvider;
+    }
+  }, 20000);
+
   it('stores staff passwords as salted hashes and verifies them', async () => {
     const credentials = await createStaffPasswordHash('a-strong-password-123');
     expect(credentials.hash).not.toBe('a-strong-password-123');
