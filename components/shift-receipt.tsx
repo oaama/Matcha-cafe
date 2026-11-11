@@ -70,8 +70,8 @@ export default function ShiftReceipt({ shift, onClose }: { shift: ShiftRecord; o
   const printReceipt = async () => {
     setPrintError('');
     try {
-      await document.fonts.load('400 12px "Readex Pro"', 'إيصال الشيفت والمبيعات');
-      await document.fonts.load('700 12px "Readex Pro"', 'إجمالي المبيعات');
+      await document.fonts.load('400 12px "Cairo"', 'إيصال الشيفت والمبيعات');
+      await document.fonts.load('700 12px "Cairo"', 'إجمالي المبيعات');
       await document.fonts.ready;
       window.print();
     } catch {

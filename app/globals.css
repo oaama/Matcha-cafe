@@ -3,6 +3,14 @@
 @import '@fontsource/readex-pro/700.css';
 @import '@fontsource/alexandria/700.css';
 
+@font-face {
+  font-family: 'Cairo';
+  src: url('/Cairo-Regular.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -407,6 +415,11 @@ button:disabled {
   border-top: 1px dashed #705331;
 }
 
+.receipt {
+  font-family: 'Cairo', sans-serif;
+  font-synthesis: weight;
+}
+
 @media print {
   body * {
     visibility: hidden !important;
@@ -449,7 +462,7 @@ button:disabled {
     margin: 0 auto;
     padding: 3mm;
     color: #000;
-    font-family: 'Readex Pro', sans-serif;
+    font-family: 'Cairo', sans-serif;
     font-size: 12px;
     font-weight: 400;
     line-height: 1.65;

@@ -29,8 +29,8 @@ export default function ReceiptPrint({ order, onClose }: ReceiptPrintProps) {
   const printReceipt = async () => {
     setPrintError('');
     try {
-      await document.fonts.load('400 12px "Readex Pro"', 'إيصال الطلب والعميل');
-      await document.fonts.load('700 12px "Readex Pro"', 'إجمالي المبيعات');
+      await document.fonts.load('400 12px "Cairo"', 'إيصال الطلب والعميل');
+      await document.fonts.load('700 12px "Cairo"', 'إجمالي المبيعات');
       await document.fonts.ready;
       window.print();
     } catch {
