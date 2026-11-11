@@ -1,6 +1,9 @@
 import mongoose, { Schema } from 'mongoose';
 import type { CustomerFollowUpStatus, CustomerRecord, OrderRecord } from './types';
 import { getDataProvider } from './data-mode';
+import { normalizeCustomerPhone } from './customer-phone';
+
+export { normalizeCustomerPhone } from './customer-phone';
 
 type CustomerFollowUp = {
   phoneKey: string;
@@ -34,13 +37,6 @@ const CustomerFollowUpModel = (mongoose.models.CustomerFollowUp as mongoose.Mode
 
 function isMock() {
   return getDataProvider() === 'mock';
-}
-
-export function normalizeCustomerPhone(phone: string) {
-  let digits = phone.replace(/\D/g, '');
-  if (digits.startsWith('0020')) digits = digits.slice(2);
-  if (digits.startsWith('0') && digits.length === 11) digits = `20${digits.slice(1)}`;
-  return digits.length >= 8 && digits.length <= 15 ? digits : null;
 }
 
 export function buildCustomerDirectory(orders: OrderRecord[], followUps: CustomerFollowUp[] = []): CustomerRecord[] {

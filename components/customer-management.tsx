@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import type { CustomerFollowUpStatus, CustomerRecord } from '@/lib/types';
-import { normalizeCustomerPhone } from '@/lib/customer-repository';
+import { normalizeCustomerPhone } from '@/lib/customer-phone';
 
 type CustomerDraft = { status: CustomerFollowUpStatus; note: string };
 type CustomerResponse = { customers?: CustomerRecord[]; error?: string };
