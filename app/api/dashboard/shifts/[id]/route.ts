@@ -8,12 +8,14 @@ import { getShiftReportOrders } from '@/lib/shift-attribution';
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const staff = await getRequestStaff();
   if (!staff) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (staff.role !== 'ADMIN') return NextResponse.json({ error: 'غير مسموح بعرض تقارير الشيفتات' }, { status: 403 });
 
   try {
     const { id } = await params;
     const shift = await getShiftById(id);
     if (!shift) return NextResponse.json({ error: 'الشيفت غير موجود' }, { status: 404 });
+    if (staff.role !== 'ADMIN' && shift.employeeId !== staff.id) {
+      return NextResponse.json({ error: 'يمكنك عرض تقرير شيفتاتك فقط' }, { status: 403 });
+    }
     if (!shift.endedAt) return NextResponse.json({ error: 'يتاح تقرير الشيفت بعد انتهائه' }, { status: 409 });
 
     const [orders, expenses, shifts] = await Promise.all([

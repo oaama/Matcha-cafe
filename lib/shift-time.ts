@@ -23,19 +23,34 @@ export function getShiftsCoveringTimestamp(shifts: ShiftRecord[], timestamp: str
   const time = Date.parse(timestamp);
   if (!Number.isFinite(time)) return [];
   return shifts.filter((shift) => {
-    const startedAt = Date.parse(shift.startedAt);
-    const endedAt = shift.endedAt ? Date.parse(shift.endedAt) : null;
-    return Number.isFinite(startedAt)
-      && startedAt <= time
-      && (endedAt === null || (Number.isFinite(endedAt) && time <= endedAt));
+    const periods = shift.periods?.length
+      ? shift.periods
+      : [{ startedAt: shift.startedAt, endedAt: shift.endedAt }];
+    return periods.some((period) => {
+      const startedAt = Date.parse(period.startedAt);
+      const endedAt = period.endedAt ? Date.parse(period.endedAt) : null;
+      return Number.isFinite(startedAt)
+        && startedAt <= time
+        && (endedAt === null || (Number.isFinite(endedAt) && time <= endedAt));
+    });
   });
 }
 
-export function getShiftDurationMinutes(shift: Pick<ShiftRecord, 'startedAt' | 'endedAt'>, now = Date.now()) {
-  const startedAt = Date.parse(shift.startedAt);
-  const endedAt = shift.endedAt ? Date.parse(shift.endedAt) : now;
-  if (!Number.isFinite(startedAt) || !Number.isFinite(endedAt)) return null;
-  return Math.max(0, Math.floor((endedAt - startedAt) / 60_000));
+export function getShiftDurationMinutes(
+  shift: Pick<ShiftRecord, 'startedAt' | 'endedAt'> & Partial<Pick<ShiftRecord, 'periods'>>,
+  now = Date.now(),
+) {
+  const periods = shift.periods?.length
+    ? shift.periods
+    : [{ startedAt: shift.startedAt, endedAt: shift.endedAt }];
+  let totalMinutes = 0;
+  for (const period of periods) {
+    const startedAt = Date.parse(period.startedAt);
+    const endedAt = period.endedAt ? Date.parse(period.endedAt) : now;
+    if (!Number.isFinite(startedAt) || !Number.isFinite(endedAt)) return null;
+    totalMinutes += Math.max(0, Math.floor((endedAt - startedAt) / 60_000));
+  }
+  return totalMinutes;
 }
 
 export function formatShiftDuration(totalMinutes: number | null) {

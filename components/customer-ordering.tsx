@@ -237,8 +237,12 @@ export default function CustomerOrdering() {
       setOrderStatus({ message: 'من فضلك أدخل رقم الطاولة', type: 'error' });
       return;
     }
-    if (orderType === 'DELIVERY' && (!customerName.trim() || !customerPhone.trim() || !customerAddress.trim())) {
-      setOrderStatus({ message: 'من فضلك أدخل الاسم ورقم الهاتف وعنوان التوصيل', type: 'error' });
+    if (!customerPhone.trim()) {
+      setOrderStatus({ message: 'من فضلك أدخل رقم الهاتف عشان نقدر نسجل طلبك ونتابع خدمتك.', type: 'error' });
+      return;
+    }
+    if (orderType === 'DELIVERY' && (!customerName.trim() || !customerAddress.trim())) {
+      setOrderStatus({ message: 'من فضلك أدخل الاسم وعنوان التوصيل', type: 'error' });
       return;
     }
 
@@ -627,7 +631,7 @@ export default function CustomerOrdering() {
             )}
             <div className="grid grid-cols-2 gap-2">
               <input required={orderType === 'DELIVERY'} value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder={orderType === 'DELIVERY' ? 'الاسم *' : 'الاسم'} aria-label="الاسم" />
-              <input required={orderType === 'DELIVERY'} value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} placeholder={orderType === 'DELIVERY' ? 'رقم الهاتف *' : 'رقم الهاتف'} aria-label="رقم الهاتف" inputMode="tel" />
+              <input required type="tel" autoComplete="tel" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} placeholder="رقم الهاتف *" aria-label="رقم الهاتف" inputMode="tel" />
             </div>
             <button type="button" onClick={submitOrder} disabled={submitting || cart.length === 0} className="w-full rounded-xl bg-[#6B8136] px-4 py-3.5 font-semibold text-white shadow-[0_8px_20px_rgba(67,93,50,.18)] transition hover:bg-[#5d702f] disabled:cursor-not-allowed disabled:opacity-45">
               {submitting ? 'جارٍ إرسال الطلب…' : 'تأكيد الطلب'}

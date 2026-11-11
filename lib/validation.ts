@@ -16,7 +16,10 @@ export const createOrderSchema = z.object({
   orderType: z.enum(['DINE_IN', 'TAKEAWAY', 'DELIVERY']),
   tableNumber: z.string().trim().optional(),
   customerName: z.string().trim().min(1).max(120).optional(),
-  customerPhone: z.string().trim().min(4).max(30).optional(),
+  customerPhone: z.string().trim().min(8).max(25).regex(/^[+\d\s().-]+$/).refine(
+    (phone) => phone.replace(/\D/g, '').length >= 8 && phone.replace(/\D/g, '').length <= 15,
+    'Customer phone must contain between 8 and 15 digits.',
+  ),
   customerAddress: z.string().trim().max(250).optional(),
   additionalAddressDetails: z.string().trim().max(250).optional(),
   deliveryInstructions: z.string().trim().max(500).optional(),
@@ -40,6 +43,16 @@ export const createOrderSchema = z.object({
     }
   }
 });
+
+export const customerFollowUpSchema = z.object({
+  phoneKey: z.string().regex(/^\d{8,15}$/),
+  status: z.enum(['NEW', 'CONTACTED', 'FOLLOW_UP', 'NO_FOLLOW_UP']).optional(),
+  note: z.string().trim().max(1000).optional(),
+  markContacted: z.boolean().optional(),
+}).refine(
+  (update) => update.status !== undefined || update.note !== undefined || update.markContacted === true,
+  'At least one customer follow-up field must be updated.',
+);
 
 export const dashboardStatusSchema = z.object({
   status: z.enum(['NEW', 'PREPARING', 'READY', 'COMPLETED', 'CANCELLED']),

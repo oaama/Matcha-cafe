@@ -2,17 +2,18 @@ import { describe, expect, it, vi } from 'vitest';
 import { calculateOrderTotal, SERVICE_FEE_RATE, TAX_RATE, validateProductSelections } from './store';
 import { menuSeed } from './menu-data';
 import { createStaffSessionToken, hasStaffCredentials, isValidStaffSessionToken, verifyStaffCredentials } from './staff-auth';
-import { endShift, listShifts, startShift } from './shift-repository';
+import { endShift, getActiveShift, listShifts, reactivateShift, startShift } from './shift-repository';
 import { formatShiftDuration, getShiftDurationMinutes, getShiftBusinessDate, getShiftsCoveringTimestamp, shiftEndedToday } from './shift-time';
 import { getShiftReportOrders } from './shift-attribution';
 import { clearMockOrders, getOrderRepository } from './order-repository';
 import { clearMockExpenses, createExpense, listExpenses } from './expense-repository';
 import { clearMockPricingSettings, getPricingSettings, updatePricingSettings } from './pricing-settings';
 import { clearMockCatalog, getCatalog, saveCatalog } from './catalog-repository';
-import { catalogSchema } from './validation';
+import { catalogSchema, createOrderSchema } from './validation';
 import { adjustInventory, clearMockInventory, getInventoryData, saveInventorySettings } from './inventory-repository';
 import { createStaffPasswordHash, verifyStaffPassword } from './staff-account-repository';
 import { isAuthorizedCronRequest } from './cron-auth';
+import { buildCustomerDirectory, clearMockCustomerFollowUps, normalizeCustomerPhone, updateCustomerFollowUp } from './customer-repository';
 import type { OrderRecord } from './types';
 
 describe('catalog validation', () => {
@@ -118,6 +119,85 @@ describe('catalog validation', () => {
   });
 });
 
+describe('customer follow-up', () => {
+  it('requires a valid customer phone number for every order type', () => {
+    const order = {
+      orderType: 'TAKEAWAY' as const,
+      items: [{ productId: 'matcha-2', quantity: 1, customizations: [] }],
+    };
+    expect(createOrderSchema.safeParse(order).success).toBe(false);
+    expect(createOrderSchema.safeParse({ ...order, customerPhone: '+20 10 1234 5678' }).success).toBe(true);
+    expect(createOrderSchema.safeParse({ ...order, customerPhone: 'café please' }).success).toBe(false);
+    expect(normalizeCustomerPhone('010 1234 5678')).toBe('201012345678');
+    expect(normalizeCustomerPhone('+20 (10) 1234-5678')).toBe('201012345678');
+  });
+
+  it('groups customer orders by normalized phone and keeps follow-up notes in mock storage', async () => {
+    const previousProvider = process.env.DATA_PROVIDER;
+    process.env.DATA_PROVIDER = 'mock';
+    clearMockCustomerFollowUps();
+    const firstOrder: OrderRecord = {
+      id: 'customer-order-1',
+      orderNumber: 'M-FIRST',
+      type: 'TAKEAWAY',
+      status: 'COMPLETED',
+      customerName: 'عميل ماتشا',
+      customerPhone: '010 1234 5678',
+      createdAt: '2026-11-08T10:00:00.000Z',
+      updatedAt: '2026-11-08T10:30:00.000Z',
+      items: [],
+      subtotal: 100,
+      serviceFee: 0,
+      tax: 0,
+      total: 100,
+    };
+    const secondOrder: OrderRecord = {
+      ...firstOrder,
+      id: 'customer-order-2',
+      orderNumber: 'M-SECOND',
+      status: 'NEW',
+      customerPhone: '+20 10 1234 5678',
+      customerAddress: 'شارع النيل',
+      createdAt: '2026-11-09T10:00:00.000Z',
+      updatedAt: '2026-11-09T10:00:00.000Z',
+      total: 150,
+    };
+
+    try {
+      const [customer] = buildCustomerDirectory([firstOrder, secondOrder]);
+      expect(customer).toMatchObject({
+        phoneKey: '201012345678',
+        name: 'عميل ماتشا',
+        address: 'شارع النيل',
+        orderCount: 2,
+        completedOrderCount: 1,
+        totalSpent: 100,
+        lastOrderNumber: 'M-SECOND',
+        followUpStatus: 'NEW',
+      });
+
+      const saved = await updateCustomerFollowUp(customer.phoneKey, {
+        status: 'FOLLOW_UP',
+        note: 'يرغب في متابعة العروض',
+      }, new Date('2026-11-09T11:00:00.000Z'));
+      expect(buildCustomerDirectory([firstOrder, secondOrder], [saved])[0]).toMatchObject({
+        followUpStatus: 'FOLLOW_UP',
+        note: 'يرغب في متابعة العروض',
+      });
+      const contacted = await updateCustomerFollowUp(customer.phoneKey, { markContacted: true }, new Date('2026-11-09T12:00:00.000Z'));
+      expect(contacted).toMatchObject({
+        status: 'CONTACTED',
+        note: 'يرغب في متابعة العروض',
+        lastContactedAt: '2026-11-09T12:00:00.000Z',
+      });
+    } finally {
+      clearMockCustomerFollowUps();
+      if (previousProvider === undefined) delete process.env.DATA_PROVIDER;
+      else process.env.DATA_PROVIDER = previousProvider;
+    }
+  });
+});
+
 describe('shift tracking', () => {
   it('calculates elapsed whole minutes from server timestamps for active and ended shifts', () => {
     const now = Date.parse('2026-11-09T12:03:59.000Z');
@@ -192,6 +272,43 @@ describe('shift tracking', () => {
     if (!first.shift || !nextShift.shift) throw new Error('Expected shifts to be created');
     expect(nextShift.shift.id).not.toBe(first.shift.id);
     expect((await listShifts('employee-a')).map((shift) => shift.id)).toEqual([nextShift.shift.id, first.shift.id]);
+  });
+
+  it('lets an admin reactivate the same shift without counting the closed gap as work', async () => {
+    const store = (globalThis as { matchaMockShiftStore?: { shifts: Array<{ employeeId: string }> } }).matchaMockShiftStore ??= { shifts: [] };
+    store.shifts = [];
+
+    const started = await startShift(
+      { employeeId: 'employee-restore', username: 'Employee Restore', shiftType: 'NIGHT' },
+      new Date('2026-11-09T08:00:00.000Z'),
+    );
+    if (!started.shift) throw new Error('Expected initial shift to start');
+
+    const ended = await endShift('employee-restore', new Date('2026-11-09T14:45:00.000Z'));
+    expect(ended?.totalMinutes).toBe(405);
+
+    const restored = await reactivateShift(started.shift.id, new Date('2026-11-09T15:00:00.000Z'));
+    expect(restored.shift).toMatchObject({
+      id: started.shift.id,
+      shiftType: 'NIGHT',
+      startedAt: '2026-11-09T08:00:00.000Z',
+      periods: [
+        { startedAt: '2026-11-09T08:00:00.000Z', endedAt: '2026-11-09T14:45:00.000Z' },
+        { startedAt: '2026-11-09T15:00:00.000Z' },
+      ],
+    });
+    expect(restored.shift?.endedAt).toBeUndefined();
+    expect(getShiftDurationMinutes(restored.shift!, Date.parse('2026-11-09T16:00:00.000Z'))).toBe(465);
+    expect(getShiftsCoveringTimestamp([restored.shift!], '2026-11-09T14:50:00.000Z')).toHaveLength(0);
+    expect(getShiftsCoveringTimestamp([restored.shift!], '2026-11-09T15:30:00.000Z')).toHaveLength(1);
+    expect(await getActiveShift('employee-restore')).toMatchObject({ id: started.shift.id });
+    expect((await listShifts('employee-restore')).map((shift) => shift.id)).toEqual([started.shift.id]);
+
+    const conflict = await reactivateShift(started.shift.id, new Date('2026-11-10T08:00:00.000Z'));
+    expect(conflict).toMatchObject({ shift: null, reason: 'already-active' });
+    expect(await endShift('employee-restore', new Date('2026-11-09T17:00:00.000Z'))).toMatchObject({ totalMinutes: 525 });
+    expect(await reactivateShift(started.shift.id, new Date('2026-11-10T08:00:00.000Z')))
+      .toMatchObject({ shift: null, reason: 'not-ended-today' });
   });
 });
 

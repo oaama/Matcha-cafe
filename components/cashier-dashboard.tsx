@@ -14,11 +14,12 @@ import UserManagement from './user-management';
 import ExpenseManagement from './expense-management';
 import CashierOrder from './cashier-order';
 import ShiftReceipt from './shift-receipt';
+import CustomerManagement from './customer-management';
 
 type OrderRow = OrderRecord;
 
 type OrderFilter = 'ALL' | OrderRow['status'];
-type DashboardSection = 'orders' | 'new-order' | 'menu' | 'inventory' | 'settings' | 'shifts' | 'users' | 'expenses';
+type DashboardSection = 'orders' | 'new-order' | 'menu' | 'inventory' | 'settings' | 'shifts' | 'users' | 'expenses' | 'customers';
 
 const statusLabels: Record<OrderRow['status'], string> = {
   NEW: 'طلب جديد',
@@ -63,6 +64,7 @@ export default function CashierDashboard() {
   const [receiptShift, setReceiptShift] = useState<ShiftRecord | null>(null);
   const [clockNow, setClockNow] = useState(() => Date.now());
   const [shiftSaving, setShiftSaving] = useState(false);
+  const [restoringShiftId, setRestoringShiftId] = useState<string | null>(null);
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -325,6 +327,30 @@ export default function CashierDashboard() {
     }
   };
 
+  const restoreShift = async (shift: ShiftRecord) => {
+    if (restoringShiftId) return;
+    setRestoringShiftId(shift.id);
+    setShiftMessage('');
+    try {
+      const response = await fetch('/api/admin/shifts', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'reactivate', shiftId: shift.id }),
+      });
+      const data = await response.json() as { shift?: ShiftRecord; error?: string };
+      if (!response.ok || !data.shift) {
+        setShiftMessage(data.error || 'تعذر استعادة الشيفت');
+        return;
+      }
+      await refreshShiftSummary();
+      setShiftMessage(`تمت استعادة شيفت ${shift.username} ${shift.shiftType === 'DAY' ? 'النهاري' : 'الليلي'} بنفس السجل.`);
+    } catch {
+      setShiftMessage('تعذر الاتصال بالخادم أثناء استعادة الشيفت');
+    } finally {
+      setRestoringShiftId(null);
+    }
+  };
+
   const orderCounts = {
     NEW: orders.filter((order) => order.status === 'NEW').length,
     PREPARING: orders.filter((order) => order.status === 'PREPARING').length,
@@ -345,12 +371,14 @@ export default function CashierDashboard() {
       { section: 'settings', title: 'الإعدادات والرسوم', icon: '⚙' },
       { section: 'shifts', title: 'الشيفتات', icon: '◷' },
       { section: 'users', title: 'المستخدمون', icon: '♙' },
+      { section: 'customers', title: 'العملاء والمتابعة', icon: '♧' },
     ]
     : [
       { section: 'orders', title: 'الطلبات', icon: '▤' },
       { section: 'new-order', title: 'إنشاء طلب', icon: '＋' },
       { section: 'expenses', title: 'المصروفات', icon: '◈' },
       { section: 'shifts', title: 'شيفتاتي', icon: '◷' },
+      { section: 'customers', title: 'العملاء والمتابعة', icon: '♧' },
     ];
 
   if (!loggedIn) {
@@ -662,7 +690,7 @@ export default function CashierDashboard() {
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="text-xl font-bold text-[#232a28]">{staff.role === 'ADMIN' ? 'سجل الشيفتات' : 'شيفتاتي'}</h2>
-              <p className="mt-1 text-sm text-[#647b77]">سجل مستقل لساعات كل شيفت؛ ويظهر تقرير الشيفت للمدير بعد انتهائه.</p>
+              <p className="mt-1 text-sm text-[#647b77]">كل شيفت وساعاته ومبيعاته مسجلة بشكل مستقل، ويمكن لصاحب الشيفت طباعة تقريره بعد انتهائه.</p>
             </div>
             {staff.role === 'EMPLOYEE' && !activeShift && !completedShiftToday ? <button type="button" onClick={() => void updateShift('start')} disabled={shiftSaving} className="rounded-xl bg-[#176f68] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60">بدء شيفت جديد</button> : null}
             {staff.role === 'EMPLOYEE' && completedShiftToday ? <p className="text-sm font-semibold text-[#647b77]">انتهى شيفتك اليوم؛ يمكنك بدء شيفت جديد غدًا.</p> : null}
@@ -681,11 +709,22 @@ export default function CashierDashboard() {
                   </div>
                   <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-[#e8efec] pt-3">
                     <p className="text-sm font-semibold text-[#315d58]">مدة الشيفت: {formatShiftDuration(getShiftDurationMinutes(shift, clockNow))}</p>
-                    {staff.role === 'ADMIN' ? shift.endedAt ? (
-                      <button type="button" onClick={() => setReceiptShift(shift)} className="rounded-xl border border-[#b8d7d1] bg-[#f1f8f6] px-4 py-2.5 text-sm font-semibold text-[#176f68] transition hover:bg-[#d8f3ee]">عرض وطباعة التقرير</button>
-                    ) : (
-                      <span className="text-xs text-[#80918d]">التقرير متاح بعد انتهاء الشيفت</span>
-                    ) : null}
+                    {staff.role === 'ADMIN' ? (
+                      <div className="flex flex-wrap gap-2">
+                        {shift.endedAt ? (
+                          <>
+                            <button type="button" onClick={() => setReceiptShift(shift)} className="rounded-xl border border-[#b8d7d1] bg-[#f1f8f6] px-4 py-2.5 text-sm font-semibold text-[#176f68] transition hover:bg-[#d8f3ee]">عرض وطباعة التقرير</button>
+                            {shiftEndedToday(shift, clockNow) && !shiftRows.some((row) => row.employeeId === shift.employeeId && !row.endedAt) ? (
+                              <button type="button" onClick={() => void restoreShift(shift)} disabled={restoringShiftId !== null} className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-800 transition hover:bg-amber-100 disabled:opacity-60">
+                                {restoringShiftId === shift.id ? 'جارٍ استعادة الشيفت…' : 'استعادة الشيفت'}
+                              </button>
+                            ) : null}
+                          </>
+                        ) : <span className="text-xs text-[#80918d]">الشيفت نشط · {shift.shiftType === 'DAY' ? 'نهاري' : 'ليلي'}</span>}
+                      </div>
+                    ) : shift.endedAt ? (
+                      <button type="button" onClick={() => setReceiptShift(shift)} className="rounded-xl border border-[#b8d7d1] bg-[#f1f8f6] px-4 py-2.5 text-sm font-semibold text-[#176f68] transition hover:bg-[#d8f3ee]">عرض وطباعة إيصال الشيفت</button>
+                    ) : <span className="text-xs text-[#80918d]">الإيصال متاح بعد انتهاء الشيفت</span>}
                   </div>
                 </article>
               ))}
@@ -693,6 +732,7 @@ export default function CashierDashboard() {
           )}
         </section> : null}
         {dashboardSection === 'users' && staff?.role === 'ADMIN' ? <UserManagement /> : null}
+        {dashboardSection === 'customers' ? <CustomerManagement /> : null}
 
         {dashboardSection === 'orders' ? <section aria-labelledby="orders-heading" className="rounded-[1.5rem] border border-[#e0eae7] bg-white/85 p-4 shadow-[0_10px_30px_rgba(29,73,68,.05)] sm:p-6">
           <div className="mb-5 flex flex-wrap items-end justify-between gap-3">

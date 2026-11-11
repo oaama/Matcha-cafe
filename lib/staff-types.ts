@@ -10,6 +10,11 @@ export type StaffIdentity = {
   active: boolean;
 };
 
+export type ShiftPeriod = {
+  startedAt: string;
+  endedAt?: string;
+};
+
 export type ShiftRecord = {
   id: string;
   employeeId: string;
@@ -18,6 +23,7 @@ export type ShiftRecord = {
   startedAt: string;
   endedAt?: string;
   totalMinutes?: number;
+  periods?: ShiftPeriod[];
 };
 
 export type ExpenseCategory = 'ELECTRICITY' | 'WATER' | 'FOOD' | 'SUPPLIES' | 'MAINTENANCE' | 'RENT' | 'OTHER';

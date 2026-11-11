@@ -1,5 +1,23 @@
 export type OrderStatus = 'NEW' | 'PREPARING' | 'READY' | 'COMPLETED' | 'CANCELLED';
 export type OrderType = 'DINE_IN' | 'TAKEAWAY' | 'DELIVERY';
+export type CustomerFollowUpStatus = 'NEW' | 'CONTACTED' | 'FOLLOW_UP' | 'NO_FOLLOW_UP';
+
+export type CustomerRecord = {
+  phoneKey: string;
+  phone: string;
+  name: string;
+  address?: string;
+  firstOrderAt: string;
+  lastOrderAt: string;
+  orderCount: number;
+  completedOrderCount: number;
+  totalSpent: number;
+  lastOrderNumber: string;
+  lastOrderStatus: OrderStatus;
+  followUpStatus: CustomerFollowUpStatus;
+  note: string;
+  lastContactedAt?: string;
+};
 
 export type CatalogGroup = {
   id: string;

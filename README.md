@@ -1,93 +1,146 @@
-# Matcha Cafe Ordering System
+# Matcha Café Ordering System
 
-This project rebuilds the original Matcha café menu into a QR ordering application with Arabic RTL support, a customer ordering flow, and a protected cashier dashboard.
+An Arabic-first, right-to-left ordering and café operations app. Customers can browse the menu and place dine-in, takeaway, and delivery orders; staff use a protected dashboard to manage orders, shifts, expenses, inventory, and the menu.
 
 ## Features
 
-- Mobile-first Arabic-first menu for dine-in, takeaway, and delivery orders.
-- Product catalog derived from the original HTML prototype.
-- Cart, customization, checkout, and confirmation flow.
-- MongoDB-backed order persistence and validation.
-- Staff dashboard for new, preparing, ready, and completed orders.
-- Contact actions for phone and Google Maps.
-- Confirmed receipt preview and browser printing for 58mm and 80mm paper.
-- Local role-based staff accounts, shift tracking, and admin user management.
-- Staff-managed menu catalog: create and edit products, prices and offers, display order, categories, option groups, and add-on prices; archive entries without removing historical order details.
-- Orders are persisted in MongoDB and shown in the cashier dashboard when refreshed.
+- Responsive Arabic menu with product search, categories, customizations, and cart.
+- Dine-in, takeaway, and delivery checkout with server-side validation and pricing.
+- Staff dashboard for order preparation, status updates, and receipt printing.
+- Employee accounts, automatic shift tracking, and per-shift sales and expense reports.
+- Menu and add-on management, ingredient recipes, stock deductions, and low-stock monitoring.
+- Customer directory with order history summaries, contact actions, follow-up notes, and contact status.
+- Configurable service charge and tax.
+- In-memory mock data for local development and MongoDB persistence for production.
 
-## Local development
+## Technology
 
-Install dependencies and run the app locally:
+- Next.js 16 App Router, React, TypeScript, and Tailwind CSS.
+- MongoDB with Mongoose for persistent production data.
+- Vitest and ESLint for tests and code quality.
+
+## Requirements
+
+- Node.js 20.19 or newer (Node.js 22 recommended).
+- npm.
+- MongoDB configured as a replica set for persistent operation; MongoDB Atlas is supported.
+
+## Run locally
 
 ```sh
 npm install
 npm run dev
 ```
 
-Open `http://localhost:3000` for the customer menu and `http://localhost:3000/dashboard/cashier` for the cashier dashboard.
+By default, local development uses in-memory mock data and does not require MongoDB. To set it explicitly, add the following to `.env.local`:
 
-For local development without a database, set `DATA_PROVIDER=mock` in `.env.local` (or omit it). The app uses in-memory data and does not need a MongoDB connection.
+```dotenv
+DATA_PROVIDER=mock
+```
 
-For MongoDB-backed local development, set `DATA_PROVIDER=mongodb` and configure `MONGODB_URI`, `NEXTAUTH_SECRET`, `STAFF_EMAIL`, and `STAFF_PASSWORD` in `.env.local`. MongoDB mode requires the database host to be reachable and its DNS records to resolve; connection failures are reported instead of silently switching to non-persistent mock data. `.env.local` is excluded from Git. The first successful login using `STAFF_EMAIL` and `STAFF_PASSWORD` creates the initial Admin account in MongoDB with a salted password hash. Staff accounts, shifts, expenses, orders, catalog, inventory, and pricing then use MongoDB repositories, so this is the same persistence path used by production. There is no public account-registration endpoint. Configure `STAFF_EMAIL` and `STAFF_PASSWORD` in the hosting environment only for first-account setup if the collection is empty; never commit real credentials.
+Open:
 
-Without `DATA_PROVIDER=mongodb`, local development uses in-memory mock data. Orders and changes are lost when the server process restarts; mock storage cannot be selected in production. The dashboard checks for order updates every four seconds.
+- Customer menu: `http://localhost:3000`
+- Staff dashboard: `http://localhost:3000/dashboard/cashier`
 
-In mock mode, the local demo accounts are:
+Mock data, accounts, orders, and settings are held in memory and reset when the server restarts. Demo sign-ins:
 
-- Admin: `demo@local.test` / `demo1234`
-- Day employee: `day@local.test` / `day12345` (`Matcha_Day_AM`)
-- Night employee: `night@local.test` / `night12345` (`Matcha_Night_PM`)
+| Role | Email | Password |
+| --- | --- | --- |
+| Admin | `demo@local.test` | `demo1234` |
+| Day employee | `day@local.test` | `day12345` |
+| Night employee | `night@local.test` | `night12345` |
 
-Mock accounts and shift records are held in memory and are lost when the server restarts. To test production persistence locally, use a separate development MongoDB database with `DATA_PROVIDER=mongodb`; never point local testing at production data. Browser receipt printing requires a configured system/browser printer; silent thermal printing is not available through a normal browser. Choose 58mm or 80mm in the receipt preview before confirming print.
+Use only a separate development database when testing persistent data. Never point local development at production.
 
-An employee shift starts automatically on successful login; refreshing the dashboard restores the current shift without starting another one. Ending a shift or logging out completes the employee's shift for that Cairo business day; another shift cannot be started until the next day. Completed orders are attributed to the employee and active shift that completes them; when an Admin completes an order, it is attributed only if exactly one employee shift covers that time. Admins can view and print a separate report for each completed employee shift, including completed sales, cash/card totals, expenses, net sales, and elapsed time. Employees can view their shift history but cannot access or print shift reports. Older completed orders without a shift ID are included in a report only when their completion timestamp (`updatedAt`) falls unambiguously within that shift; overlapping or otherwise ambiguous orders are not misattributed and are flagged in the report. Historical expenses without a saved shift ID are not retroactively assigned.
+## Environment configuration
 
-Inventory is deducted automatically for products and recipe ingredients once a positive opening balance or a low-stock threshold is recorded; no per-item deduction checkbox is required. Items with no recorded stock balance remain available for sale until initialized, so an unknown zero balance does not unexpectedly stop orders.
+`.env.local` is excluded from Git. `.env.example` contains placeholders for a MongoDB-backed deployment; replace them with unique values and never commit real credentials.
 
-The menu is seeded in `lib/menu-data.ts`. Order storage is isolated behind `lib/order-repository.ts`.
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `DATA_PROVIDER` | Production | Set to `mongodb`. Mock mode is development-only. |
+| `MONGODB_URI` | MongoDB mode | Connection string for the application database. |
+| `NEXTAUTH_SECRET` | MongoDB mode | Unique secret of at least 32 characters used to sign staff sessions. |
+| `CRON_SECRET` | If the Vercel cleanup schedule remains enabled | Random token of at least 32 characters used to authorize the order cleanup request. |
+| `STAFF_EMAIL` | Initial account setup | Email for creating the first Admin account when no staff account exists. |
+| `STAFF_PASSWORD` | Initial account setup | Initial Admin password; use at least 12 characters. |
 
-Menu changes are managed from the cashier dashboard. In local mock mode they last while the server process is running; with MongoDB the catalog is stored in the `cafe_settings` collection. Product and category removal is a reversible archive/hide action so existing orders keep their original item snapshots. The Expenses section records electricity, water, food/raw materials, supplies, maintenance, rent, and other costs by date, shift, and employee in the `cafe_expenses` collection. Employees can record their own expenses; Admin can review and delete all records and manage staff profiles and passwords.
+The initial Admin credentials are used to bootstrap the first account only. The password is stored as a salted hash. There is no public account-registration endpoint. Once the first Admin is created, manage staff accounts from the dashboard.
 
-## Production build
+In MongoDB mode, connection errors are reported rather than silently switching to mock storage. Production requires `DATA_PROVIDER=mongodb`.
 
-npm run build
+## Project structure
 
-Run the checks before deployment:
+```text
+app/
+  api/                 API route handlers
+  dashboard/cashier/   Staff dashboard route
+  globals.css          Global styles
+  layout.tsx           Root layout and metadata
+components/            Customer menu and dashboard UI
+lib/                   Domain logic, validation, and data repositories
+  store.test.ts        Unit and integration-focused tests
+public/                App-served static assets
+docs/
+  brand/               Café brand and design references
+  reference/           Original menu prototype
+```
+
+The menu's initial catalog is defined in `lib/menu-data.ts`. Order, shift, inventory, and expense persistence is handled through the repositories in `lib/`.
+
+## Staff and operations
+
+- An employee's assigned day or night shift starts automatically after successful login. Refreshing the dashboard restores the current shift.
+- Ending a shift or logging out closes that employee's shift for the Cairo business day; another shift can begin the following day.
+- If an employee's shift was ended or logged out by mistake, an Admin can reactivate that same shift from today's shift record, provided the employee has no other active shift. The shift keeps its original ID and day/night assignment; its report adds the work periods while excluding the time between closing and reactivation.
+- Completed orders are attributed to the employee and shift that completes them. Admin-completed orders are assigned only when exactly one employee shift matches the completion time.
+- Admins can view and print a separate report for each completed shift; employees can print reports for their own shifts only. Ambiguous legacy orders are not misattributed and are flagged; historical expenses without a shift ID are not retroactively assigned.
+- A customer phone number is required with every new order. The customer directory groups order history by normalized phone number and lets signed-in staff track follow-up status, notes, and the last contact time. Existing orders with phone numbers are included.
+- Inventory is deducted automatically after a positive opening balance or low-stock threshold is recorded. Items without a recorded balance remain sellable until initialized.
+- Product and category removal is reversible: entries are hidden while historical order snapshots remain intact.
+- Service charges and tax are disabled by default. When enabled, service is calculated on the subtotal, then tax on the subtotal plus service. The server recalculates totals at checkout.
+- The dashboard refreshes order and shift data every four seconds.
+
+## Commands
+
+```sh
+npm run dev        # Start the development server
+npm run build      # Create a production build
+npm run start      # Start the production server
+npm run typecheck  # Run TypeScript checks
+npm test           # Run Vitest
+npm run lint       # Run ESLint
+```
+
+Run all checks before deployment:
 
 ```sh
 npm run typecheck
 npm test
 npm run lint
+npm run build
 ```
 
-## Deployment
+## Deploy to Vercel
 
-This app can be deployed to Vercel as a Next.js application. Use Node.js 22 (the project requires Node.js 20.19 or newer). Set these variables in the Vercel Production environment:
+1. Connect the repository to Vercel and use Node.js 22.
+2. Set the production environment variables listed above.
+3. Configure MongoDB network access for Vercel and use a least-privilege database user.
+4. Use a replica-set deployment because order creation, cancellation, and inventory updates use transactions.
+5. Use separate credentials and preferably a separate database for Preview deployments.
+6. Run the production checks and verify checkout, staff login, stock deductions, and receipts against the production catalog.
 
-- `DATA_PROVIDER=mongodb`
-- `MONGODB_URI`
-- `NEXTAUTH_SECRET` (at least 32 random characters; generate a unique value)
-- `CRON_SECRET` (at least 32 random characters; authorizes the scheduled weekly deletion of every order)
-- `STAFF_EMAIL` (initial staff account email; used only to bootstrap the first account if `staff_accounts` is empty)
-- `STAFF_PASSWORD` (at least 12 characters; initial account password, stored in MongoDB as a salted hash)
+### Scheduled order cleanup
 
-The MongoDB deployment must support multi-document transactions because inventory changes and order creation/cancellation are transactional. MongoDB Atlas supports this; for another host, use a replica set. Configure network access for Vercel and a least-privilege database user. Use separate credentials and preferably a separate database for Preview deployments. Production does not fall back to mock data.
+`vercel.json` schedules `/api/cron/clear-orders` for Sundays at 00:00 UTC. When configured with `CRON_SECRET`, this endpoint permanently deletes **all documents in the `orders` collection**. It does not delete staff, catalog, inventory, or pricing data. Export any order history that must be retained before enabling the schedule; remove or change the cron configuration if automatic deletion is not intended.
 
-Vercel runs `/api/cron/clear-orders` every Sunday at 00:00 UTC. The endpoint requires the `CRON_SECRET` bearer token and deletes every document in the `orders` collection; this permanently removes order history, so export any records you need before the scheduled run. It does not delete catalog, inventory, pricing settings, or staff accounts. Deleted MongoDB storage is generally reusable by the database, but this does not necessarily reduce Atlas's already allocated storage immediately.
+## Known limitations
 
-## Pricing rules
+- Card is recorded as the selected payment method; online card processing is not integrated.
+- Receipt printing uses the browser's print dialog and requires a configured printer. Silent thermal printing is not supported.
+- The cashier dashboard uses polling rather than push-based realtime updates.
 
-The server uses the catalog's base product price plus every selected add-on price, multiplied by the item quantity. Service fees and tax are disabled by default and can be independently enabled and configured (0–100%) in the cashier dashboard. When enabled, service is calculated from the subtotal and tax from the subtotal plus service; amounts are rounded to two decimal places. The browser uses the same calculation function for the cart preview, and the server recalculates totals using the saved settings at submission time. In local mock mode, settings last while the server process is running; with MongoDB they are stored in the `cafe_settings` collection.
+## Design references
 
-## Production checklist
-
-- Confirm the production build, tests, typecheck, and lint all pass.
-- Configure backups and retention for the MongoDB database.
-- Verify dine-in/table and takeaway checkout flows against production catalog and prices.
-- Configure monitoring and an external rate limit for public order creation and staff login before opening the app to untrusted traffic.
-- Online card processing is not integrated; orders currently record the selected payment method only.
-- The cashier dashboard polls every four seconds; push-based realtime notifications are not implemented.
-
-## Data migration notes
-
-The original HTML file includes product names, categories, and options that have been captured into the seeded catalog. The application keeps Arabic product names and prices as originally provided.
+The brand guide and original menu prototype are retained under [`docs/`](./docs/).
