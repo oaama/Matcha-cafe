@@ -2,7 +2,7 @@ import Image from 'next/image';
 
 export default function LogoSplash() {
   return (
-    <main className="logo-splash" role="status" aria-live="polite" aria-busy="true" aria-label="لحظات ونجهز طلبك">
+    <main className="logo-splash" role="status" aria-live="polite" aria-busy="true" aria-label="استعد لتجربة ماتشا على مزاجك">
       <div className="logo-splash__content">
         <div className="logo-splash__mark">
           <Image
@@ -19,7 +19,7 @@ export default function LogoSplash() {
         </div>
         <div className="logo-splash__copy">
           <span className="brand-name">MATCHA CAFÉ</span>
-          <span>لحظات ونجهز لك المكان</span>
+          <span>استعد لتجربة ماتشا على مزاجك</span>
         </div>
         <div className="logo-splash__progress" aria-hidden="true">
           <span />

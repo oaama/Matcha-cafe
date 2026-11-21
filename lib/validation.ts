@@ -71,6 +71,8 @@ const inventoryItemSchema = z.object({
   productId: z.string().min(1).max(100).optional(),
   name: z.string().trim().min(1).max(150),
   unit: z.string().trim().min(1).max(30),
+  category: z.string().trim().max(60).optional(),
+  unitCost: z.number().finite().min(0).max(1_000_000_000).optional(),
   quantity: z.number().finite().min(0).max(1_000_000_000),
   lowStockThreshold: z.number().finite().min(0).max(1_000_000_000),
   trackStock: z.boolean(),
@@ -128,6 +130,43 @@ export const inventoryAdjustmentSchema = z.object({
   delta: z.number().finite().min(-1_000_000_000).max(1_000_000_000).refine((value) => value !== 0),
   note: z.string().trim().max(250).optional(),
 });
+
+const purchaseInvoiceDateSchema = z.string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'تاريخ الفاتورة غير صالح')
+  .refine((value) => {
+    const date = new Date(`${value}T00:00:00.000Z`);
+    return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+  }, 'تاريخ الفاتورة غير صالح');
+
+export const purchaseInvoiceInputSchema = z.object({
+  supplier: z.string().trim().min(1).max(160),
+  invoiceNumber: z.string().trim().min(1).max(120),
+  invoiceDate: purchaseInvoiceDateSchema,
+  items: z.array(z.object({
+    itemId: z.string().min(1).max(120),
+    quantity: z.number().finite().positive().max(1_000_000),
+    unitPrice: z.number().finite().min(0).max(1_000_000_000),
+  })).min(1).max(200),
+  notes: z.string().trim().max(1000).optional(),
+}).superRefine((invoice, context) => {
+  const itemTotals = new Map<string, number>();
+  for (const item of invoice.items) {
+    const total = (itemTotals.get(item.itemId) ?? 0) + item.quantity;
+    itemTotals.set(item.itemId, total);
+    if (!Number.isFinite(item.quantity * item.unitPrice) || item.quantity * item.unitPrice > 1_000_000_000_000) {
+      context.addIssue({ code: 'custom', message: 'إجمالي أحد أصناف الفاتورة يتجاوز الحد المسموح' });
+    }
+    if (total > 1_000_000_000) {
+      context.addIssue({ code: 'custom', message: 'إجمالي كمية الصنف يتجاوز الحد المسموح' });
+    }
+  }
+});
+
+export const purchaseInvoiceActionSchema = z.discriminatedUnion('action', [
+  z.object({ action: z.literal('UPDATE'), id: z.string().min(1).max(120), invoice: purchaseInvoiceInputSchema }),
+  z.object({ action: z.literal('APPROVE'), id: z.string().min(1).max(120) }),
+  z.object({ action: z.literal('CANCEL'), id: z.string().min(1).max(120) }),
+]);
 
 const catalogGroupSchema = z.object({
   id: z.string().min(1).max(80),

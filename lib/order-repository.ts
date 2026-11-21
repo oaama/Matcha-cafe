@@ -1,6 +1,6 @@
 import type { OrderRecord, OrderStatus } from './types';
 import { getDataProvider } from './data-mode';
-import { consumeInventoryForOrder, restoreInventoryForOrder } from './inventory-repository';
+import { consumeInventoryForOrder, getInventoryCostSnapshot, restoreInventoryForOrder } from './inventory-repository';
 
 export interface OrderRepository {
   create(order: OrderRecord, idempotencyKey?: string): Promise<{ order: OrderRecord; created: boolean }>;
@@ -51,7 +51,8 @@ const mockRepository: OrderRepository = {
 
     const creation = (async () => {
       const inventoryConsumption = await consumeInventoryForOrder(order);
-      const storedOrder = { ...order, inventoryConsumption };
+      const inventoryCostSnapshot = await getInventoryCostSnapshot(inventoryConsumption);
+      const storedOrder = { ...order, inventoryConsumption, ...(inventoryCostSnapshot !== null ? { inventoryCostSnapshot } : {}) };
       mockStore.orders.unshift(structuredClone(storedOrder));
       if (idempotencyKey) mockStore.idempotencyKeys.set(idempotencyKey, order.id);
       return { order: structuredClone(storedOrder), created: true };
@@ -131,8 +132,10 @@ const mongoRepository: OrderRepository = {
         }
 
         const inventoryConsumption = await consumeInventoryForOrder(order, session);
-        await OrderModel.create([{ ...order, inventoryConsumption, idempotencyKey }], { session });
-        result = { order: { ...order, inventoryConsumption }, created: true };
+        const inventoryCostSnapshot = await getInventoryCostSnapshot(inventoryConsumption, session);
+        const storedOrder = { ...order, inventoryConsumption, ...(inventoryCostSnapshot !== null ? { inventoryCostSnapshot } : {}) };
+        await OrderModel.create([{ ...storedOrder, idempotencyKey }], { session });
+        result = { order: storedOrder, created: true };
       });
       if (!result) throw new Error('Unable to create order');
       return result;

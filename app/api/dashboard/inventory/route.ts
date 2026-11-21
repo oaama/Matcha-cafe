@@ -51,7 +51,8 @@ export async function PUT(request: Request) {
 }
 
 export async function PATCH(request: Request) {
-  if (!await isStaff()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const staff = await requireStaffRole(['ADMIN']);
+  if (!staff) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   let body: unknown;
   try {
@@ -65,7 +66,7 @@ export async function PATCH(request: Request) {
   }
 
   try {
-    const item = await adjustInventory(parsed.data.itemId, parsed.data.delta, parsed.data.note);
+    const item = await adjustInventory(parsed.data.itemId, parsed.data.delta, parsed.data.note, staff.username);
     return NextResponse.json({ item });
   } catch (error) {
     if (error instanceof InventoryItemNotFoundError) {

@@ -93,6 +93,7 @@ export type OrderRecord = {
   employeeId?: string;
   employeeName?: string;
   inventoryConsumption?: InventoryConsumption[];
+  inventoryCostSnapshot?: number;
 };
 
 export type InventoryItem = {
@@ -101,6 +102,8 @@ export type InventoryItem = {
   productId?: string;
   name: string;
   unit: string;
+  category?: string;
+  unitCost?: number;
   quantity: number;
   lowStockThreshold: number;
   trackStock: boolean;
@@ -117,8 +120,11 @@ export type InventoryMovement = {
   itemName: string;
   itemType: InventoryItem['type'];
   quantity: number;
-  reason: 'adjustment' | 'sale' | 'cancellation';
+  reason: 'adjustment' | 'sale' | 'cancellation' | 'purchase';
   referenceId?: string;
   note?: string;
+  performedBy?: string;
+  previousBalance?: number;
+  newBalance?: number;
   createdAt: string;
 };

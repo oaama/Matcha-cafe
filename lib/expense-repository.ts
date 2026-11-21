@@ -32,16 +32,34 @@ function toExpense(document: ExpenseDocument): ExpenseRecord {
   return { ...document, createdAt: document.createdAt.toISOString() };
 }
 
-export async function listExpenses(filters: { expenseDate?: string; employeeId?: string; shiftId?: string } = {}) {
+export async function listExpenses(filters: {
+  expenseDate?: string;
+  employeeId?: string;
+  shiftId?: string;
+  from?: string;
+  to?: string;
+} = {}) {
   if (getDataProvider() === 'mock') {
     return mockStore.expenses
       .filter((expense) => (!filters.expenseDate || expense.expenseDate === filters.expenseDate)
         && (!filters.employeeId || expense.employeeId === filters.employeeId)
-        && (!filters.shiftId || expense.shiftId === filters.shiftId))
+        && (!filters.shiftId || expense.shiftId === filters.shiftId)
+        && (!filters.from || expense.expenseDate >= filters.from)
+        && (!filters.to || expense.expenseDate <= filters.to))
       .map((expense) => ({ ...expense }));
   }
   await connectToDatabase();
-  const expenses = await ExpenseModel.find(filters).sort({ expenseDate: -1, createdAt: -1 }).lean();
+  const query: Record<string, unknown> = {};
+  if (filters.expenseDate) query.expenseDate = filters.expenseDate;
+  if (filters.employeeId) query.employeeId = filters.employeeId;
+  if (filters.shiftId) query.shiftId = filters.shiftId;
+  if (filters.from || filters.to) {
+    query.expenseDate = {
+      ...(filters.from ? { $gte: filters.from } : {}),
+      ...(filters.to ? { $lte: filters.to } : {}),
+    };
+  }
+  const expenses = await ExpenseModel.find(query).sort({ expenseDate: -1, createdAt: -1 }).lean();
   return expenses.map(toExpense);
 }
 

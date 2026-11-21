@@ -45,6 +45,7 @@ const orderSchema = new Schema<StoredOrder>({
     itemId: { type: String, required: true },
     quantity: { type: Number, required: true },
   }],
+  inventoryCostSnapshot: { type: Number, min: 0 },
   idempotencyKey: { type: String, unique: true, sparse: true, select: false },
 }, { versionKey: false, collection: 'orders' });
 

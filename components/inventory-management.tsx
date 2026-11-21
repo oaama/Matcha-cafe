@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import type { InventoryItem, InventoryMovement, Product, ProductRecipe } from '@/lib/types';
+import { getProductPrice } from '@/lib/pricing';
+import { calculateRecipeCost } from '@/lib/recipe-cost';
 
 type InventoryData = {
   items: InventoryItem[];
@@ -31,6 +33,7 @@ export default function InventoryManagement() {
   const [message, setMessage] = useState('');
   const [ingredientName, setIngredientName] = useState('');
   const [ingredientUnit, setIngredientUnit] = useState('');
+  const [ingredientCategory, setIngredientCategory] = useState('');
   const [search, setSearch] = useState('');
   const [from, setFrom] = useState(() => {
     const date = new Date();
@@ -71,7 +74,10 @@ export default function InventoryManagement() {
   const recipeProducts = useMemo(() => products.filter((product) => !search.trim()
     || product.ar.toLowerCase().includes(search.trim().toLowerCase())), [products, search]);
   const isStockTracked = (item: InventoryItem) => item.trackStock || item.quantity > 0 || item.lowStockThreshold > 0;
-  const lowStockCount = items.filter((item) => isStockTracked(item) && item.quantity <= item.lowStockThreshold).length;
+  const outOfStockCount = items.filter((item) => isStockTracked(item) && item.quantity === 0).length;
+  const lowStockCount = items.filter((item) => isStockTracked(item)
+    && item.quantity > 0
+    && item.quantity <= item.lowStockThreshold).length;
   const trackedCount = items.filter(isStockTracked).length;
   const uninitializedCount = items.filter((item) => !isStockTracked(item)).length;
 
@@ -106,6 +112,7 @@ export default function InventoryManagement() {
       type: 'ingredient',
       name: ingredientName.trim(),
       unit: ingredientUnit.trim(),
+      category: ingredientCategory.trim() || undefined,
       quantity: 0,
       lowStockThreshold: 0,
       trackStock: true,
@@ -113,6 +120,7 @@ export default function InventoryManagement() {
     if (await saveSettings([...items, item])) {
       setIngredientName('');
       setIngredientUnit('');
+      setIngredientCategory('');
     }
   };
 
@@ -230,8 +238,8 @@ export default function InventoryManagement() {
             <h2 id="inventory-heading" className="text-xl font-bold text-[#232122]">إدارة المخزون</h2>
             <p className="mt-1 text-sm text-[#705331]">سجّل الرصيد الافتتاحي للصنف مرة واحدة؛ بعدها يُخصم تلقائيًا مع كل طلب ويظهر عند انخفاضه.</p>
           </div>
-          <span className={`rounded-full px-3 py-1.5 text-xs font-semibold ${lowStockCount ? 'bg-amber-50 text-amber-800' : 'bg-[#f4f6ef] text-[#66764e]'}`}>
-            {lowStockCount ? `${lowStockCount} محتاج مراجعة` : uninitializedCount ? `${uninitializedCount} رصيد غير مُسجل` : trackedCount ? 'الأرصدة المتابعة تمام' : 'لا توجد أصناف بالمخزون'}
+          <span className={`rounded-full px-3 py-1.5 text-xs font-semibold ${outOfStockCount ? 'bg-rose-50 text-rose-800' : lowStockCount ? 'bg-amber-50 text-amber-800' : 'bg-[#f4f6ef] text-[#66764e]'}`}>
+            {outOfStockCount ? `${outOfStockCount} صنف نفد من المخزون` : lowStockCount ? `${lowStockCount} صنف منخفض` : uninitializedCount ? `${uninitializedCount} رصيد غير مُسجل` : trackedCount ? 'الأرصدة المتابعة تمام' : 'لا توجد أصناف بالمخزون'}
           </span>
         </div>
 
@@ -250,7 +258,7 @@ export default function InventoryManagement() {
                 {saving ? 'جارٍ الحفظ…' : 'حفظ إعدادات المخزون'}
               </button>
             </div>
-            <form onSubmit={(event) => void addIngredient(event)} className="mb-6 grid gap-3 rounded-2xl border border-dashed border-[#dfe2d5] bg-[#fafbf7] p-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+            <form onSubmit={(event) => void addIngredient(event)} className="mb-6 grid gap-3 rounded-2xl border border-dashed border-[#dfe2d5] bg-[#fafbf7] p-4 sm:grid-cols-2 xl:grid-cols-4 xl:items-end">
               <label className="grid gap-1.5 text-sm font-semibold text-[#232122]">
                 خامة جديدة
                 <input required maxLength={150} value={ingredientName} onChange={(event) => setIngredientName(event.target.value)} placeholder="مثال: لبن كامل الدسم" className={inputClass} />
@@ -258,6 +266,10 @@ export default function InventoryManagement() {
               <label className="grid gap-1.5 text-sm font-semibold text-[#232122]">
                 وحدة القياس
                 <input required maxLength={30} value={ingredientUnit} onChange={(event) => setIngredientUnit(event.target.value)} placeholder="مل، جرام، قطعة..." className={inputClass} />
+              </label>
+              <label className="grid gap-1.5 text-sm font-semibold text-[#232122]">
+                التصنيف (اختياري)
+                <input maxLength={60} value={ingredientCategory} onChange={(event) => setIngredientCategory(event.target.value)} placeholder="مثال: ألبان" className={inputClass} />
               </label>
               <button disabled={saving} className="rounded-xl border border-[#c9d19e] bg-white px-4 py-2.5 text-sm font-semibold text-[#6B8136] transition hover:bg-[#f4f6ef] disabled:opacity-50">
                 {saving ? 'جارٍ الحفظ…' : 'إضافة خامة'}
@@ -296,6 +308,13 @@ export default function InventoryManagement() {
               <h3 className="mb-3 font-bold text-[#403d33]">وصفة كل منتج</h3>
               {recipeProducts.map((product) => {
                 const recipe = recipes.find((entry) => entry.productId === product.id);
+                const recipeCost = calculateRecipeCost(recipe, allIngredients);
+                const hasRecipe = Boolean(recipe?.ingredients.length);
+                const sellingPrice = getProductPrice(product);
+                const grossProfit = recipeCost.totalCost === undefined ? undefined : sellingPrice - recipeCost.totalCost;
+                const profitMargin = grossProfit === undefined || sellingPrice <= 0
+                  ? undefined
+                  : (grossProfit / sellingPrice) * 100;
                 return (
                   <details key={product.id} className="group rounded-xl border border-[#E5E3B2] bg-white">
                     <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 font-semibold text-[#403d33]">
@@ -304,12 +323,23 @@ export default function InventoryManagement() {
                     </summary>
                     <div className="space-y-3 border-t border-[#E5E3B2] p-4">
                       {(recipe?.ingredients ?? []).map((entry) => {
-                        const ingredient = ingredients.find((item) => item.id === entry.itemId);
+                        const ingredient = allIngredients.find((item) => item.id === entry.itemId);
+                        const ingredientCost = recipeCost.ingredients.find((item) => item.itemId === entry.itemId);
                         return (
                           <div key={entry.itemId} className="flex items-center justify-between gap-3 rounded-lg bg-[#f8f8f4] px-3 py-2 text-sm">
-                            <span>{ingredient?.name ?? 'خامة محذوفة'}</span>
-                            <span className="flex items-center gap-3 text-[#705331]">
-                              {entry.quantity} {ingredient?.unit}
+                            <span className="min-w-0 flex-1">{ingredient?.name ?? 'خامة محذوفة'}</span>
+                            <span className="flex items-center gap-2 text-[#705331]">
+                              <RecipeQuantityInput
+                                value={entry.quantity}
+                                onChange={(quantity) => updateRecipe(product.id, {
+                                  ...recipe!,
+                                  ingredients: recipe!.ingredients.map((row) => row.itemId === entry.itemId ? { ...row, quantity } : row),
+                                })}
+                              />
+                              <span>{ingredient?.unit}</span>
+                              <span className="min-w-16 text-start" dir="ltr">
+                                {ingredientCost?.lineCost === undefined ? '—' : `${ingredientCost.lineCost.toFixed(2)} ج.م`}
+                              </span>
                               <button type="button" aria-label={`إزالة ${ingredient?.name ?? 'الخامة'} من وصفة ${product.ar}`} onClick={() => {
                                 const nextIngredients = recipe!.ingredients.filter((row) => row.itemId !== entry.itemId);
                                 updateRecipe(product.id, nextIngredients.length ? { ...recipe!, ingredients: nextIngredients } : null);
@@ -318,6 +348,12 @@ export default function InventoryManagement() {
                           </div>
                         );
                       })}
+                      <div className="grid gap-2 rounded-lg bg-[#f4f6ef] p-3 text-sm sm:grid-cols-2">
+                        <p className="flex justify-between gap-2"><span>سعر البيع</span><strong>{sellingPrice.toFixed(2)} ج.م</strong></p>
+                        <p className="flex justify-between gap-2"><span>تكلفة الوصفة</span><strong>{recipeCost.totalCost === undefined ? (hasRecipe ? 'أدخل تكلفة كل خامة' : 'أضف مكونات الوصفة') : `${recipeCost.totalCost.toFixed(2)} ج.م`}</strong></p>
+                        <p className="flex justify-between gap-2"><span>الربح الإجمالي</span><strong>{grossProfit === undefined ? '—' : `${grossProfit.toFixed(2)} ج.م`}</strong></p>
+                        <p className="flex justify-between gap-2"><span>هامش الربح</span><strong>{profitMargin === undefined ? '—' : `${profitMargin.toFixed(1)}%`}</strong></p>
+                      </div>
                       <RecipeIngredientForm ingredients={allIngredients} onAdd={(itemId, quantity) => addRecipeIngredient(product.id, itemId, quantity)} />
                     </div>
                   </details>
@@ -331,17 +367,19 @@ export default function InventoryManagement() {
                 <p className="rounded-xl bg-[#FCF5ED] px-4 py-6 text-center text-sm text-[#705331]">الحركات هتظهر هنا بعد تسجيل إضافة أو خصم أو طلب.</p>
               ) : (
                 <div className="overflow-x-auto rounded-xl border border-[#E5E3B2]">
-                  <table className="w-full min-w-[600px] text-right text-sm">
+                    <table className="w-full min-w-[820px] text-right text-sm">
                     <thead className="bg-[#f6f7f2] text-xs text-[#6c6d5c]">
-                      <tr><th className="px-3 py-2.5">التاريخ</th><th className="px-3 py-2.5">الصنف</th><th className="px-3 py-2.5">الحركة</th><th className="px-3 py-2.5">الكمية</th><th className="px-3 py-2.5">ملاحظة</th></tr>
+                        <tr><th className="px-3 py-2.5">التاريخ</th><th className="px-3 py-2.5">الصنف</th><th className="px-3 py-2.5">الحركة</th><th className="px-3 py-2.5">الكمية</th><th className="px-3 py-2.5">الرصيد قبل / بعد</th><th className="px-3 py-2.5">المسؤول</th><th className="px-3 py-2.5">ملاحظة / مرجع</th></tr>
                     </thead>
                     <tbody className="divide-y divide-[#E5E3B2]">
                       {movements.slice(0, 20).map((movement) => (
                         <tr key={movement.id}>
                           <td className="whitespace-nowrap px-3 py-2.5 text-xs text-[#705331]">{new Date(movement.createdAt).toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' })}</td>
                           <td className="px-3 py-2.5 font-medium">{movement.itemName}</td>
-                          <td className="px-3 py-2.5 text-xs">{movement.reason === 'sale' ? 'طلب' : movement.reason === 'cancellation' ? 'إلغاء طلب' : 'تعديل يدوي'}</td>
+                          <td className="px-3 py-2.5 text-xs">{movement.reason === 'sale' ? 'طلب' : movement.reason === 'cancellation' ? 'إلغاء طلب' : movement.reason === 'purchase' ? 'فاتورة شراء' : 'تعديل يدوي'}</td>
                           <td dir="ltr" className={`whitespace-nowrap px-3 py-2.5 font-semibold ${movement.quantity < 0 ? 'text-rose-700' : 'text-emerald-700'}`}>{movement.quantity > 0 ? '+' : ''}{movement.quantity}</td>
+                          <td dir="ltr" className="whitespace-nowrap px-3 py-2.5 text-xs text-[#705331]">{movement.previousBalance !== undefined && movement.newBalance !== undefined ? `${movement.previousBalance} / ${movement.newBalance}` : '—'}</td>
+                          <td className="whitespace-nowrap px-3 py-2.5 text-xs">{movement.performedBy ?? '—'}</td>
                           <td className="px-3 py-2.5 text-xs text-[#705331]">{movement.note ?? movement.referenceId ?? '—'}</td>
                         </tr>
                       ))}
@@ -390,7 +428,8 @@ function InventoryCard({ item, onAdjust, onUpdate }: {
   onUpdate: (itemId: string, patch: Partial<InventoryItem>) => void;
 }) {
   const stockTracked = item.trackStock || item.quantity > 0 || item.lowStockThreshold > 0;
-  const low = stockTracked && item.quantity <= item.lowStockThreshold;
+  const out = stockTracked && item.quantity === 0;
+  const low = stockTracked && item.quantity > 0 && item.quantity <= item.lowStockThreshold;
   return (
     <article className="rounded-2xl border border-[#E5E3B2] bg-white p-4">
       <div className="flex items-start justify-between gap-3">
@@ -398,8 +437,8 @@ function InventoryCard({ item, onAdjust, onUpdate }: {
           <h4 className="font-bold text-[#403d33]">{item.name}</h4>
           <p className="mt-1 text-sm text-[#705331]">{item.quantity} {item.unit}</p>
         </div>
-        <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${low ? 'bg-amber-50 text-amber-800' : stockTracked ? 'bg-[#f4f6ef] text-[#66764e]' : 'bg-[#f4f3ef] text-[#705331]'}`}>
-          {low ? 'مخزون قليل' : stockTracked ? 'متابَع تلقائيًا' : 'الرصيد غير مُسجل'}
+        <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${out ? 'bg-rose-50 text-rose-800' : low ? 'bg-amber-50 text-amber-800' : stockTracked ? 'bg-[#f4f6ef] text-[#66764e]' : 'bg-[#f4f3ef] text-[#705331]'}`}>
+          {out ? 'نفد المخزون' : low ? 'مخزون منخفض' : stockTracked ? 'متابَع تلقائيًا' : 'الرصيد غير مُسجل'}
         </span>
       </div>
       <div className="mt-3 grid grid-cols-[1fr_1fr] gap-2">
@@ -411,12 +450,55 @@ function InventoryCard({ item, onAdjust, onUpdate }: {
           حد التنبيه
           <input aria-label={`حد تنبيه ${item.name}`} min="0" step="any" type="number" value={item.lowStockThreshold} onChange={(event) => onUpdate(item.id, { lowStockThreshold: Number(event.target.value) || 0 })} className="mt-1 w-full rounded-lg border-[#E5E3B2] px-2 py-1.5 text-sm" />
         </label>
+        <label className="text-xs text-[#705331]">
+          التصنيف
+          <input aria-label={`تصنيف ${item.name}`} maxLength={60} value={item.category ?? ''} onChange={(event) => onUpdate(item.id, { category: event.target.value || undefined })} className="mt-1 w-full rounded-lg border-[#E5E3B2] px-2 py-1.5 text-sm" />
+        </label>
       </div>
+      {item.type === 'ingredient' ? (
+        <label className="mt-3 block text-xs text-[#705331]">
+          تكلفة الوحدة (ج.م)
+          <input
+            aria-label={`تكلفة وحدة ${item.name}`}
+            min="0"
+            step="any"
+            type="number"
+            value={item.unitCost ?? ''}
+            onChange={(event) => onUpdate(item.id, {
+              unitCost: event.target.value === '' ? undefined : Number(event.target.value),
+            })}
+            className="mt-1 w-full rounded-lg border-[#E5E3B2] px-2 py-1.5 text-sm"
+          />
+        </label>
+      ) : null}
       <div className="mt-3 flex items-center justify-between gap-3 border-t border-[#E5E3B2] pt-3">
         <span className="text-xs font-semibold text-[#705331]">{stockTracked ? 'الخصم التلقائي مفعّل' : 'أضف الرصيد لتفعيل الخصم'}</span>
         <button type="button" onClick={onAdjust} className="shrink-0 rounded-lg bg-[#f4f6ef] px-3 py-2 text-xs font-semibold text-[#6B8136] hover:bg-[#e9efdf]">تعديل الرصيد</button>
       </div>
     </article>
+  );
+}
+
+function RecipeQuantityInput({ value, onChange }: { value: number; onChange: (value: number) => void }) {
+  return (
+    <input
+      aria-label="كمية الخامة في الوصفة"
+      min="0.001"
+      step="any"
+      type="number"
+      defaultValue={value}
+      onBlur={(event) => {
+        const input = event.currentTarget;
+        const quantity = Number(input.value);
+        if (Number.isFinite(quantity) && quantity > 0) {
+          input.value = String(quantity);
+          onChange(quantity);
+        } else {
+          input.value = String(value);
+        }
+      }}
+      className="w-20 rounded-lg border-[#E5E3B2] px-2 py-1 text-sm"
+    />
   );
 }
 

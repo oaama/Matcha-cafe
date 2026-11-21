@@ -102,7 +102,9 @@ export async function POST(request: Request) {
     const result = calculateOrderInventoryConsumption(order, inventory.items, inventory.recipes).length
       ? await repository.createWithInventory(order, idempotencyKey)
       : await repository.create(order, idempotencyKey);
-    return NextResponse.json({ ok: true, order: result.order }, { status: result.created ? 201 : 200 });
+    const customerOrder = { ...result.order };
+    delete customerOrder.inventoryCostSnapshot;
+    return NextResponse.json({ ok: true, order: customerOrder }, { status: result.created ? 201 : 200 });
   } catch (error) {
     if (error instanceof InventoryStockError) {
       return NextResponse.json({ error: error.message }, { status: 409 });

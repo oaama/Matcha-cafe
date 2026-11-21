@@ -9,6 +9,10 @@ An Arabic-first, right-to-left ordering and café operations app. Customers can 
 - Staff dashboard for order preparation, status updates, and receipt printing.
 - Employee accounts, automatic shift tracking, and per-shift sales and expense reports.
 - Menu and add-on management, ingredient recipes, stock deductions, and low-stock monitoring.
+- Purchase invoice drafts and approval with stock-in movements and weighted-average ingredient costs.
+- Separate manual debts with installment history, and manual shift revenue kept apart from order sales.
+- Employee payroll profiles, shift-based wage statements, advances, overtime, and a financial overview.
+- Excel exports for orders, inventory, purchases, manual revenue, expenses, debts, payroll, and recipe costs.
 - Customer directory with order history summaries, contact actions, follow-up notes, and contact status.
 - Configurable service charge and tax.
 - In-memory mock data for local development and MongoDB persistence for production.
@@ -98,6 +102,11 @@ The menu's initial catalog is defined in `lib/menu-data.ts`. Order, shift, inven
 - Admins can view and print a separate report for each completed shift; employees can print reports for their own shifts only. Ambiguous legacy orders are not misattributed and are flagged; historical expenses without a shift ID are not retroactively assigned.
 - A customer phone number is required with every new order. The customer directory groups order history by normalized phone number and lets signed-in staff track follow-up status, notes, and the last contact time. Existing orders with phone numbers are included.
 - Inventory is deducted automatically after a positive opening balance or low-stock threshold is recorded. Items without a recorded balance remain sellable until initialized.
+- Ingredient unit costs can be entered in inventory to calculate recipe cost, gross profit, and margin. These costs do not change product selling prices or stock deductions.
+- Purchase invoices remain drafts until approved. Approval updates inventory and weighted-average unit costs in a MongoDB transaction; approved invoices cannot be cancelled, and purchases never create debts.
+- Manual shift revenue is recorded separately from order transactions. Employees can record revenue only against their active shift; only Admins can edit or delete revenue entries.
+- New orders save an inventory-cost snapshot only when every consumed stock item has a recorded unit cost. Financial summaries use those snapshots and visibly mark estimates based on current costs or orders with unavailable costs.
+- Debts are entered explicitly by an Admin and never generated from purchase invoices. Payroll statements calculate base wages from recorded shift hours and subtract each manually recorded advance once.
 - Product and category removal is reversible: entries are hidden while historical order snapshots remain intact.
 - Service charges and tax are disabled by default. When enabled, service is calculated on the subtotal, then tax on the subtotal plus service. The server recalculates totals at checkout.
 - The dashboard refreshes order and shift data every four seconds.

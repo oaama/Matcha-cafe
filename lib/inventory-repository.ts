@@ -35,6 +35,8 @@ const itemSchema = new Schema<InventoryItem>({
   productId: { type: String, unique: true, sparse: true },
   name: { type: String, required: true },
   unit: { type: String, required: true },
+  category: { type: String, trim: true, maxlength: 60 },
+  unitCost: { type: Number, min: 0 },
   quantity: { type: Number, required: true, min: 0 },
   lowStockThreshold: { type: Number, required: true, min: 0 },
   trackStock: { type: Boolean, required: true },
@@ -46,9 +48,12 @@ const movementSchema = new Schema<InventoryMovement>({
   itemName: { type: String, required: true },
   itemType: { type: String, enum: ['product', 'ingredient'], required: true },
   quantity: { type: Number, required: true },
-  reason: { type: String, enum: ['adjustment', 'sale', 'cancellation'], required: true },
+  reason: { type: String, enum: ['adjustment', 'sale', 'cancellation', 'purchase'], required: true },
   referenceId: String,
   note: String,
+  performedBy: String,
+  previousBalance: Number,
+  newBalance: Number,
   createdAt: { type: String, required: true },
 }, { versionKey: false, collection: 'inventory_movements' });
 movementSchema.index({ itemId: 1, createdAt: -1 });
@@ -178,12 +183,13 @@ export async function saveInventorySettings(items: InventoryItem[], recipes: Pro
   }
 }
 
-export async function adjustInventory(itemId: string, delta: number, note?: string) {
+export async function adjustInventory(itemId: string, delta: number, note?: string, performedBy?: string) {
   const now = new Date().toISOString();
   if (getDataProvider() === 'mock') {
     const item = mockStore.items.find((candidate) => candidate.id === itemId);
     if (!item) throw new InventoryItemNotFoundError();
     if (item.quantity + delta < 0) throw new InventoryStockError(`الكمية المتاحة من «${item.name}» لا تكفي للخصم`);
+    const previousBalance = item.quantity;
     item.quantity += delta;
     if (delta > 0) item.trackStock = true;
     mockStore.movements.unshift({
@@ -194,6 +200,9 @@ export async function adjustInventory(itemId: string, delta: number, note?: stri
       quantity: delta,
       reason: 'adjustment',
       note,
+      performedBy,
+      previousBalance,
+      newBalance: item.quantity,
       createdAt: now,
     });
     return structuredClone(item);
@@ -205,6 +214,11 @@ export async function adjustInventory(itemId: string, delta: number, note?: stri
   try {
     let updated: InventoryItem | null = null;
     await session.withTransaction(async () => {
+      const current = await InventoryItemModel.findOne({ id: itemId }).session(session).lean() as InventoryItem | null;
+      if (!current) throw new InventoryItemNotFoundError();
+      if (current.quantity + delta < 0) {
+        throw new InventoryStockError(`الكمية المتاحة من «${current.name}» لا تكفي للخصم`);
+      }
       updated = await InventoryItemModel.findOneAndUpdate(
         { id: itemId, ...(delta < 0 ? { quantity: { $gte: -delta } } : {}) },
         { $inc: { quantity: delta }, ...(delta > 0 ? { $set: { trackStock: true } } : {}) },
@@ -223,6 +237,9 @@ export async function adjustInventory(itemId: string, delta: number, note?: stri
         quantity: delta,
         reason: 'adjustment',
         note,
+        performedBy,
+        previousBalance: current.quantity,
+        newBalance: updated.quantity,
         createdAt: now,
       }], { session });
     });
@@ -231,6 +248,108 @@ export async function adjustInventory(itemId: string, delta: number, note?: stri
   } finally {
     await session.endSession();
   }
+}
+
+export async function receiveInventoryPurchase(
+  lines: Array<{ itemId: string; quantity: number; unitCost: number }>,
+  referenceId: string,
+  performedBy: string,
+  session?: ClientSession,
+) {
+  const now = new Date().toISOString();
+  if (getDataProvider() === 'mock') {
+    const updates = lines.map((line) => {
+      const item = mockStore.items.find((candidate) => candidate.id === line.itemId);
+      if (!item) throw new InventoryItemNotFoundError();
+      return { item, line };
+    });
+    for (const { item, line } of updates) {
+      const previousBalance = item.quantity;
+      const newBalance = previousBalance + line.quantity;
+      item.unitCost = item.unitCost === undefined || previousBalance <= 0
+        ? line.unitCost
+        : Number(((previousBalance * item.unitCost + line.quantity * line.unitCost) / newBalance).toFixed(6));
+      item.quantity = newBalance;
+      item.trackStock = true;
+      mockStore.movements.unshift({
+        id: newId(),
+        itemId: item.id,
+        itemName: item.name,
+        itemType: item.type,
+        quantity: line.quantity,
+        reason: 'purchase',
+        referenceId,
+        performedBy,
+        previousBalance,
+        newBalance,
+        createdAt: now,
+      });
+    }
+    return updates.map(({ item }) => structuredClone(item));
+  }
+
+  if (!session) throw new Error('A database session is required to receive purchased inventory');
+  const received: InventoryItem[] = [];
+  for (const line of lines) {
+    const current = await InventoryItemModel.findOne({ id: line.itemId }).session(session).lean() as InventoryItem | null;
+    if (!current) throw new InventoryItemNotFoundError();
+    const newBalance = current.quantity + line.quantity;
+    const unitCost = current.unitCost === undefined || current.quantity <= 0
+      ? line.unitCost
+      : Number(((current.quantity * current.unitCost + line.quantity * line.unitCost) / newBalance).toFixed(6));
+    const updated = await InventoryItemModel.findOneAndUpdate(
+      { id: line.itemId },
+      { $inc: { quantity: line.quantity }, $set: { unitCost, trackStock: true } },
+      { new: true, session },
+    ).lean() as InventoryItem | null;
+    if (!updated) throw new InventoryItemNotFoundError();
+    await InventoryMovementModel.create([{
+      id: newId(),
+      itemId: updated.id,
+      itemName: updated.name,
+      itemType: updated.type,
+      quantity: line.quantity,
+      reason: 'purchase',
+      referenceId,
+      performedBy,
+      previousBalance: current.quantity,
+      newBalance,
+      createdAt: now,
+    }], { session });
+    received.push(updated);
+  }
+  return received;
+}
+
+export async function getInventoryCostSnapshot(
+  consumption: Array<{ itemId: string; quantity: number }>,
+  session?: ClientSession,
+) {
+  if (!consumption.length) return null;
+  let items: InventoryItem[];
+  if (getDataProvider() === 'mock') {
+    items = consumption
+      .map((entry) => mockStore.items.find((item) => item.id === entry.itemId))
+      .filter((item): item is InventoryItem => Boolean(item));
+  } else {
+    if (!session) throw new Error('A database session is required to calculate order inventory cost');
+    items = await InventoryItemModel.find({
+      id: { $in: consumption.map((entry) => entry.itemId) },
+    }).session(session).lean() as InventoryItem[];
+  }
+  if (items.length !== new Set(consumption.map((entry) => entry.itemId)).size
+    || items.some((item) => item.unitCost === undefined)) return null;
+  const costById = new Map<string, number>();
+  for (const item of items) {
+    if (item.unitCost === undefined) return null;
+    costById.set(item.id, item.unitCost);
+  }
+  const amount = consumption.reduce((sum, entry) => {
+    const unitCost = costById.get(entry.itemId);
+    if (unitCost === undefined) throw new Error(`Missing unit cost for consumed inventory item ${entry.itemId}`);
+    return sum + entry.quantity * unitCost;
+  }, 0);
+  return Number(amount.toFixed(2));
 }
 
 export function calculateOrderInventoryConsumption(order: OrderRecord, items: InventoryItem[], recipes: ProductRecipe[]) {
@@ -270,6 +389,9 @@ export async function consumeInventoryForOrder(order: OrderRecord, session?: Cli
         quantity: -entry.quantity,
         reason: 'sale',
         referenceId: order.orderNumber,
+        performedBy: 'نظام الطلبات',
+        previousBalance: item.quantity + entry.quantity,
+        newBalance: item.quantity,
         createdAt: order.createdAt,
       });
     }
@@ -305,6 +427,9 @@ export async function consumeInventoryForOrder(order: OrderRecord, session?: Cli
         quantity: -entry.quantity,
         reason: 'sale',
         referenceId: order.orderNumber,
+        performedBy: 'نظام الطلبات',
+        previousBalance: item.quantity,
+        newBalance: item.quantity - entry.quantity,
         createdAt: order.createdAt,
       };
     }), { session });
@@ -328,6 +453,9 @@ export async function restoreInventoryForOrder(order: OrderRecord, session?: Cli
         quantity: entry.quantity,
         reason: 'cancellation',
         referenceId: order.orderNumber,
+        performedBy: order.employeeName ?? 'نظام الطلبات',
+        previousBalance: item.quantity - entry.quantity,
+        newBalance: item.quantity,
         createdAt: now,
       });
     }
@@ -351,6 +479,9 @@ export async function restoreInventoryForOrder(order: OrderRecord, session?: Cli
       quantity: entry.quantity,
       reason: 'cancellation',
       referenceId: order.orderNumber,
+      performedBy: order.employeeName ?? 'نظام الطلبات',
+      previousBalance: item.quantity,
+      newBalance: item.quantity + entry.quantity,
       createdAt: now,
     }], { session });
   }

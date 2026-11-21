@@ -9,6 +9,11 @@ import type { ShiftRecord, StaffIdentity } from '@/lib/staff-types';
 import { formatShiftDuration, getShiftDurationMinutes, shiftEndedToday } from '@/lib/shift-time';
 import MenuManagement from './menu-management';
 import InventoryManagement from './inventory-management';
+import PurchaseManagement from './purchase-management';
+import DebtManagement from './debt-management';
+import PayrollManagement from './payroll-management';
+import ShiftRevenueManagement from './shift-revenue-management';
+import FinancialOverview from './financial-overview';
 import ReceiptPrint from './receipt-print';
 import UserManagement from './user-management';
 import ExpenseManagement from './expense-management';
@@ -19,7 +24,8 @@ import CustomerManagement from './customer-management';
 type OrderRow = OrderRecord;
 
 type OrderFilter = 'ALL' | OrderRow['status'];
-type DashboardSection = 'orders' | 'new-order' | 'menu' | 'inventory' | 'settings' | 'shifts' | 'users' | 'expenses' | 'customers';
+type DashboardSection = 'overview' | 'orders' | 'new-order' | 'menu' | 'inventory' | 'purchases' | 'debts' | 'payroll' | 'settings' | 'shifts' | 'users' | 'expenses' | 'customers';
+type NavigationItem = { section: DashboardSection; title: string; icon: string; group: string };
 
 const statusLabels: Record<OrderRow['status'], string> = {
   NEW: 'طلب جديد',
@@ -61,6 +67,7 @@ export default function CashierDashboard() {
   const [shiftRows, setShiftRows] = useState<ShiftRecord[]>([]);
   const [shiftMessage, setShiftMessage] = useState('');
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [receiptShift, setReceiptShift] = useState<ShiftRecord | null>(null);
   const [clockNow, setClockNow] = useState(() => Date.now());
   const [shiftSaving, setShiftSaving] = useState(false);
@@ -99,6 +106,7 @@ export default function CashierDashboard() {
         if (!active) return;
         if (session.authenticated) {
           setStaff(session.staff ?? null);
+          setDashboardSection(session.staff?.role === 'ADMIN' ? 'overview' : 'orders');
           setActiveShift(session.activeShift ?? null);
           setLoggedIn(true);
           void fetchOrders();
@@ -204,6 +212,7 @@ export default function CashierDashboard() {
         return;
       }
       setStaff(data.staff ?? null);
+      setDashboardSection(data.staff?.role === 'ADMIN' ? 'overview' : 'orders');
       setActiveShift(data.activeShift ?? null);
       setLoggedIn(true);
       await fetchOrders();
@@ -361,25 +370,35 @@ export default function CashierDashboard() {
   const completedShiftToday = staff?.role === 'EMPLOYEE'
     && shiftRows.some((shift) => shift.employeeId === staff.id && shiftEndedToday(shift, clockNow));
   const pricingHasChanges = JSON.stringify(pricingSettings) !== JSON.stringify(savedPricingSettings);
-  const navigationItems: Array<{ section: DashboardSection; title: string; icon: string }> = staff?.role === 'ADMIN'
+  const navigationItems: NavigationItem[] = staff?.role === 'ADMIN'
     ? [
-      { section: 'orders', title: 'الطلبات', icon: '▤' },
-      { section: 'new-order', title: 'إنشاء طلب', icon: '＋' },
-      { section: 'expenses', title: 'المصروفات', icon: '◈' },
-      { section: 'menu', title: 'إدارة المنيو', icon: '☷' },
-      { section: 'inventory', title: 'المخزون والتقارير', icon: '▦' },
-      { section: 'settings', title: 'الإعدادات والرسوم', icon: '⚙' },
-      { section: 'shifts', title: 'الشيفتات', icon: '◷' },
-      { section: 'users', title: 'المستخدمون', icon: '♙' },
-      { section: 'customers', title: 'العملاء والمتابعة', icon: '♧' },
+      { section: 'overview', title: 'نظرة عامة', icon: '◫', group: 'الرئيسية' },
+      { section: 'orders', title: 'الطلبات', icon: '▤', group: 'الطلبات والمبيعات' },
+      { section: 'new-order', title: 'إنشاء طلب', icon: '＋', group: 'الطلبات والمبيعات' },
+      { section: 'expenses', title: 'المصروفات', icon: '◈', group: 'الطلبات والمبيعات' },
+      { section: 'shifts', title: 'الشيفتات والإيرادات', icon: '◷', group: 'الشيفتات' },
+      { section: 'menu', title: 'إدارة المنيو', icon: '☷', group: 'المنيو والمنتجات' },
+      { section: 'inventory', title: 'إدارة المخزون', icon: '▦', group: 'المخزون والمشتريات' },
+      { section: 'purchases', title: 'فواتير المشتريات', icon: '▧', group: 'المخزون والمشتريات' },
+      { section: 'debts', title: 'الديون اليدوية', icon: '◉', group: 'المالية والديون' },
+      { section: 'payroll', title: 'الموظفون والرواتب', icon: '♙', group: 'الموظفون والصلاحيات' },
+      { section: 'users', title: 'المستخدمون', icon: '♙', group: 'الموظفون والصلاحيات' },
+      { section: 'customers', title: 'العملاء والمتابعة', icon: '♧', group: 'العملاء' },
+      { section: 'settings', title: 'الإعدادات والرسوم', icon: '⚙', group: 'الإعدادات' },
     ]
     : [
-      { section: 'orders', title: 'الطلبات', icon: '▤' },
-      { section: 'new-order', title: 'إنشاء طلب', icon: '＋' },
-      { section: 'expenses', title: 'المصروفات', icon: '◈' },
-      { section: 'shifts', title: 'شيفتاتي', icon: '◷' },
-      { section: 'customers', title: 'العملاء والمتابعة', icon: '♧' },
+      { section: 'orders', title: 'الطلبات', icon: '▤', group: 'الطلبات والمبيعات' },
+      { section: 'new-order', title: 'إنشاء طلب', icon: '＋', group: 'الطلبات والمبيعات' },
+      { section: 'expenses', title: 'المصروفات', icon: '◈', group: 'الطلبات والمبيعات' },
+      { section: 'shifts', title: 'شيفتاتي وإيراداتي', icon: '◷', group: 'الشيفتات' },
+      { section: 'customers', title: 'العملاء والمتابعة', icon: '♧', group: 'العملاء' },
     ];
+  const navigationGroups = navigationItems.reduce<Array<{ title: string; items: NavigationItem[] }>>((groups, item) => {
+    const group = groups.find((entry) => entry.title === item.group);
+    if (group) group.items.push(item);
+    else groups.push({ title: item.group, items: [item] });
+    return groups;
+  }, []);
 
   if (!loggedIn) {
     if (sessionChecking) {
@@ -512,28 +531,25 @@ export default function CashierDashboard() {
       </header>
 
       <div className="mx-auto flex min-h-[calc(100svh-4.5rem)] w-full max-w-[1600px] gap-4 px-2 py-3 sm:px-4 lg:gap-6 lg:px-6 lg:py-5">
-        <aside className="hidden w-[17rem] shrink-0 self-start rounded-[1.5rem] border border-[#dbe7e3] bg-white/80 p-3 shadow-[0_4px_18px_rgba(29,73,68,.04)] xl:sticky xl:top-[5.75rem] xl:block">
-          <p className="px-3 pb-2 pt-3 text-xs font-semibold text-[#80918d]">الرئيسية</p>
-          <nav aria-label="أقسام لوحة التحكم" className="space-y-2">
-            {navigationItems.map(({ section, title, icon }) => (
-              <button
-                key={section}
-                type="button"
-                aria-pressed={dashboardSection === section}
-                onClick={() => setDashboardSection(section)}
-                className={`flex w-full items-center gap-3 rounded-xl border px-3 py-3 text-start text-sm font-semibold transition ${dashboardSection === section ? 'border-[#4b9b91] bg-[#d8f3ee] text-[#176f68]' : 'border-transparent text-[#566b67] hover:border-[#dbe7e3] hover:bg-[#f4f9f7]'}`}
-              >
-                <span aria-hidden="true" className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/80 text-base">{icon}</span>
-                {title}
-              </button>
-            ))}
+        <aside className={`hidden shrink-0 self-start rounded-[1.5rem] border border-[#dbe7e3] bg-white/80 p-3 shadow-[0_4px_18px_rgba(29,73,68,.04)] xl:sticky xl:top-[5.75rem] xl:block ${sidebarCollapsed ? 'w-[4.75rem]' : 'w-[17rem]'}`}>
+          <div className={`flex items-center gap-2 px-2 pb-2 pt-3 ${sidebarCollapsed ? 'justify-center' : 'justify-between'}`}>
+            {!sidebarCollapsed ? <p className="text-xs font-semibold text-[#80918d]">أقسام لوحة التحكم</p> : null}
+            <button type="button" onClick={() => setSidebarCollapsed((current) => !current)} className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#dbe7e3] text-sm text-[#315d58]" aria-label={sidebarCollapsed ? 'توسيع القائمة' : 'تصغير القائمة'} aria-expanded={!sidebarCollapsed}>{sidebarCollapsed ? '»' : '«'}</button>
+          </div>
+          <nav aria-label="أقسام لوحة التحكم" className="space-y-3">
+            {navigationGroups.map((group) => <div key={group.title}>
+              {!sidebarCollapsed ? <p className="px-3 pb-1 text-[10px] font-semibold text-[#80918d]">{group.title}</p> : null}
+              <div className="space-y-1">
+                {group.items.map(({ section, title, icon }) => <button key={section} type="button" aria-pressed={dashboardSection === section} aria-label={sidebarCollapsed ? title : undefined} title={sidebarCollapsed ? title : undefined} onClick={() => setDashboardSection(section)} className={`flex min-h-11 w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-start text-sm font-semibold transition ${sidebarCollapsed ? 'justify-center' : ''} ${dashboardSection === section ? 'border-[#4b9b91] bg-[#d8f3ee] text-[#176f68]' : 'border-transparent text-[#566b67] hover:border-[#dbe7e3] hover:bg-[#f4f9f7]'}`}><span aria-hidden="true" className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/80 text-base">{icon}</span>{!sidebarCollapsed ? title : null}</button>)}
+              </div>
+            </div>)}
           </nav>
         </aside>
 
         <main className="min-w-0 flex-1 rounded-[1.5rem] border border-[#dbe7e3] bg-[#f8fcfa] p-3 shadow-[0_5px_22px_rgba(29,73,68,.045)] sm:p-5 lg:p-7">
           <section className="dashboard-hero mb-6 flex flex-wrap items-center justify-between gap-5 rounded-[1.35rem] bg-gradient-to-l from-[#56766f] to-[#18756d] px-5 py-5 text-white shadow-sm sm:px-7 sm:py-6">
             <div>
-              <h1 className="text-2xl font-bold sm:text-3xl">لوحة الكاشير</h1>
+              <h1 className="text-2xl font-bold sm:text-3xl">{staff?.role === 'ADMIN' ? 'لوحة إدارة المقهى' : 'لوحة الكاشير'}</h1>
               {staff ? <p className="mt-1 text-sm text-white/75">{staff.username}</p> : null}
             </div>
             <button type="button" onClick={() => setDrawerOpen(true)} className="inline-flex items-center gap-2 rounded-xl border border-white/25 bg-white/15 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/25 xl:hidden">
@@ -594,6 +610,10 @@ export default function CashierDashboard() {
         {dashboardSection === 'expenses' && staff ? <ExpenseManagement staff={staff} activeShift={activeShift} /> : null}
         {dashboardSection === 'menu' ? <MenuManagement /> : null}
         {dashboardSection === 'inventory' ? <InventoryManagement /> : null}
+        {dashboardSection === 'purchases' && staff?.role === 'ADMIN' ? <PurchaseManagement /> : null}
+        {dashboardSection === 'debts' && staff?.role === 'ADMIN' ? <DebtManagement /> : null}
+        {dashboardSection === 'payroll' && staff?.role === 'ADMIN' ? <PayrollManagement /> : null}
+        {dashboardSection === 'overview' && staff?.role === 'ADMIN' ? <FinancialOverview /> : null}
 
         {dashboardSection === 'settings' ? <section aria-labelledby="pricing-heading" className="mb-7 rounded-[1.5rem] border border-[#E5E3B2] bg-white/85 p-4 shadow-[0_8px_24px_rgba(44,43,35,.04)] sm:p-6">
           <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
@@ -731,6 +751,7 @@ export default function CashierDashboard() {
             </div>
           )}
         </section> : null}
+        {dashboardSection === 'shifts' && staff ? <ShiftRevenueManagement staff={staff} activeShift={activeShift} shifts={shiftRows} /> : null}
         {dashboardSection === 'users' && staff?.role === 'ADMIN' ? <UserManagement currentStaffId={staff.id} /> : null}
         {dashboardSection === 'customers' ? <CustomerManagement /> : null}
 
