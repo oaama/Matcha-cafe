@@ -426,12 +426,6 @@ export default function CashierDashboard() {
       { section: 'shifts', title: 'شيفتاتي وإيراداتي', icon: '◷', group: 'الشيفتات' },
       { section: 'customers', title: 'العملاء والمتابعة', icon: '♧', group: 'العملاء' },
     ];
-  const bottomTabSections = staff?.role === 'ADMIN'
-    ? ['overview', 'orders', 'new-order', 'inventory']
-    : ['orders', 'new-order', 'shifts'];
-  const bottomTabs = bottomTabSections
-    .map((section) => navigationItems.find((item) => item.section === section))
-    .filter((item): item is NavigationItem => Boolean(item));
   const navigationGroups = navigationItems.reduce<Array<{ title: string; items: NavigationItem[] }>>((groups, item) => {
     const group = groups.find((entry) => entry.title === item.group);
     if (group) group.items.push(item);
@@ -452,11 +446,11 @@ export default function CashierDashboard() {
     }
 
     return (
-      <main className="relative flex min-h-[calc(100svh-3.125rem)] w-full min-w-0 items-center justify-center overflow-hidden px-4 py-7 sm:px-6 sm:py-10">
+      <main className="relative flex min-h-[calc(100svh-3.125rem)] w-full min-w-0 items-center justify-center overflow-hidden px-4 py-4 sm:px-6 sm:py-10">
         <div aria-hidden="true" className="pointer-events-none absolute -right-24 -top-28 h-80 w-80 rounded-full border border-[#91A560]/20 motion-float" />
         <div aria-hidden="true" className="pointer-events-none absolute -bottom-32 -left-24 h-96 w-96 rounded-full bg-[#E5E3B2]/55 blur-3xl" />
         <div className="relative grid w-full max-w-5xl overflow-hidden rounded-[2rem] border border-white/80 bg-white shadow-[0_28px_90px_rgba(52,69,39,.14)] md:min-h-[36rem] md:grid-cols-2">
-          <section className="relative isolate flex min-h-56 flex-col justify-between overflow-hidden bg-gradient-to-br from-[#176f68] via-[#286f62] to-[#536f3c] px-6 py-7 text-white sm:px-10 sm:py-9 md:min-h-full md:px-12 md:py-12">
+          <section className="relative isolate flex flex-col justify-between gap-5 overflow-hidden bg-gradient-to-br from-[#176f68] via-[#286f62] to-[#536f3c] px-5 py-5 text-white sm:px-10 sm:py-9 md:min-h-full md:px-12 md:py-12">
             <div aria-hidden="true" className="pointer-events-none absolute -left-20 -top-24 h-64 w-64 rounded-full border border-white/10" />
             <div aria-hidden="true" className="pointer-events-none absolute -bottom-28 -right-16 h-72 w-72 rounded-full bg-white/5 blur-2xl" />
             <div className="relative flex items-center gap-3">
@@ -466,7 +460,7 @@ export default function CashierDashboard() {
                 <p className="mt-1 text-xs text-white/70">مساحة فريق العمل</p>
               </div>
             </div>
-            <div className="relative mt-8 md:mt-0">
+            <div className="relative mt-8 hidden sm:block md:mt-0">
               <h2 className="max-w-md text-2xl font-bold leading-relaxed sm:text-3xl">كل شيفت يبدأ بخطوة بسيطة</h2>
               <p className="mt-2 max-w-sm text-sm leading-7 text-white/75">سجّل دخولك لمتابعة الطلبات وإدارة شيفتك ومصروفاتك.</p>
             </div>
@@ -479,14 +473,14 @@ export default function CashierDashboard() {
             </div>
           </section>
 
-          <section className="flex items-center px-6 py-8 sm:px-10 sm:py-10 md:px-12">
+          <section className="flex items-center px-5 py-6 sm:px-10 sm:py-10 md:px-12">
             <div className="motion-enter mx-auto w-full max-w-md">
               <p className="text-sm font-semibold text-[#6B8136]">مرحبًا بعودتك</p>
               <h1 className="mt-2 text-2xl font-bold leading-relaxed text-[#232122] sm:text-3xl">تسجيل الدخول</h1>
               <p className="mt-2 text-sm leading-6 text-[#705331]">أدخل بيانات حساب الموظف أو المدير للمتابعة.</p>
 
               <form
-                className="mt-7 space-y-5"
+                className="mt-5 space-y-4"
                 onSubmit={(event) => {
                   event.preventDefault();
                   void login();
@@ -501,7 +495,6 @@ export default function CashierDashboard() {
                     required
                     value={auth.email}
                     onChange={(e) => setAuth({ ...auth, email: e.target.value })}
-                    placeholder="name@example.com"
                     className="mt-2 w-full rounded-xl border-[#d9dfc7] bg-[#fbfcf8] px-4 py-3 text-left transition placeholder:text-[#a6a99b] focus:bg-white focus:ring-4 focus:ring-[#91A560]/10"
                   />
                 </label>
@@ -516,15 +509,19 @@ export default function CashierDashboard() {
                       value={auth.password}
                       onChange={(e) => setAuth({ ...auth, password: e.target.value })}
                       placeholder="أدخل كلمة المرور"
-                      className="w-full rounded-xl border-[#d9dfc7] bg-[#fbfcf8] py-3 pl-20 pr-4 text-left transition placeholder:text-[#a6a99b] focus:bg-white focus:ring-4 focus:ring-[#91A560]/10"
+                      className="w-full rounded-xl border-[#d9dfc7] bg-[#fbfcf8] py-3 pl-12 pr-4 text-left transition placeholder:text-[#a6a99b] focus:bg-white focus:ring-4 focus:ring-[#91A560]/10"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword((visible) => !visible)}
                       aria-label={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
-                      className="absolute left-2 top-1/2 -translate-y-1/2 rounded-lg px-2 py-1 text-xs font-semibold text-[#58704a] hover:bg-[#edf2e4]"
+                      className="absolute left-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-[#58704a] transition hover:bg-[#edf2e4]"
                     >
-                      {showPassword ? 'إخفاء' : 'إظهار'}
+                      {showPassword ? (
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-5 w-5" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" /></svg>
+                      ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-5 w-5" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>
+                      )}
                     </button>
                   </span>
                 </label>
@@ -577,7 +574,7 @@ export default function CashierDashboard() {
         </div>
       </header>
 
-      <div className="mx-auto flex min-h-[calc(100svh-4.5rem)] w-full max-w-[1600px] gap-4 px-2 py-3 pb-24 sm:px-4 lg:gap-6 lg:px-6 lg:py-5 xl:pb-5">
+      <div className="mx-auto flex min-h-[calc(100svh-4.5rem)] w-full max-w-[1600px] gap-4 px-2 py-3 sm:px-4 lg:gap-6 lg:px-6 lg:py-5">
         <aside className={`hidden shrink-0 self-start rounded-[1.5rem] border border-[#dbe7e3] bg-white/80 p-3 shadow-[0_4px_18px_rgba(29,73,68,.04)] xl:sticky xl:top-[5.75rem] xl:block ${sidebarCollapsed ? 'w-[4.75rem]' : 'w-[17rem]'}`}>
           <div className={`flex items-center gap-2 px-2 pb-2 pt-3 ${sidebarCollapsed ? 'justify-center' : 'justify-between'}`}>
             {!sidebarCollapsed ? <p className="text-xs font-semibold text-[#80918d]">أقسام لوحة التحكم</p> : null}
@@ -958,18 +955,7 @@ export default function CashierDashboard() {
         </main>
       </div>
 
-      <nav aria-label="تنقل سريع" className="fixed inset-x-0 bottom-0 z-40 flex items-stretch border-t border-[#dbe7e3] bg-white/95 px-1 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_18px_rgba(29,73,68,.06)] backdrop-blur xl:hidden">
-        {bottomTabs.map(({ section, title, icon }) => (
-          <button key={section} type="button" aria-pressed={dashboardSection === section} onClick={() => setDashboardSection(section)} className={`flex flex-1 flex-col items-center gap-1 py-2 text-[11px] font-semibold transition active:scale-95 ${dashboardSection === section ? 'text-[#176f68]' : 'text-[#7a8a87] hover:text-[#315d58]'}`}>
-            <span aria-hidden="true" className={`flex h-8 w-14 items-center justify-center rounded-full text-base transition ${dashboardSection === section ? 'bg-[#d8f3ee]' : ''}`}>{icon}</span>
-            {title}
-          </button>
-        ))}
-        <button type="button" onClick={() => setDrawerOpen(true)} className="flex flex-1 flex-col items-center gap-1 py-2 text-[11px] font-semibold text-[#7a8a87] transition hover:text-[#315d58] active:scale-95">
-          <span aria-hidden="true" className="flex h-8 w-14 items-center justify-center rounded-full text-base">☰</span>
-          كل الأقسام
-        </button>
-      </nav>
+
     </div>
   );
 }
