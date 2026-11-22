@@ -327,7 +327,14 @@ export default function InventoryManagement() {
                         const ingredientCost = recipeCost.ingredients.find((item) => item.itemId === entry.itemId);
                         return (
                           <div key={entry.itemId} className="flex items-center justify-between gap-3 rounded-lg bg-[#f8f8f4] px-3 py-2 text-sm">
-                            <span className="min-w-0 flex-1">{ingredient?.name ?? 'خامة محذوفة'}</span>
+                            <span className="min-w-0 flex-1">
+                              <span className="block">{ingredient?.name ?? 'خامة محذوفة'}</span>
+                              <span className="mt-0.5 block text-xs font-semibold text-[#80918d]">
+                                {ingredient?.unitCost === undefined
+                                  ? 'سعر الوحدة غير مسجل'
+                                  : `سعر ال${ingredient.unit}: ${ingredient.unitCost.toFixed(2)} ج.م`}
+                              </span>
+                            </span>
                             <span className="flex items-center gap-2 text-[#705331]">
                               <RecipeQuantityInput
                                 value={entry.quantity}
@@ -337,7 +344,7 @@ export default function InventoryManagement() {
                                 })}
                               />
                               <span>{ingredient?.unit}</span>
-                              <span className="min-w-16 text-start" dir="ltr">
+                              <span className="min-w-16 text-start" dir="ltr" title="تكلفة الكمية في الوصفة">
                                 {ingredientCost?.lineCost === undefined ? '—' : `${ingredientCost.lineCost.toFixed(2)} ج.م`}
                               </span>
                               <button type="button" aria-label={`إزالة ${ingredient?.name ?? 'الخامة'} من وصفة ${product.ar}`} onClick={() => {
