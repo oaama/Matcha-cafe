@@ -15,6 +15,7 @@ export default function LogoSplash() {
           />
           <svg className="logo-splash__outline" viewBox="0 0 240 240" aria-hidden="true">
             <circle className="logo-splash__outline-path" cx="120" cy="120" r="115" />
+            <circle className="logo-splash__outline-arc" cx="120" cy="120" r="126" />
           </svg>
         </div>
         <div className="logo-splash__copy">

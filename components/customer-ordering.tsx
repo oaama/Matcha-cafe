@@ -428,7 +428,7 @@ export default function CustomerOrdering() {
         </div>
       </section>
 
-      <section id="customer-menu" className="mb-6 scroll-mt-4 rounded-[1.5rem] border border-[#E5E3B2] bg-white p-3 shadow-[0_8px_24px_rgba(44,43,35,.04)] sm:mb-8 sm:p-4">
+      <section id="customer-menu" className="sticky top-2 z-20 mb-6 scroll-mt-4 rounded-[1.5rem] border border-[#E5E3B2] bg-white/95 p-3 shadow-[0_8px_24px_rgba(44,43,35,.06)] backdrop-blur sm:mb-8 sm:p-4">
         <div className="mb-3 flex items-center justify-between gap-3 px-1">
           <span className="shrink-0 rounded-full bg-[#f3f4ed] px-3 py-1.5 text-xs font-semibold text-[#687650]">{filteredProducts.length} صنف</span>
         </div>
@@ -488,7 +488,7 @@ export default function CustomerOrdering() {
                 </div>
                 <div className="grid grid-cols-2 gap-2.5 sm:gap-3.5 xl:grid-cols-3">
                   {items.map((product, index) => (
-                    <article key={product.id} className="group flex min-h-[196px] min-w-0 flex-col justify-between rounded-[1.1rem] border border-[#eae8e0] bg-white p-2.5 shadow-[0_3px_14px_rgba(44,43,35,.035)] transition duration-200 hover:-translate-y-1 hover:border-[#d9dfcc] hover:shadow-[0_16px_32px_rgba(44,43,35,.085)] sm:min-h-44 sm:rounded-[1.35rem] sm:p-4">
+                    <article key={product.id} className="group flex min-h-[196px] min-w-0 flex-col justify-between rounded-[1.1rem] border border-[#eae8e0] bg-white p-2.5 shadow-[0_3px_14px_rgba(44,43,35,.035)] transition duration-200 active:scale-[.985] hover:-translate-y-1 hover:border-[#d9dfcc] hover:shadow-[0_16px_32px_rgba(44,43,35,.085)] sm:min-h-44 sm:rounded-[1.35rem] sm:p-4">
                       <div className="flex min-h-[112px] min-w-0 flex-col sm:min-h-[112px]">
                         <div className="mb-2 flex items-start justify-between gap-1.5 sm:mb-3 sm:gap-3">
                           <div className={`relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl sm:h-12 sm:w-12 sm:rounded-2xl ${index % 3 === 0 ? 'bg-[#edf1e5] text-[#587044]' : index % 3 === 1 ? 'bg-[#f4eee7] text-[#967354]' : 'bg-[#f2f0e6] text-[#89804d]'}`}>
@@ -511,7 +511,7 @@ export default function CustomerOrdering() {
                         <button
                           type="button"
                           onClick={() => addToCart(product)}
-                          className="min-h-10 w-full rounded-full bg-[#edf1e7] px-2 py-2.5 text-[11px] font-bold text-[#6B8136] transition hover:bg-[#6B8136] hover:text-white sm:min-h-0 sm:w-auto sm:px-3.5 sm:text-xs"
+                          className="min-h-10 w-full rounded-full bg-[#edf1e7] px-2 py-2.5 text-[11px] font-bold text-[#6B8136] transition active:scale-95 hover:bg-[#6B8136] hover:text-white sm:min-h-0 sm:w-auto sm:px-3.5 sm:text-xs"
                         >
                           <span className="sm:hidden">{product.groups.length ? 'خصص +' : 'أضف +'}</span>
                           <span className="hidden sm:inline">{product.groups.length ? 'خصص و أضف +' : 'أضف للسلة +'}</span>
@@ -665,7 +665,7 @@ export default function CustomerOrdering() {
       <button
         type="button"
         onClick={() => setMobileCartOpen(true)}
-        className="fixed inset-x-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-30 flex items-center justify-between rounded-2xl bg-[#354a2c] px-5 py-3.5 text-white shadow-[0_12px_32px_rgba(31,47,26,.28)] lg:hidden"
+        className="fixed inset-x-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-30 flex items-center justify-between rounded-full border border-white/10 bg-[#354a2c]/95 px-5 py-3.5 text-white shadow-[0_16px_36px_rgba(31,47,26,.36)] backdrop-blur transition active:scale-[.99] lg:hidden"
         aria-label={`عرض السلة، ${cartItemCount} أصناف`}
       >
         <span className="flex items-center gap-2 font-semibold">

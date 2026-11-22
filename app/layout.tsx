@@ -18,12 +18,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="ar" dir="rtl">
       <body className="flex min-h-screen flex-col">
         {children}
-        <footer className="mt-auto px-4 py-4 text-center text-xs leading-5 text-[#705331]">
-          <span dir="ltr" className="inline-block font-semibold tracking-wide text-[#6B8136]">
-            <span className="block sm:inline">Developed by HEXA PLUS</span>
-            <span aria-hidden="true" className="hidden sm:inline"> · </span>
-            <span className="block sm:inline">Technical Lead: Eng. Angluos Rezq</span>
-          </span>
+        <footer className="mt-auto border-t border-[#E5E3B2] bg-white/70 px-4 py-5 text-center backdrop-blur">
+          <p className="brand-name text-[11px] uppercase tracking-[.18em] text-[#6B8136]">Matcha Café</p>
+          <p dir="ltr" className="mt-1.5 text-xs font-semibold tracking-wide text-[#705331]">
+            Developed by HEXA PLUS
+            <span aria-hidden="true" className="mx-1.5 text-[#c9c9bb]">·</span>
+            Technical Lead: Eng. Angluos Rezq
+          </p>
         </footer>
       </body>
     </html>

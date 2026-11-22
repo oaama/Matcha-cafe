@@ -1,10 +1,12 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import type { Category, Product } from '@/lib/types';
+import type { Product } from '@/lib/types';
 import { getProductPrice } from '@/lib/pricing';
 
-type MenuResponse = { categories: Category[]; products: Product[] };
+type MenuResponse = { products: Product[] };
+
+const inputClass = 'w-full rounded-xl border border-[#E5E3B2] bg-white px-3 py-2.5 text-sm transition placeholder:text-[#a6a99b] focus:border-[#6B8136] focus:outline-none focus:ring-2 focus:ring-[#91A560]/15';
 
 export default function CashierOrder({ onCreated }: { onCreated: () => void }) {
   const [products, setProducts] = useState<Product[]>([]);
@@ -95,6 +97,8 @@ export default function CashierOrder({ onCreated }: { onCreated: () => void }) {
     }
   };
 
+  const delivery = orderType === 'DELIVERY';
+
   return (
     <section className="space-y-5">
       <div className="rounded-[1.5rem] border border-[#E5E3B2] bg-white/75 p-5">
@@ -111,27 +115,80 @@ export default function CashierOrder({ onCreated }: { onCreated: () => void }) {
               onChange={(event) => setSearch(event.target.value)}
               placeholder="ابحث عن صنف..."
               aria-label="ابحث عن صنف في المنيو"
-              className="w-full"
+              className={inputClass}
             />
           </label>
           <div className="grid gap-3 sm:grid-cols-2">
             {loading ? <p className="text-sm text-[#705331]">جارٍ تحميل المنيو…</p> : filteredProducts.map((product) => {
               const quantity = items.find((item) => item.productId === product.id)?.quantity ?? 0;
-              return <button key={product.id} type="button" onClick={() => addItem(product.id)} className={`flex min-w-0 items-center justify-between gap-2 rounded-xl border px-3 py-3 text-right transition ${quantity ? 'border-[#6B8136] bg-[#f3f6ec]' : 'border-[#E5E3B2] bg-white hover:bg-[#FCF5ED]'}`}><span className="min-w-0 break-words"><strong className="block">{product.ar}</strong><span className="text-xs text-[#705331]">{getProductPrice(product).toFixed(2)} ج.م</span></span>{quantity ? <span className="shrink-0 rounded-full bg-[#6B8136] px-2 py-1 text-xs text-white">{quantity}</span> : <span className="shrink-0 text-[#6B8136]">+ إضافة</span>}</button>;
+              return <button key={product.id} type="button" onClick={() => addItem(product.id)} className={`flex min-w-0 items-center justify-between gap-2 rounded-xl border px-3 py-3 text-right transition active:scale-[.98] ${quantity ? 'border-[#6B8136] bg-[#f3f6ec]' : 'border-[#E5E3B2] bg-white hover:bg-[#FCF5ED]'}`}><span className="min-w-0 break-words"><strong className="block">{product.ar}</strong><span className="text-xs text-[#705331]">{getProductPrice(product).toFixed(2)} ج.م</span></span>{quantity ? <span className="shrink-0 rounded-full bg-[#6B8136] px-2 py-1 text-xs text-white">{quantity}</span> : <span className="shrink-0 text-[#6B8136]">+ إضافة</span>}</button>;
             })}
             {!loading && filteredProducts.length === 0 ? <p className="text-sm text-[#705331] sm:col-span-2">ملقيناش صنف بالاسم ده. جرّب كلمة تانية.</p> : null}
           </div>
         </div>
         <div className="min-w-0 space-y-3 rounded-[1.5rem] border border-[#E5E3B2] bg-white/75 p-4 sm:p-5">
-          <div className="flex gap-2">{([['DINE_IN', 'داخلي'], ['TAKEAWAY', 'تيك أواي'], ['DELIVERY', 'توصيل']] as const).map(([value, label]) => <button key={value} type="button" onClick={() => setOrderType(value)} className={`flex-1 rounded-xl px-2 py-2 text-sm font-semibold ${orderType === value ? 'bg-[#6B8136] text-white' : 'bg-[#FCF5ED] text-[#705331]'}`}>{label}</button>)}</div>
-          {items.map((item) => <div key={item.productId} className="flex items-center justify-between gap-2 text-sm"><span>{productsById.get(item.productId)?.ar}</span><input aria-label={`كمية ${productsById.get(item.productId)?.ar}`} type="number" min="0" value={item.quantity} onChange={(event) => changeQuantity(item.productId, Number(event.target.value))} className="w-20" /></div>)}
-          {orderType === 'DINE_IN' ? <input required placeholder="رقم الطاولة" value={tableNumber} onChange={(event) => setTableNumber(event.target.value)} /> : null}
-          {orderType === 'DELIVERY' ? <><input required placeholder="اسم العميل" value={customerName} onChange={(event) => setCustomerName(event.target.value)} /><input required type="tel" autoComplete="tel" placeholder="رقم الهاتف" value={customerPhone} onChange={(event) => setCustomerPhone(event.target.value)} /><input required placeholder="العنوان" value={customerAddress} onChange={(event) => setCustomerAddress(event.target.value)} /></> : <><input placeholder="اسم العميل (اختياري)" value={customerName} onChange={(event) => setCustomerName(event.target.value)} /><input required type="tel" autoComplete="tel" placeholder="رقم الهاتف" value={customerPhone} onChange={(event) => setCustomerPhone(event.target.value)} /></>}
-          <select value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value as 'cash' | 'card')}><option value="cash">كاش</option><option value="card">بطاقة</option></select>
+          <div className="flex gap-2" role="group" aria-label="نوع الطلب">{([['DINE_IN', 'داخلي'], ['TAKEAWAY', 'تيك أواي'], ['DELIVERY', 'توصيل']] as const).map(([value, label]) => <button key={value} type="button" aria-pressed={orderType === value} onClick={() => setOrderType(value)} className={`flex-1 rounded-xl px-2 py-2 text-sm font-semibold transition active:scale-95 ${orderType === value ? 'bg-[#6B8136] text-white' : 'bg-[#FCF5ED] text-[#705331] hover:bg-[#f3ecdd]'}`}>{label}</button>)}</div>
+
+          {items.length === 0 ? (
+            <p className="rounded-xl border border-dashed border-[#E5E3B2] bg-[#FCF5ED]/60 px-3 py-4 text-center text-xs text-[#8b8b7b]">السلة فاضية — اختار أصناف من المنيو.</p>
+          ) : items.map((item) => {
+            const name = productsById.get(item.productId)?.ar ?? '';
+            return (
+              <div key={item.productId} className="flex items-center justify-between gap-2 text-sm">
+                <span className="min-w-0 flex-1 truncate font-semibold text-[#403d33]">{name}</span>
+                <div className="flex shrink-0 items-center gap-1.5">
+                  <button type="button" aria-label={`تقليل كمية ${name}`} onClick={() => changeQuantity(item.productId, item.quantity - 1)} className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#E5E3B2] bg-white text-base font-bold text-[#705331] transition hover:bg-[#FCF5ED] active:scale-95">−</button>
+                  <span aria-label={`كمية ${name}`} className="w-6 text-center font-bold tabular-nums">{item.quantity}</span>
+                  <button type="button" aria-label={`زيادة كمية ${name}`} onClick={() => changeQuantity(item.productId, item.quantity + 1)} className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#E5E3B2] bg-white text-base font-bold text-[#6B8136] transition hover:bg-[#FCF5ED] active:scale-95">+</button>
+                </div>
+              </div>
+            );
+          })}
+
+          {orderType === 'DINE_IN' ? (
+            <label className="block text-xs font-semibold text-[#705331]">
+              رقم الطاولة
+              <input required placeholder="مثال: 3" value={tableNumber} onChange={(event) => setTableNumber(event.target.value)} className={`mt-1 ${inputClass}`} />
+            </label>
+          ) : null}
+          {delivery ? (
+            <>
+              <label className="block text-xs font-semibold text-[#705331]">
+                اسم العميل
+                <input required placeholder="اسم العميل" value={customerName} onChange={(event) => setCustomerName(event.target.value)} className={`mt-1 ${inputClass}`} />
+              </label>
+              <label className="block text-xs font-semibold text-[#705331]">
+                رقم الهاتف
+                <input required type="tel" autoComplete="tel" placeholder="01xxxxxxxxx" value={customerPhone} onChange={(event) => setCustomerPhone(event.target.value)} className={`mt-1 ${inputClass}`} />
+              </label>
+              <label className="block text-xs font-semibold text-[#705331]">
+                العنوان
+                <input required placeholder="العنوان بالتفصيل" value={customerAddress} onChange={(event) => setCustomerAddress(event.target.value)} className={`mt-1 ${inputClass}`} />
+              </label>
+            </>
+          ) : (
+            <>
+              <label className="block text-xs font-semibold text-[#705331]">
+                اسم العميل <span className="font-normal text-[#a6a99b]">(اختياري)</span>
+                <input placeholder="اسم العميل" value={customerName} onChange={(event) => setCustomerName(event.target.value)} className={`mt-1 ${inputClass}`} />
+              </label>
+              <label className="block text-xs font-semibold text-[#705331]">
+                رقم الهاتف <span className="font-normal text-[#a6a99b]">(اختياري)</span>
+                <input type="tel" autoComplete="tel" placeholder="01xxxxxxxxx" value={customerPhone} onChange={(event) => setCustomerPhone(event.target.value)} className={`mt-1 ${inputClass}`} />
+              </label>
+            </>
+          )}
+          <label className="block text-xs font-semibold text-[#705331]">
+            طريقة الدفع
+            <select value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value as 'cash' | 'card')} className={`mt-1 ${inputClass}`}>
+              <option value="cash">كاش</option>
+              <option value="card">بطاقة</option>
+            </select>
+          </label>
           <div className="flex items-center justify-between border-t border-[#E5E3B2] pt-3 font-bold"><span>الإجمالي التقريبي</span><span>{total.toFixed(2)} ج.م</span></div>
-          <button type="submit" disabled={submitting || loading} className="w-full rounded-xl bg-[#6B8136] px-4 py-3 font-semibold text-white disabled:opacity-50">{submitting ? 'جارٍ إنشاء الطلب…' : 'تأكيد الطلب'}</button>
-          {message ? <p role="status" className="text-sm text-[#6B8136]">{message}</p> : null}
-          {error ? <p role="alert" className="text-sm text-rose-700">{error}</p> : null}
+          <button type="submit" disabled={submitting || loading || items.length === 0} className="w-full rounded-xl bg-[#6B8136] px-4 py-3 font-semibold text-white transition hover:bg-[#5d702f] active:scale-[.99] disabled:opacity-50">{submitting ? 'جارٍ إنشاء الطلب…' : 'تأكيد الطلب'}</button>
+          {message ? <p role="status" className="rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2.5 text-sm text-emerald-800 motion-enter">{message}</p> : null}
+          {error ? <p role="alert" className="rounded-xl border border-rose-100 bg-rose-50 px-3 py-2.5 text-sm text-rose-700 motion-enter">{error}</p> : null}
         </div>
       </form>
     </section>
