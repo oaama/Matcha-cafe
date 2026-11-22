@@ -33,6 +33,16 @@ export const DEFAULT_OVERHEAD_SETTINGS: OverheadSettings = {
   expectedMonthlyUnits: 0,
 };
 
+export type OverheadConfig = OverheadSettings & {
+  /** Target food (material) cost as a percentage of the sale price. */
+  targetFoodCostPercent: number;
+};
+
+export const DEFAULT_OVERHEAD_CONFIG: OverheadConfig = {
+  ...DEFAULT_OVERHEAD_SETTINGS,
+  targetFoodCostPercent: 30,
+};
+
 function roundMoney(value: number) {
   return Math.round((value + Number.EPSILON) * 100) / 100;
 }
