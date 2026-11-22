@@ -42,3 +42,16 @@ describe('mock payroll repository', () => {
     expect(await listActivityLogs({ entityType: 'payroll', entityId: 'payroll-test-staff' })).toHaveLength(6);
   });
 });
+
+describe('payroll profile mongoose schema', () => {
+  it('accepts empty optional profile fields, matching the API contract', async () => {
+    const { PayrollModel } = await import('./payroll-repository');
+    const doc = new PayrollModel({
+      employeeId: 'schema-test-staff',
+      profile: { jobTitle: '', hourlyRate: 25, hireDate: '', additionalInfo: '' },
+      advances: [],
+      overtimeEntries: [],
+    });
+    expect(doc.validateSync()).toBeUndefined();
+  });
+});

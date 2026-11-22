@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from 'react';
 import type { InventoryItem, InventoryMovement, Product, ProductRecipe } from '@/lib/types';
 import { getProductPrice } from '@/lib/pricing';
 import { calculateRecipeCost } from '@/lib/recipe-cost';
-import { DEFAULT_OVERHEAD_CONFIG, summarizeItemCost, type OverheadConfig } from '@/lib/overhead-costing';
 
 type InventoryData = {
   items: InventoryItem[];
@@ -27,7 +26,6 @@ export default function InventoryManagement() {
   const [recipes, setRecipes] = useState<ProductRecipe[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [movements, setMovements] = useState<InventoryMovement[]>([]);
-  const [overhead, setOverhead] = useState<OverheadConfig>({ ...DEFAULT_OVERHEAD_CONFIG });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [downloading, setDownloading] = useState(false);
@@ -66,22 +64,6 @@ export default function InventoryManagement() {
   useEffect(() => {
     const timeout = window.setTimeout(() => void loadInventory(), 0);
     return () => window.clearTimeout(timeout);
-  }, []);
-
-  useEffect(() => {
-    let active = true;
-    const timeout = window.setTimeout(() => {
-      void fetch('/api/dashboard/settings/overhead')
-        .then(async (response) => {
-          const data = await response.json() as { config?: OverheadConfig };
-          if (response.ok && data.config && active) setOverhead(data.config);
-        })
-        .catch(() => undefined);
-    }, 0);
-    return () => {
-      active = false;
-      window.clearTimeout(timeout);
-    };
   }, []);
 
   const productItems = useMemo(() => items.filter((item) => item.type === 'product'
@@ -333,12 +315,6 @@ export default function InventoryManagement() {
                 const profitMargin = grossProfit === undefined || sellingPrice <= 0
                   ? undefined
                   : (grossProfit / sellingPrice) * 100;
-                const costSummary = recipeCost.totalCost === undefined ? undefined : summarizeItemCost({
-                  salePrice: sellingPrice,
-                  materialCost: recipeCost.totalCost,
-                  settings: overhead,
-                  targetFoodCostPercent: overhead.targetFoodCostPercent,
-                });
                 return (
                   <details key={product.id} className="group rounded-xl border border-[#E5E3B2] bg-white">
                     <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 font-semibold text-[#403d33]">
@@ -377,10 +353,6 @@ export default function InventoryManagement() {
                         <p className="flex justify-between gap-2"><span>تكلفة الوصفة</span><strong>{recipeCost.totalCost === undefined ? (hasRecipe ? 'أدخل تكلفة كل خامة' : 'أضف مكونات الوصفة') : `${recipeCost.totalCost.toFixed(2)} ج.م`}</strong></p>
                         <p className="flex justify-between gap-2"><span>الربح الإجمالي</span><strong>{grossProfit === undefined ? '—' : `${grossProfit.toFixed(2)} ج.م`}</strong></p>
                         <p className="flex justify-between gap-2"><span>هامش الربح</span><strong>{profitMargin === undefined ? '—' : `${profitMargin.toFixed(1)}%`}</strong></p>
-                        <p className="flex justify-between gap-2"><span>نصيب التشغيل للوحدة</span><strong>{costSummary?.overheadShare === undefined ? '—' : `${costSummary.overheadShare.toFixed(2)} ج.م`}</strong></p>
-                        <p className="flex justify-between gap-2"><span>التكلفة الكاملة</span><strong>{costSummary === undefined ? '—' : `${costSummary.fullCost.toFixed(2)} ج.م`}</strong></p>
-                        <p className="flex justify-between gap-2"><span>صافي الربح بعد التشغيل</span><strong>{costSummary === undefined ? '—' : `${costSummary.netProfit.toFixed(2)} ج.م`}</strong></p>
-                        <p className="flex justify-between gap-2"><span>السعر المقترح (مستهدف {overhead.targetFoodCostPercent}٪)</span><strong>{costSummary?.suggestedSalePrice === undefined ? '—' : `${costSummary.suggestedSalePrice.toFixed(2)} ج.م`}</strong></p>
                       </div>
                       <RecipeIngredientForm ingredients={allIngredients} onAdd={(itemId, quantity) => addRecipeIngredient(product.id, itemId, quantity)} />
                     </div>

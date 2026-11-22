@@ -21,12 +21,12 @@ import CashierOrder from './cashier-order';
 import ShiftReceipt from './shift-receipt';
 import CustomerManagement from './customer-management';
 import DailyReportSection from './daily-report';
-import { DEFAULT_OVERHEAD_CONFIG, type OverheadConfig } from '@/lib/overhead-costing';
+import OverheadPricing from '@/components/overhead-pricing';
 
 type OrderRow = OrderRecord;
 
 type OrderFilter = 'ALL' | OrderRow['status'];
-type DashboardSection = 'overview' | 'orders' | 'new-order' | 'menu' | 'inventory' | 'purchases' | 'debts' | 'payroll' | 'settings' | 'shifts' | 'users' | 'expenses' | 'customers' | 'daily';
+type DashboardSection = 'overview' | 'orders' | 'new-order' | 'menu' | 'inventory' | 'purchases' | 'debts' | 'payroll' | 'settings' | 'shifts' | 'users' | 'expenses' | 'customers' | 'daily' | 'overhead';
 type NavigationItem = { section: DashboardSection; title: string; icon: string; group: string };
 
 const statusLabels: Record<OrderRow['status'], string> = {
@@ -63,11 +63,6 @@ export default function CashierDashboard() {
   const [pricingLoading, setPricingLoading] = useState(true);
   const [pricingSaving, setPricingSaving] = useState(false);
   const [pricingSaved, setPricingSaved] = useState(false);
-  const [overheadConfig, setOverheadConfig] = useState<OverheadConfig>({ ...DEFAULT_OVERHEAD_CONFIG });
-  const [savedOverheadConfig, setSavedOverheadConfig] = useState<OverheadConfig>({ ...DEFAULT_OVERHEAD_CONFIG });
-  const [overheadLoading, setOverheadLoading] = useState(true);
-  const [overheadSaving, setOverheadSaving] = useState(false);
-  const [overheadSaved, setOverheadSaved] = useState(false);
   const [backupDownloading, setBackupDownloading] = useState(false);
   const [dashboardSection, setDashboardSection] = useState<DashboardSection>('orders');
   const [receiptOrder, setReceiptOrder] = useState<OrderRecord | null>(null);
@@ -197,19 +192,6 @@ export default function CashierDashboard() {
         .finally(() => {
           if (active) setPricingLoading(false);
         });
-      void fetch('/api/dashboard/settings/overhead')
-        .then(async (response) => {
-          const data = await response.json() as { config?: OverheadConfig; error?: string };
-          if (!response.ok || !data.config) throw new Error(data.error || 'تعذر تحميل إعدادات التشغيل');
-          if (active) {
-            setOverheadConfig(data.config);
-            setSavedOverheadConfig(data.config);
-          }
-        })
-        .catch(() => undefined)
-        .finally(() => {
-          if (active) setOverheadLoading(false);
-        });
     }, 0);
     return () => {
       active = false;
@@ -272,32 +254,6 @@ export default function CashierDashboard() {
       setError('تعذر الاتصال بالخادم أثناء حفظ إعدادات الرسوم');
     } finally {
       setPricingSaving(false);
-    }
-  };
-
-  const saveOverheadConfig = async () => {
-    if (overheadSaving) return;
-    setOverheadSaving(true);
-    setOverheadSaved(false);
-    setError(null);
-    try {
-      const response = await fetch('/api/dashboard/settings/overhead', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(overheadConfig),
-      });
-      const data = await response.json() as { config?: OverheadConfig; error?: string };
-      if (!response.ok || !data.config) {
-        setError(data.error || 'تعذر حفظ إعدادات التشغيل');
-        return;
-      }
-      setOverheadConfig(data.config);
-      setSavedOverheadConfig(data.config);
-      setOverheadSaved(true);
-    } catch {
-      setError('تعذر الاتصال بالخادم أثناء حفظ إعدادات التشغيل');
-    } finally {
-      setOverheadSaving(false);
     }
   };
 
@@ -441,7 +397,6 @@ export default function CashierDashboard() {
   const completedShiftToday = staff?.role === 'EMPLOYEE'
     && shiftRows.some((shift) => shift.employeeId === staff.id && shiftEndedToday(shift, clockNow));
   const pricingHasChanges = JSON.stringify(pricingSettings) !== JSON.stringify(savedPricingSettings);
-  const overheadHasChanges = JSON.stringify(overheadConfig) !== JSON.stringify(savedOverheadConfig);
   const navigationItems: NavigationItem[] = staff?.role === 'ADMIN'
     ? [
       { section: 'overview', title: 'نظرة عامة', icon: '◫', group: 'الرئيسية' },
@@ -451,6 +406,7 @@ export default function CashierDashboard() {
       { section: 'expenses', title: 'المصروفات', icon: '◈', group: 'الطلبات والمبيعات' },
       { section: 'shifts', title: 'الشيفتات والإيرادات', icon: '◷', group: 'الشيفتات' },
       { section: 'menu', title: 'إدارة المنيو', icon: '☷', group: 'المنيو والمنتجات' },
+      { section: 'overhead', title: 'التشغيل والتسعير', icon: '◍', group: 'المنيو والمنتجات' },
       { section: 'inventory', title: 'إدارة المخزون', icon: '▦', group: 'المخزون والمشتريات' },
       { section: 'purchases', title: 'فواتير المشتريات', icon: '▧', group: 'المخزون والمشتريات' },
       { section: 'debts', title: 'الديون اليدوية', icon: '◉', group: 'المالية والديون' },
@@ -687,6 +643,7 @@ export default function CashierDashboard() {
         {dashboardSection === 'debts' && staff?.role === 'ADMIN' ? <DebtManagement /> : null}
         {dashboardSection === 'payroll' && staff?.role === 'ADMIN' ? <PayrollManagement /> : null}
         {dashboardSection === 'overview' && staff?.role === 'ADMIN' ? <FinancialOverview /> : null}
+        {dashboardSection === 'overhead' && staff?.role === 'ADMIN' ? <OverheadPricing /> : null}
         {dashboardSection === 'daily' && staff?.role === 'ADMIN' ? <DailyReportSection /> : null}
 
         {dashboardSection === 'settings' ? <section aria-labelledby="pricing-heading" className="mb-7 rounded-[1.5rem] border border-[#E5E3B2] bg-white/85 p-4 shadow-[0_8px_24px_rgba(44,43,35,.04)] sm:p-6">
@@ -774,65 +731,6 @@ export default function CashierDashboard() {
                   className="rounded-xl bg-[#6B8136] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_6px_16px_rgba(67,93,50,.15)] transition hover:bg-[#5d702f] disabled:cursor-not-allowed disabled:opacity-45"
                 >
                   {pricingSaving ? 'جارٍ حفظ الإعدادات…' : 'حفظ إعدادات الرسوم'}
-                </button>
-              </div>
-            </>
-          )}
-        </section> : null}
-
-        {dashboardSection === 'settings' ? <section aria-labelledby="overhead-heading" className="mb-7 rounded-[1.5rem] border border-[#E5E3B2] bg-white/85 p-4 shadow-[0_8px_24px_rgba(44,43,35,.04)] sm:p-6">
-          <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h2 id="overhead-heading" className="text-xl font-bold text-[#232122]">التشغيل الثابت الشهري</h2>
-              <p className="mt-1.5 max-w-2xl text-sm leading-6 text-[#705331]">المصاريف الثابتة بتتوزع على عدد الأصناف المتوقع بيعها في الشهر عشان تعرف التكلفة الكاملة وصافي ربح كل صنف.</p>
-            </div>
-          </div>
-          {overheadLoading ? (
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              {[0, 1, 2, 3].map((item) => <div key={item} className="h-20 animate-pulse rounded-2xl bg-[#f2f2eb] motion-reduce:animate-none" />)}
-            </div>
-          ) : (
-            <>
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                {([
-                  ['rent', 'إيجار'],
-                  ['labor', 'عمالة ثابتة'],
-                  ['electricity', 'كهربا'],
-                  ['water', 'مياه'],
-                  ['internet', 'نت'],
-                  ['other', 'أخرى'],
-                  ['expectedMonthlyUnits', 'عدد الأصناف المتوقع شهريًا'],
-                  ['targetFoodCostPercent', 'نسبة تكلفة الأكل المستهدفة ٪'],
-                ] as Array<[keyof OverheadConfig, string]>).map(([key, label]) => (
-                  <label key={key} className="flex items-center justify-between gap-3 rounded-2xl border border-[#E5E3B2] bg-[#fcfcf9] px-4 py-3 text-sm font-medium text-[#705331]">
-                    {label}
-                    <input
-                      type="number"
-                      min="0"
-                      step="any"
-                      inputMode="decimal"
-                      value={overheadConfig[key]}
-                      onChange={(event) => {
-                        const value = event.target.value === '' ? 0 : Number(event.target.value);
-                        setOverheadConfig((current) => ({ ...current, [key]: value }));
-                        setOverheadSaved(false);
-                      }}
-                      className="w-28 rounded-lg border-[#E5E3B2] bg-white px-3 py-2 text-center tabular-nums"
-                    />
-                  </label>
-                ))}
-              </div>
-              <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-                <p role="status" className="text-sm text-[#66764e]">
-                  {overheadSaved ? 'تم حفظ إعدادات التشغيل.' : overheadHasChanges ? 'لديك تغييرات غير محفوظة.' : 'إعدادات التشغيل الحالية محفوظة.'}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => void saveOverheadConfig()}
-                  disabled={!overheadHasChanges || overheadSaving || overheadLoading}
-                  className="rounded-xl bg-[#6B8136] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_6px_16px_rgba(67,93,50,.15)] transition hover:bg-[#5d702f] disabled:cursor-not-allowed disabled:opacity-45"
-                >
-                  {overheadSaving ? 'جارٍ حفظ الإعدادات…' : 'حفظ إعدادات التشغيل'}
                 </button>
               </div>
             </>
