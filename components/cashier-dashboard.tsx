@@ -426,6 +426,12 @@ export default function CashierDashboard() {
       { section: 'shifts', title: 'شيفتاتي وإيراداتي', icon: '◷', group: 'الشيفتات' },
       { section: 'customers', title: 'العملاء والمتابعة', icon: '♧', group: 'العملاء' },
     ];
+  const bottomTabSections = staff?.role === 'ADMIN'
+    ? ['overview', 'orders', 'new-order', 'inventory']
+    : ['orders', 'new-order', 'shifts'];
+  const bottomTabs = bottomTabSections
+    .map((section) => navigationItems.find((item) => item.section === section))
+    .filter((item): item is NavigationItem => Boolean(item));
   const navigationGroups = navigationItems.reduce<Array<{ title: string; items: NavigationItem[] }>>((groups, item) => {
     const group = groups.find((entry) => entry.title === item.group);
     if (group) group.items.push(item);
@@ -474,7 +480,7 @@ export default function CashierDashboard() {
           </section>
 
           <section className="flex items-center px-6 py-8 sm:px-10 sm:py-10 md:px-12">
-            <div className="mx-auto w-full max-w-md">
+            <div className="motion-enter mx-auto w-full max-w-md">
               <p className="text-sm font-semibold text-[#6B8136]">مرحبًا بعودتك</p>
               <h1 className="mt-2 text-2xl font-bold leading-relaxed text-[#232122] sm:text-3xl">تسجيل الدخول</h1>
               <p className="mt-2 text-sm leading-6 text-[#705331]">أدخل بيانات حساب الموظف أو المدير للمتابعة.</p>
@@ -496,7 +502,7 @@ export default function CashierDashboard() {
                     value={auth.email}
                     onChange={(e) => setAuth({ ...auth, email: e.target.value })}
                     placeholder="name@example.com"
-                    className="mt-2 w-full rounded-xl border-[#d9dfc7] bg-[#fbfcf8] px-4 py-3 text-left placeholder:text-[#a6a99b] focus:bg-white focus:ring-4 focus:ring-[#91A560]/10"
+                    className="mt-2 w-full rounded-xl border-[#d9dfc7] bg-[#fbfcf8] px-4 py-3 text-left transition placeholder:text-[#a6a99b] focus:bg-white focus:ring-4 focus:ring-[#91A560]/10"
                   />
                 </label>
                 <label className="block text-sm font-semibold text-[#232122]">
@@ -510,7 +516,7 @@ export default function CashierDashboard() {
                       value={auth.password}
                       onChange={(e) => setAuth({ ...auth, password: e.target.value })}
                       placeholder="أدخل كلمة المرور"
-                      className="w-full rounded-xl border-[#d9dfc7] bg-[#fbfcf8] py-3 pl-20 pr-4 text-left placeholder:text-[#a6a99b] focus:bg-white focus:ring-4 focus:ring-[#91A560]/10"
+                      className="w-full rounded-xl border-[#d9dfc7] bg-[#fbfcf8] py-3 pl-20 pr-4 text-left transition placeholder:text-[#a6a99b] focus:bg-white focus:ring-4 focus:ring-[#91A560]/10"
                     />
                     <button
                       type="button"
@@ -545,6 +551,7 @@ export default function CashierDashboard() {
     <div className="dashboard-shell min-h-screen w-full min-w-0 bg-[#f1f8f6]">
       <header className="sticky top-0 z-30 flex min-h-[4.5rem] flex-wrap items-center justify-between gap-3 border-b border-[#dbe7e3] bg-[#f7fbf9]/95 px-4 py-2.5 backdrop-blur sm:px-6 lg:px-8">
         <div className="flex items-center gap-3">
+          <button type="button" onClick={() => setDrawerOpen(true)} aria-label="فتح قائمة الأقسام" className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#cbd9d5] bg-white text-lg leading-none text-[#176f68] transition hover:bg-[#edf6f3] active:scale-95 xl:hidden">☰</button>
           <Image src="/matcha-logo.png" alt="Matcha Coffee and Pancakes" width={44} height={44} className="h-10 w-10 rounded-full object-cover" priority />
           <div>
             <p className="brand-name text-sm tracking-[.08em] text-[#176f68]">MATCHA CAFÉ</p>
@@ -570,7 +577,7 @@ export default function CashierDashboard() {
         </div>
       </header>
 
-      <div className="mx-auto flex min-h-[calc(100svh-4.5rem)] w-full max-w-[1600px] gap-4 px-2 py-3 sm:px-4 lg:gap-6 lg:px-6 lg:py-5">
+      <div className="mx-auto flex min-h-[calc(100svh-4.5rem)] w-full max-w-[1600px] gap-4 px-2 py-3 pb-24 sm:px-4 lg:gap-6 lg:px-6 lg:py-5 xl:pb-5">
         <aside className={`hidden shrink-0 self-start rounded-[1.5rem] border border-[#dbe7e3] bg-white/80 p-3 shadow-[0_4px_18px_rgba(29,73,68,.04)] xl:sticky xl:top-[5.75rem] xl:block ${sidebarCollapsed ? 'w-[4.75rem]' : 'w-[17rem]'}`}>
           <div className={`flex items-center gap-2 px-2 pb-2 pt-3 ${sidebarCollapsed ? 'justify-center' : 'justify-between'}`}>
             {!sidebarCollapsed ? <p className="text-xs font-semibold text-[#80918d]">أقسام لوحة التحكم</p> : null}
@@ -597,21 +604,18 @@ export default function CashierDashboard() {
           </nav>
         </aside>
 
-        <main className="min-w-0 flex-1 rounded-[1.5rem] border border-[#dbe7e3] bg-[#f8fcfa] p-3 shadow-[0_5px_22px_rgba(29,73,68,.045)] sm:p-5 lg:p-7">
+        <main key={dashboardSection} className="motion-enter min-w-0 flex-1 rounded-[1.5rem] border border-[#dbe7e3] bg-[#f8fcfa] p-3 shadow-[0_5px_22px_rgba(29,73,68,.045)] sm:p-5 lg:p-7">
           <section className="dashboard-hero mb-6 flex flex-wrap items-center justify-between gap-5 rounded-[1.35rem] bg-gradient-to-l from-[#56766f] to-[#18756d] px-5 py-5 text-white shadow-sm sm:px-7 sm:py-6">
             <div>
               <h1 className="text-2xl font-bold sm:text-3xl">{staff?.role === 'ADMIN' ? 'لوحة إدارة المقهى' : 'لوحة الكاشير'}</h1>
               {staff ? <p className="mt-1 text-sm text-white/75">{staff.username}</p> : null}
             </div>
-            <button type="button" onClick={() => setDrawerOpen(true)} className="inline-flex items-center gap-2 rounded-xl border border-white/25 bg-white/15 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/25 xl:hidden">
-              <span className="text-lg" aria-hidden="true">☰</span> أقسام لوحة التحكم
-            </button>
           </section>
 
-        {drawerOpen ? <div className="fixed inset-0 z-50 bg-[#183a36]/40 backdrop-blur-[1px] xl:hidden" onClick={() => setDrawerOpen(false)}>
-          <aside className="me-auto h-full w-72 max-w-[85vw] overflow-y-auto bg-white p-5 shadow-2xl" onClick={(event) => event.stopPropagation()}>
-            <div className="mb-6 flex items-center justify-between"><h2 className="text-lg font-bold text-[#232122]">أقسام الداشبورد</h2><button type="button" onClick={() => setDrawerOpen(false)} className="rounded-lg px-2 py-1 text-xl text-[#315d58]" aria-label="إغلاق القائمة">×</button></div>
-            <nav aria-label="أقسام لوحة التحكم" className="space-y-2">
+        <div className={`fixed inset-0 z-50 bg-[#183a36]/40 backdrop-blur-[1px] transition-opacity duration-300 xl:hidden ${drawerOpen ? 'opacity-100' : 'pointer-events-none opacity-0'}`} onClick={() => setDrawerOpen(false)} aria-hidden={!drawerOpen}>
+          <aside className={`me-auto flex h-full w-72 max-w-[85vw] flex-col bg-white shadow-2xl transition-transform duration-300 ease-out ${drawerOpen ? 'translate-x-0' : 'translate-x-full'}`} onClick={(event) => event.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-[#edf2ef] px-5 py-4"><h2 className="text-lg font-bold text-[#232122]">أقسام الداشبورد</h2><button type="button" onClick={() => setDrawerOpen(false)} className="flex h-9 w-9 items-center justify-center rounded-lg text-xl text-[#315d58] transition hover:bg-[#edf6f3]" aria-label="إغلاق القائمة">×</button></div>
+            <nav aria-label="أقسام لوحة التحكم" className="flex-1 space-y-2 overflow-y-auto p-4">
               {navigationGroups.map((group) => {
                 const groupOpen = isGroupOpen(group.title);
                 return <div key={group.title}>
@@ -631,7 +635,7 @@ export default function CashierDashboard() {
               })}
             </nav>
           </aside>
-        </div> : null}
+        </div>
         {shiftMessage ? <p role="status" className="mb-5 rounded-xl border border-[#E5E3B2] bg-[#FCF5ED] px-4 py-3 text-sm text-[#705331]">{shiftMessage}</p> : null}
 
         {demoMode ? (
@@ -953,6 +957,19 @@ export default function CashierDashboard() {
         {receiptShift ? <ShiftReceipt shift={receiptShift} onClose={() => setReceiptShift(null)} /> : null}
         </main>
       </div>
+
+      <nav aria-label="تنقل سريع" className="fixed inset-x-0 bottom-0 z-40 flex items-stretch border-t border-[#dbe7e3] bg-white/95 px-1 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_18px_rgba(29,73,68,.06)] backdrop-blur xl:hidden">
+        {bottomTabs.map(({ section, title, icon }) => (
+          <button key={section} type="button" aria-pressed={dashboardSection === section} onClick={() => setDashboardSection(section)} className={`flex flex-1 flex-col items-center gap-1 py-2 text-[11px] font-semibold transition active:scale-95 ${dashboardSection === section ? 'text-[#176f68]' : 'text-[#7a8a87] hover:text-[#315d58]'}`}>
+            <span aria-hidden="true" className={`flex h-8 w-14 items-center justify-center rounded-full text-base transition ${dashboardSection === section ? 'bg-[#d8f3ee]' : ''}`}>{icon}</span>
+            {title}
+          </button>
+        ))}
+        <button type="button" onClick={() => setDrawerOpen(true)} className="flex flex-1 flex-col items-center gap-1 py-2 text-[11px] font-semibold text-[#7a8a87] transition hover:text-[#315d58] active:scale-95">
+          <span aria-hidden="true" className="flex h-8 w-14 items-center justify-center rounded-full text-base">☰</span>
+          كل الأقسام
+        </button>
+      </nav>
     </div>
   );
 }
