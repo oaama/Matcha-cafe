@@ -21,11 +21,13 @@ import ExpenseManagement from './expense-management';
 import CashierOrder from './cashier-order';
 import ShiftReceipt from './shift-receipt';
 import CustomerManagement from './customer-management';
+import DailyReportSection from './daily-report';
+import OverheadPricing from '@/components/overhead-pricing';
 
 type OrderRow = OrderRecord;
 
 type OrderFilter = 'ALL' | OrderRow['status'];
-type DashboardSection = 'overview' | 'orders' | 'new-order' | 'menu' | 'inventory' | 'recipe-stock' | 'purchases' | 'debts' | 'payroll' | 'settings' | 'shifts' | 'users' | 'expenses' | 'customers';
+type DashboardSection = 'overview' | 'orders' | 'new-order' | 'menu' | 'inventory' | 'recipe-stock' | 'purchases' | 'debts' | 'payroll' | 'settings' | 'shifts' | 'users' | 'expenses' | 'customers' | 'daily' | 'overhead';
 type NavigationItem = { section: DashboardSection; title: string; icon: string; group: string };
 
 const statusLabels: Record<OrderRow['status'], string> = {
@@ -62,6 +64,7 @@ export default function CashierDashboard() {
   const [pricingLoading, setPricingLoading] = useState(true);
   const [pricingSaving, setPricingSaving] = useState(false);
   const [pricingSaved, setPricingSaved] = useState(false);
+  const [backupDownloading, setBackupDownloading] = useState(false);
   const [dashboardSection, setDashboardSection] = useState<DashboardSection>('orders');
   const [receiptOrder, setReceiptOrder] = useState<OrderRecord | null>(null);
   const [activeShift, setActiveShift] = useState<ShiftRecord | null>(null);
@@ -255,6 +258,30 @@ export default function CashierDashboard() {
     }
   };
 
+  const downloadBackup = async () => {
+    if (backupDownloading) return;
+    setBackupDownloading(true);
+    setError(null);
+    try {
+      const response = await fetch('/api/dashboard/backup');
+      if (!response.ok) {
+        const data = await response.json() as { error?: string };
+        throw new Error(data.error || 'تعذر تجهيز النسخة الاحتياطية');
+      }
+      const payload = await response.text();
+      const blobUrl = URL.createObjectURL(new Blob([payload], { type: 'application/json' }));
+      const anchor = document.createElement('a');
+      anchor.href = blobUrl;
+      anchor.download = `matcha-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      anchor.click();
+      URL.revokeObjectURL(blobUrl);
+    } catch (backupError) {
+      setError(backupError instanceof Error ? backupError.message : 'تعذر تنزيل النسخة الاحتياطية');
+    } finally {
+      setBackupDownloading(false);
+    }
+  };
+
   const updateStatus = async (id: string, status: string) => {
     if (status === 'CANCELLED' && !window.confirm('تأكيد إلغاء هذا الطلب؟ سيظل محفوظًا في سجل الطلبات.')) return;
     setBusyOrderId(id);
@@ -375,11 +402,13 @@ export default function CashierDashboard() {
   const navigationItems: NavigationItem[] = staff?.role === 'ADMIN'
     ? [
       { section: 'overview', title: 'نظرة عامة', icon: '◫', group: 'الرئيسية' },
+      { section: 'daily', title: 'اليومية', icon: '◔', group: 'الرئيسية' },
       { section: 'orders', title: 'الطلبات', icon: '▤', group: 'الطلبات والمبيعات' },
       { section: 'new-order', title: 'إنشاء طلب', icon: '＋', group: 'الطلبات والمبيعات' },
       { section: 'expenses', title: 'المصروفات', icon: '◈', group: 'الطلبات والمبيعات' },
       { section: 'shifts', title: 'الشيفتات والإيرادات', icon: '◷', group: 'الشيفتات' },
       { section: 'menu', title: 'إدارة المنيو', icon: '☷', group: 'المنيو والمنتجات' },
+      { section: 'overhead', title: 'التشغيل والتسعير', icon: '◍', group: 'المنيو والمنتجات' },
       { section: 'inventory', title: 'إدارة المخزون', icon: '▦', group: 'المخزون والمشتريات' },
       { section: 'recipe-stock', title: 'متابعة الوصفات', icon: '◉', group: 'المخزون والمشتريات' },
       { section: 'purchases', title: 'فواتير المشتريات', icon: '▧', group: 'المخزون والمشتريات' },
@@ -618,6 +647,8 @@ export default function CashierDashboard() {
         {dashboardSection === 'debts' && staff?.role === 'ADMIN' ? <DebtManagement /> : null}
         {dashboardSection === 'payroll' && staff?.role === 'ADMIN' ? <PayrollManagement /> : null}
         {dashboardSection === 'overview' && staff?.role === 'ADMIN' ? <FinancialOverview /> : null}
+        {dashboardSection === 'overhead' && staff?.role === 'ADMIN' ? <OverheadPricing /> : null}
+        {dashboardSection === 'daily' && staff?.role === 'ADMIN' ? <DailyReportSection /> : null}
 
         {dashboardSection === 'settings' ? <section aria-labelledby="pricing-heading" className="mb-7 rounded-[1.5rem] border border-[#E5E3B2] bg-white/85 p-4 shadow-[0_8px_24px_rgba(44,43,35,.04)] sm:p-6">
           <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
@@ -708,6 +739,23 @@ export default function CashierDashboard() {
               </div>
             </>
           )}
+        </section> : null}
+
+        {dashboardSection === 'settings' ? <section aria-labelledby="backup-heading" className="mb-7 rounded-[1.5rem] border border-[#E5E3B2] bg-white/85 p-4 shadow-[0_8px_24px_rgba(44,43,35,.04)] sm:p-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 id="backup-heading" className="text-xl font-bold text-[#232122]">نسخة احتياطية</h2>
+              <p className="mt-1.5 max-w-2xl text-sm leading-6 text-[#705331]">نزّل كل بيانات المحل (المنيو والمخزون والطلبات والمصاريف والموظفين والديون والإعدادات) في ملف JSON واحد.</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => void downloadBackup()}
+              disabled={backupDownloading}
+              className="rounded-xl bg-[#176f68] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#115b56] disabled:opacity-60"
+            >
+              {backupDownloading ? 'جارٍ تجهيز النسخة…' : 'تنزيل نسخة احتياطية (JSON)'}
+            </button>
+          </div>
         </section> : null}
 
         {dashboardSection === 'shifts' && staff ? <section className="rounded-[1.5rem] border border-[#e0eae7] bg-white/85 p-4 shadow-[0_10px_30px_rgba(29,73,68,.05)] sm:p-6">

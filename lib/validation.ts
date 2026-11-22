@@ -65,6 +65,17 @@ export const pricingSettingsSchema = z.object({
   taxRate: z.number().finite().min(0).max(100),
 });
 
+export const overheadConfigSchema = z.object({
+  rent: z.number().finite().min(0),
+  labor: z.number().finite().min(0),
+  electricity: z.number().finite().min(0),
+  water: z.number().finite().min(0),
+  internet: z.number().finite().min(0),
+  other: z.number().finite().min(0),
+  expectedMonthlyUnits: z.number().finite().min(0),
+  targetFoodCostPercent: z.number().finite().min(1).max(100),
+});
+
 const inventoryItemSchema = z.object({
   id: z.string().min(1).max(120),
   type: z.enum(['product', 'ingredient']),

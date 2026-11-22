@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import mongoose from 'mongoose';
 import { z } from 'zod';
 import { requireStaffRole } from '@/lib/staff-api';
 import { listStaffAccounts } from '@/lib/staff-user-repository';
@@ -110,6 +111,10 @@ export async function PATCH(request: Request) {
     const record = await updatePayrollProfile(employeeId, profile as PayrollProfile, staff);
     return NextResponse.json({ profile: record.profile, active: employee.active });
   } catch (error) {
+    if (error instanceof mongoose.Error.ValidationError) {
+      const fields = Object.keys(error.errors).join(', ');
+      return NextResponse.json({ error: `بيانات ملف الراتب غير صحيحة: ${fields}` }, { status: 400 });
+    }
     console.error('Unable to update payroll profile:', error);
     return NextResponse.json({ error: 'تعذر تحديث ملف الراتب' }, { status: 500 });
   }

@@ -15,11 +15,13 @@ declare global {
 const mockStore = globalThis.matchaMockPayrollStore
   ?? (globalThis.matchaMockPayrollStore = { records: [] });
 
+// Optional fields mirror the API contract (app/api/admin/payroll): empty strings are valid.
+// Mongoose `required` rejects '', which is what broke live saves with an empty hire date.
 const profileSchema = new Schema<PayrollProfile>({
-  jobTitle: { type: String, required: true, trim: true, maxlength: 120 },
+  jobTitle: { type: String, trim: true, maxlength: 120, default: '' },
   hourlyRate: { type: Number, required: true, min: 0, max: 1_000_000 },
-  hireDate: { type: String, required: true },
-  additionalInfo: { type: String, required: true, maxlength: 2000 },
+  hireDate: { type: String, default: '' },
+  additionalInfo: { type: String, maxlength: 2000, default: '' },
 }, { _id: false });
 
 const advanceSchema = new Schema<PayrollAdvance>({
@@ -46,7 +48,8 @@ const payrollSchema = new Schema<PayrollRecord>({
   overtimeEntries: { type: [overtimeSchema], default: [] },
 }, { versionKey: false, collection: 'staff_payroll' });
 
-const PayrollModel = (mongoose.models.StaffPayroll as mongoose.Model<PayrollRecord> | undefined)
+// Exported for schema-level regression tests; runtime code should use the repository functions.
+export const PayrollModel = (mongoose.models.StaffPayroll as mongoose.Model<PayrollRecord> | undefined)
   ?? mongoose.model<PayrollRecord>('StaffPayroll', payrollSchema);
 
 type ActivityActor = { id: string; username: string };
