@@ -9,6 +9,7 @@ An Arabic-first, right-to-left ordering and café operations app. Customers can 
 - Staff dashboard for order preparation, status updates, and receipt printing.
 - Employee accounts, automatic shift tracking, and per-shift sales and expense reports.
 - Menu and add-on management, ingredient recipes, stock deductions, and low-stock monitoring.
+- Dedicated recipe monitoring with estimated servings, recipe coverage, food-cost percentage, and alerts at five servings or fewer.
 - Purchase invoice drafts and approval with stock-in movements and weighted-average ingredient costs.
 - Separate manual debts with installment history, and manual shift revenue kept apart from order sales.
 - Employee payroll profiles, shift-based wage statements, advances, overtime, and a financial overview.

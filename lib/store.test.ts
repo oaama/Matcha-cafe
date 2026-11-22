@@ -10,7 +10,7 @@ import { clearMockExpenses, createExpense, deleteExpense, listExpenses, updateEx
 import { clearMockPricingSettings, getPricingSettings, updatePricingSettings } from './pricing-settings';
 import { clearMockCatalog, getCatalog, saveCatalog } from './catalog-repository';
 import { catalogSchema, createOrderSchema } from './validation';
-import { adjustInventory, clearMockInventory, getInventoryData, saveInventorySettings } from './inventory-repository';
+import { adjustInventory, clearMockInventory, getInventoryData, saveInventoryConfiguration, saveInventorySettings } from './inventory-repository';
 import { deleteStaffAccount, listStaffAccounts, createStaffAccount, updateStaffAccount } from './staff-user-repository';
 import { createStaffPasswordHash, verifyStaffPassword } from './staff-account-repository';
 import { isAuthorizedCronRequest } from './cron-auth';
@@ -509,6 +509,39 @@ describe('mock order repository', () => {
       expect(saved.items.find((item) => item.id === ingredient.id)?.quantity).toBe(6);
     } finally {
       clearMockOrders();
+      clearMockInventory();
+      if (previousProvider === undefined) delete process.env.DATA_PROVIDER;
+      else process.env.DATA_PROVIDER = previousProvider;
+    }
+  });
+});
+
+describe('inventory configuration', () => {
+  it('preserves current stock and movement history when saving stale item settings', async () => {
+    const previousProvider = process.env.DATA_PROVIDER;
+    process.env.DATA_PROVIDER = 'mock';
+    clearMockInventory();
+    const ingredient = {
+      id: 'ingredient:configuration-test',
+      type: 'ingredient' as const,
+      name: 'ماتشا اختبار',
+      unit: 'جرام',
+      quantity: 10,
+      lowStockThreshold: 1,
+      trackStock: true,
+    };
+
+    try {
+      await saveInventorySettings([ingredient], []);
+      const staleItems = (await getInventoryData([])).items;
+      await adjustInventory(ingredient.id, -2, 'استهلاك اختبار');
+      await saveInventoryConfiguration(staleItems.map((item) => ({ ...item, unitCost: 12 })), []);
+
+      const inventory = await getInventoryData([]);
+      expect(inventory.items[0]).toMatchObject({ quantity: 8, unitCost: 12, trackStock: true });
+      expect(inventory.movements).toHaveLength(1);
+      expect(inventory.movements[0]).toMatchObject({ quantity: -2, reason: 'adjustment' });
+    } finally {
       clearMockInventory();
       if (previousProvider === undefined) delete process.env.DATA_PROVIDER;
       else process.env.DATA_PROVIDER = previousProvider;

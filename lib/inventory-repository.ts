@@ -156,6 +156,23 @@ export async function getInventoryData(products: Product[]) {
   return { items: items as InventoryItem[], recipes: recipes as ProductRecipe[], movements: movements as InventoryMovement[] };
 }
 
+export async function getRecipeMonitoringData() {
+  if (getDataProvider() === 'mock') {
+    return {
+      items: structuredClone(mockStore.items),
+      recipes: structuredClone(mockStore.recipes),
+    };
+  }
+
+  const { connectToDatabase } = await import('./database');
+  await connectToDatabase();
+  const [items, recipes] = await Promise.all([
+    InventoryItemModel.find().sort({ type: 1, name: 1 }).lean(),
+    ProductRecipeModel.find().lean(),
+  ]);
+  return { items: items as InventoryItem[], recipes: recipes as ProductRecipe[] };
+}
+
 export async function saveInventorySettings(items: InventoryItem[], recipes: ProductRecipe[]) {
   if (getDataProvider() === 'mock') {
     mockStore.items = structuredClone(items);
@@ -173,6 +190,69 @@ export async function saveInventorySettings(items: InventoryItem[], recipes: Pro
           { id: item.id },
           { $set: item },
           { upsert: true, session },
+        );
+      }
+      await ProductRecipeModel.deleteMany({}, { session });
+      if (recipes.length) await ProductRecipeModel.insertMany(recipes, { session });
+    });
+  } finally {
+    await session.endSession();
+  }
+}
+
+export async function saveInventoryConfiguration(items: InventoryItem[], recipes: ProductRecipe[]) {
+  if (getDataProvider() === 'mock') {
+    const existingItems = new Map(mockStore.items.map((item) => [item.id, item]));
+    const updatedItems = items.map((item) => {
+      const current = existingItems.get(item.id);
+      return {
+        ...item,
+        quantity: current?.quantity ?? 0,
+        trackStock: current
+          ? current.trackStock || item.trackStock || current.quantity > 0 || item.lowStockThreshold > 0
+          : item.trackStock,
+      };
+    });
+    const submittedIds = new Set(items.map((item) => item.id));
+    mockStore.items = [
+      ...mockStore.items.filter((item) => !submittedIds.has(item.id)),
+      ...updatedItems,
+    ];
+    mockStore.recipes = structuredClone(recipes);
+    return;
+  }
+
+  const { connectToDatabase } = await import('./database');
+  const connection = await connectToDatabase();
+  const session = await connection.startSession();
+  try {
+    await session.withTransaction(async () => {
+      for (const item of items) {
+        const current = await InventoryItemModel.findOne({ id: item.id }).session(session).lean() as InventoryItem | null;
+        if (!current) {
+          await InventoryItemModel.create([{ ...item, quantity: 0 }], { session });
+          continue;
+        }
+
+        const set: Partial<InventoryItem> = {
+          type: item.type,
+          name: item.name,
+          unit: item.unit,
+          lowStockThreshold: item.lowStockThreshold,
+          trackStock: current.trackStock || item.trackStock || current.quantity > 0 || item.lowStockThreshold > 0,
+        };
+        const unset: Record<string, 1> = {};
+        if (item.productId === undefined) unset.productId = 1;
+        else set.productId = item.productId;
+        if (item.category === undefined) unset.category = 1;
+        else set.category = item.category;
+        if (item.unitCost === undefined) unset.unitCost = 1;
+        else set.unitCost = item.unitCost;
+
+        await InventoryItemModel.updateOne(
+          { id: item.id },
+          { $set: set, ...(Object.keys(unset).length ? { $unset: unset } : {}) },
+          { session },
         );
       }
       await ProductRecipeModel.deleteMany({}, { session });

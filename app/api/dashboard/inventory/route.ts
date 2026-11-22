@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCatalog } from '@/lib/catalog-repository';
 import { requireStaffRole } from '@/lib/staff-api';
-import { adjustInventory, getInventoryData, InventoryItemNotFoundError, saveInventorySettings } from '@/lib/inventory-repository';
+import { adjustInventory, getInventoryData, InventoryItemNotFoundError, saveInventoryConfiguration } from '@/lib/inventory-repository';
 import { inventoryAdjustmentSchema, inventorySettingsSchema } from '@/lib/validation';
 
 async function isStaff() {
@@ -42,7 +42,7 @@ export async function PUT(request: Request) {
       || parsed.data.recipes.some((recipe) => !productIds.has(recipe.productId))) {
       return NextResponse.json({ error: 'يوجد صنف غير موجود في المنيو ضمن إعدادات المخزون' }, { status: 400 });
     }
-    await saveInventorySettings(parsed.data.items, parsed.data.recipes);
+    await saveInventoryConfiguration(parsed.data.items, parsed.data.recipes);
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error('Unable to save inventory settings:', error);

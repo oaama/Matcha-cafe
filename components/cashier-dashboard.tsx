@@ -9,6 +9,7 @@ import type { ShiftRecord, StaffIdentity } from '@/lib/staff-types';
 import { formatShiftDuration, getShiftDurationMinutes, shiftEndedToday } from '@/lib/shift-time';
 import MenuManagement from './menu-management';
 import InventoryManagement from './inventory-management';
+import RecipeStockMonitor from './recipe-stock-monitor';
 import PurchaseManagement from './purchase-management';
 import DebtManagement from './debt-management';
 import PayrollManagement from './payroll-management';
@@ -24,7 +25,7 @@ import CustomerManagement from './customer-management';
 type OrderRow = OrderRecord;
 
 type OrderFilter = 'ALL' | OrderRow['status'];
-type DashboardSection = 'overview' | 'orders' | 'new-order' | 'menu' | 'inventory' | 'purchases' | 'debts' | 'payroll' | 'settings' | 'shifts' | 'users' | 'expenses' | 'customers';
+type DashboardSection = 'overview' | 'orders' | 'new-order' | 'menu' | 'inventory' | 'recipe-stock' | 'purchases' | 'debts' | 'payroll' | 'settings' | 'shifts' | 'users' | 'expenses' | 'customers';
 type NavigationItem = { section: DashboardSection; title: string; icon: string; group: string };
 
 const statusLabels: Record<OrderRow['status'], string> = {
@@ -144,7 +145,7 @@ export default function CashierDashboard() {
       const response = await fetch('/api/dashboard/shift');
       const data = await response.json() as { active?: ShiftRecord | null; shifts?: ShiftRecord[]; error?: string };
       if (!response.ok) {
-        if (data.error) setError(data.error);
+        if (response.status !== 401 && data.error) setError(data.error);
         return;
       }
       setShiftRows(data.shifts ?? []);
@@ -299,6 +300,7 @@ export default function CashierDashboard() {
     } catch {
       setError('تعذر الاتصال بالخادم أثناء تسجيل الخروج');
     } finally {
+      setError(null);
       setLoggedIn(false);
       setStaff(null);
       setOrders([]);
@@ -379,6 +381,7 @@ export default function CashierDashboard() {
       { section: 'shifts', title: 'الشيفتات والإيرادات', icon: '◷', group: 'الشيفتات' },
       { section: 'menu', title: 'إدارة المنيو', icon: '☷', group: 'المنيو والمنتجات' },
       { section: 'inventory', title: 'إدارة المخزون', icon: '▦', group: 'المخزون والمشتريات' },
+      { section: 'recipe-stock', title: 'متابعة الوصفات', icon: '◉', group: 'المخزون والمشتريات' },
       { section: 'purchases', title: 'فواتير المشتريات', icon: '▧', group: 'المخزون والمشتريات' },
       { section: 'debts', title: 'الديون اليدوية', icon: '◉', group: 'المالية والديون' },
       { section: 'payroll', title: 'الموظفون والرواتب', icon: '♙', group: 'الموظفون والصلاحيات' },
@@ -610,6 +613,7 @@ export default function CashierDashboard() {
         {dashboardSection === 'expenses' && staff ? <ExpenseManagement staff={staff} activeShift={activeShift} /> : null}
         {dashboardSection === 'menu' ? <MenuManagement /> : null}
         {dashboardSection === 'inventory' ? <InventoryManagement /> : null}
+        {dashboardSection === 'recipe-stock' && staff?.role === 'ADMIN' ? <RecipeStockMonitor /> : null}
         {dashboardSection === 'purchases' && staff?.role === 'ADMIN' ? <PurchaseManagement /> : null}
         {dashboardSection === 'debts' && staff?.role === 'ADMIN' ? <DebtManagement /> : null}
         {dashboardSection === 'payroll' && staff?.role === 'ADMIN' ? <PayrollManagement /> : null}
