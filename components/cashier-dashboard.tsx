@@ -1,9 +1,10 @@
 'use client';
 
 import Image from 'next/image';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import LogoSplash from './logo-splash';
 import { DEFAULT_PRICING_SETTINGS, type PricingSettings } from '@/lib/pricing';
+import { playOrderSound, unlockOrderSound } from '@/lib/order-sound';
 import type { OrderRecord } from '@/lib/types';
 import type { ShiftRecord, StaffIdentity } from '@/lib/staff-types';
 import { formatShiftDuration, getShiftDurationMinutes, shiftEndedToday } from '@/lib/shift-time';
@@ -77,13 +78,24 @@ export default function CashierDashboard() {
   const [clockNow, setClockNow] = useState(() => Date.now());
   const [shiftSaving, setShiftSaving] = useState(false);
   const [restoringShiftId, setRestoringShiftId] = useState<string | null>(null);
+  const [soundMuted, setSoundMuted] = useState(() => typeof window !== 'undefined'
+    && window.localStorage.getItem('matcha-order-sound-muted') === '1');
+  const soundMutedRef = useRef(soundMuted);
+  const knownOrderIdsRef = useRef<Set<string> | null>(null);
 
   const fetchOrders = useCallback(async () => {
     try {
       const response = await fetch('/api/dashboard/orders');
       const data = await response.json() as { orders?: OrderRow[]; error?: string; demoMode?: boolean };
       if (response.ok) {
-        setOrders(data.orders || []);
+        const incoming = data.orders || [];
+        const known = knownOrderIdsRef.current;
+        knownOrderIdsRef.current = new Set(incoming.map((order) => order.id));
+        if (known !== null && !soundMutedRef.current
+          && incoming.some((order) => order.status === 'NEW' && !known.has(order.id))) {
+          playOrderSound();
+        }
+        setOrders(incoming);
         setLoggedIn(true);
         setDemoMode(Boolean(data.demoMode));
         setError(null);
@@ -172,6 +184,22 @@ export default function CashierDashboard() {
     const interval = window.setInterval(() => setClockNow(Date.now()), 30_000);
     return () => window.clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    const unlock = () => unlockOrderSound();
+    window.addEventListener('pointerdown', unlock, { once: true });
+    return () => window.removeEventListener('pointerdown', unlock);
+  }, []);
+
+  const toggleSoundMuted = () => {
+    setSoundMuted((current) => {
+      const next = !current;
+      soundMutedRef.current = next;
+      window.localStorage.setItem('matcha-order-sound-muted', next ? '1' : '0');
+      if (!next) unlockOrderSound();
+      return next;
+    });
+  };
 
   useEffect(() => {
     if (!loggedIn || staff?.role !== 'ADMIN') {
@@ -568,6 +596,9 @@ export default function CashierDashboard() {
               <span className="rounded-xl bg-[#f1f3ef] px-3 py-2.5 text-xs font-semibold text-[#647b77]">انتهى شيفتك اليوم</span>
             ) : <button type="button" disabled={shiftSaving} onClick={() => void updateShift('start')} className="rounded-xl bg-[#176f68] px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-[#115b56] disabled:opacity-60">{shiftSaving ? 'جارٍ بدء الشيفت…' : 'بدء الشيفت'}</button>
           ) : null}
+          <button type="button" onClick={toggleSoundMuted} suppressHydrationWarning aria-label={soundMuted ? 'تشغيل تنبيه الطلبات الجديدة' : 'كتم تنبيه الطلبات الجديدة'} title={soundMuted ? 'تشغيل تنبيه الطلبات الجديدة' : 'كتم تنبيه الطلبات الجديدة'} className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#cbd9d5] bg-white text-base leading-none text-[#176f68] transition hover:bg-[#edf6f3] active:scale-95">
+            <span aria-hidden="true">{soundMuted ? '🔕' : '🔔'}</span>
+          </button>
           <button onClick={logout} className="rounded-xl border border-[#cbd9d5] bg-white px-4 py-2.5 text-sm font-semibold text-[#315d58] transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700">
             تسجيل الخروج
           </button>
