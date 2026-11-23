@@ -428,7 +428,7 @@ export default function CustomerOrdering() {
         </div>
       </section>
 
-      <section id="customer-menu" className="sticky top-2 z-20 mb-6 scroll-mt-4 rounded-[1.5rem] border border-[#E5E3B2] bg-white/95 p-3 shadow-[0_8px_24px_rgba(44,43,35,.06)] backdrop-blur sm:mb-8 sm:p-4">
+      <section id="customer-menu" className="sticky top-0 z-40 mb-6 scroll-mt-4 border-b border-[#E5E3B2] bg-white p-3 shadow-[0_10px_24px_rgba(44,43,35,.08)] sm:mb-8 sm:rounded-[1.5rem] sm:border sm:p-4">
         <div className="mb-3 flex items-center justify-between gap-3 px-1">
           <span className="shrink-0 rounded-full bg-[#f3f4ed] px-3 py-1.5 text-xs font-semibold text-[#687650]">{filteredProducts.length} صنف</span>
         </div>

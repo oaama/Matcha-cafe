@@ -35,6 +35,7 @@ export default function InventoryManagement() {
   const [ingredientUnit, setIngredientUnit] = useState('');
   const [ingredientCategory, setIngredientCategory] = useState('');
   const [search, setSearch] = useState('');
+  const [showAllStock, setShowAllStock] = useState(false);
   const [from, setFrom] = useState(() => {
     const date = new Date();
     date.setDate(date.getDate() - 6);
@@ -276,16 +277,6 @@ export default function InventoryManagement() {
               </button>
             </form>
 
-            <div className="mb-7">
-              <h3 className="mb-3 font-bold text-[#403d33]">أرصدة الأصناف الجاهزة للبيع</h3>
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                {productItems.map((item) => (
-                  <InventoryCard key={item.id} item={item} onAdjust={() => setAdjustment({ itemId: item.id, quantity: '', note: '', direction: 1 })} onUpdate={updateItem} />
-                ))}
-              </div>
-              <p className="mt-2 text-xs leading-5 text-[#89877c]">مافيش تفعيل يدوي مطلوب: أول ما تضيف رصيد للصنف، يدخل المتابعة ويتخصم تلقائيًا مع الطلب. الأصناف اللي رصيدها صفر وغير مُسجل تفضل متاحة للبيع لحد تسجيل رصيدها.</p>
-            </div>
-
             <div className="mb-6">
               <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
                 <h3 className="font-bold text-[#403d33]">الخامات والوصفات</h3>
@@ -394,6 +385,20 @@ export default function InventoryManagement() {
                   </table>
                 </div>
               )}
+            </div>
+            <div className="mb-7">
+              <h3 className="mb-3 font-bold text-[#403d33]">أرصدة الأصناف الجاهزة للبيع</h3>
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                {(showAllStock ? productItems : productItems.slice(0, 24)).map((item) => (
+                  <InventoryCard key={item.id} item={item} onAdjust={() => setAdjustment({ itemId: item.id, quantity: '', note: '', direction: 1 })} onUpdate={updateItem} />
+                ))}
+              </div>
+              {!showAllStock && productItems.length > 24 ? (
+                <button type="button" onClick={() => setShowAllStock(true)} className="mt-3 w-full rounded-xl border border-[#dfe2d5] bg-white px-4 py-2.5 text-sm font-semibold text-[#6B8136] transition hover:bg-[#f4f6ef]">
+                  عرض كل الأصناف ({productItems.length})
+                </button>
+              ) : null}
+              <p className="mt-2 text-xs leading-5 text-[#89877c]">مافيش تفعيل يدوي مطلوب: أول ما تضيف رصيد للصنف، يدخل المتابعة ويتخصم تلقائيًا مع الطلب. الأصناف اللي رصيدها صفر وغير مُسجل تفضل متاحة للبيع لحد تسجيل رصيدها.</p>
             </div>
           </>
         )}

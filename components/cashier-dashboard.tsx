@@ -72,7 +72,6 @@ export default function CashierDashboard() {
   const [shiftMessage, setShiftMessage] = useState('');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [groupToggles, setGroupToggles] = useState<Record<string, boolean>>({});
   const [receiptShift, setReceiptShift] = useState<ShiftRecord | null>(null);
   const [clockNow, setClockNow] = useState(() => Date.now());
   const [shiftSaving, setShiftSaving] = useState(false);
@@ -432,13 +431,6 @@ export default function CashierDashboard() {
     else groups.push({ title: item.group, items: [item] });
     return groups;
   }, []);
-  // Sidebar accordion: the active section's group stays open; the rest collapse.
-  const activeGroupTitle = navigationGroups.find((group) => group.items.some((item) => item.section === dashboardSection))?.title;
-  const isGroupOpen = (title: string) => groupToggles[title] ?? (title === activeGroupTitle);
-  const toggleGroup = (title: string) => setGroupToggles((current) => {
-    const open = current[title] ?? (title === activeGroupTitle);
-    return { ...current, [title]: !open };
-  });
 
   if (!loggedIn) {
     if (sessionChecking) {
@@ -582,20 +574,13 @@ export default function CashierDashboard() {
           </div>
           <nav aria-label="أقسام لوحة التحكم" className="space-y-2">
             {navigationGroups.map((group) => {
-              const groupOpen = sidebarCollapsed || isGroupOpen(group.title);
               return <div key={group.title}>
                 {!sidebarCollapsed ? (
-                  <button type="button" onClick={() => toggleGroup(group.title)} aria-expanded={groupOpen} className="flex w-full items-center justify-between rounded-lg px-3 py-1.5 text-[11px] font-semibold text-[#80918d] transition hover:bg-[#f4f9f7] hover:text-[#315d58]">
-                    <span>{group.title}</span>
-                    <span className="flex items-center gap-1.5">
-                      <span className="rounded-full bg-[#f1f3ef] px-1.5 py-0.5 text-[10px] tabular-nums">{group.items.length}</span>
-                      <span aria-hidden="true" className={`inline-block transition-transform ${groupOpen ? '' : '-rotate-90'}`}>▾</span>
-                    </span>
-                  </button>
+                  <p className="px-3 pb-1 pt-2 text-[11px] font-semibold text-[#80918d]">{group.title}</p>
                 ) : null}
-                {groupOpen ? <div className="space-y-1">
+                <div className="space-y-1">
                   {group.items.map(({ section, title, icon }) => <button key={section} type="button" aria-pressed={dashboardSection === section} aria-label={sidebarCollapsed ? title : undefined} title={sidebarCollapsed ? title : undefined} onClick={() => setDashboardSection(section)} className={`flex min-h-11 w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-start text-sm font-semibold transition ${sidebarCollapsed ? 'justify-center' : ''} ${dashboardSection === section ? 'border-[#4b9b91] bg-[#d8f3ee] text-[#176f68]' : 'border-transparent text-[#566b67] hover:border-[#dbe7e3] hover:bg-[#f4f9f7]'}`}><span aria-hidden="true" className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/80 text-base">{icon}</span>{!sidebarCollapsed ? title : null}</button>)}
-                </div> : null}
+                </div>
               </div>;
             })}
           </nav>
@@ -614,20 +599,13 @@ export default function CashierDashboard() {
             <div className="flex items-center justify-between border-b border-[#edf2ef] px-5 py-4"><h2 className="text-lg font-bold text-[#232122]">أقسام الداشبورد</h2><button type="button" onClick={() => setDrawerOpen(false)} className="flex h-9 w-9 items-center justify-center rounded-lg text-xl text-[#315d58] transition hover:bg-[#edf6f3]" aria-label="إغلاق القائمة">×</button></div>
             <nav aria-label="أقسام لوحة التحكم" className="flex-1 space-y-2 overflow-y-auto p-4">
               {navigationGroups.map((group) => {
-                const groupOpen = isGroupOpen(group.title);
                 return <div key={group.title}>
-                  <button type="button" onClick={() => toggleGroup(group.title)} aria-expanded={groupOpen} className="flex w-full items-center justify-between rounded-lg px-4 py-2 text-xs font-semibold text-[#80918d] transition hover:bg-[#edf6f3] hover:text-[#315d58]">
-                    <span>{group.title}</span>
-                    <span className="flex items-center gap-1.5">
-                      <span className="rounded-full bg-[#f1f3ef] px-1.5 py-0.5 text-[10px] tabular-nums">{group.items.length}</span>
-                      <span aria-hidden="true" className={`inline-block transition-transform ${groupOpen ? '' : '-rotate-90'}`}>▾</span>
-                    </span>
-                  </button>
-                  {groupOpen ? <div className="space-y-1">
+                  <p className="px-4 pb-1 pt-2 text-xs font-semibold text-[#80918d]">{group.title}</p>
+                  <div className="space-y-1">
                     {group.items.map(({ section, title, icon }) => (
                       <button key={section} type="button" aria-pressed={dashboardSection === section} onClick={() => { setDashboardSection(section); setDrawerOpen(false); }} className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-start text-sm font-semibold transition ${dashboardSection === section ? 'bg-[#176f68] text-white shadow-sm' : 'text-[#315d58] hover:bg-[#edf6f3]'}`}><span aria-hidden="true">{icon}</span>{title}</button>
                     ))}
-                  </div> : null}
+                  </div>
                 </div>;
               })}
             </nav>
