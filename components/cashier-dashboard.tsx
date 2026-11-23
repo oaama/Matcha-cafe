@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import LogoSplash from './logo-splash';
 import { DEFAULT_PRICING_SETTINGS, type PricingSettings } from '@/lib/pricing';
 import type { OrderRecord } from '@/lib/types';
@@ -65,6 +65,8 @@ export default function CashierDashboard() {
   const [pricingSaving, setPricingSaving] = useState(false);
   const [pricingSaved, setPricingSaved] = useState(false);
   const [backupDownloading, setBackupDownloading] = useState(false);
+  const [backupRestoring, setBackupRestoring] = useState(false);
+  const restoreInputRef = useRef<HTMLInputElement | null>(null);
   const [dashboardSection, setDashboardSection] = useState<DashboardSection>('orders');
   const [receiptOrder, setReceiptOrder] = useState<OrderRecord | null>(null);
   const [activeShift, setActiveShift] = useState<ShiftRecord | null>(null);
@@ -279,6 +281,35 @@ export default function CashierDashboard() {
       setError(backupError instanceof Error ? backupError.message : 'تعذر تنزيل النسخة الاحتياطية');
     } finally {
       setBackupDownloading(false);
+    }
+  };
+
+  const restoreBackupFromFile = async (file: File) => {
+    if (backupRestoring) return;
+    if (!window.confirm('هيتم استبدال كل البيانات الحالية بالنسخة دي (ما عدا حسابات المستخدمين). متأكد؟')) return;
+    setBackupRestoring(true);
+    setError(null);
+    try {
+      const text = await file.text();
+      let payload: unknown;
+      try {
+        payload = JSON.parse(text);
+      } catch {
+        throw new Error('الملف مش JSON صالح');
+      }
+      const response = await fetch('/api/dashboard/backup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json() as { error?: string };
+      if (!response.ok) throw new Error(data.error || 'تعذر استرجاع النسخة الاحتياطية');
+      window.alert('تم استرجاع النسخة بنجاح. هيتم تحديث الصفحة دلوقتي.');
+      window.location.reload();
+    } catch (restoreError) {
+      setError(restoreError instanceof Error ? restoreError.message : 'تعذر استرجاع النسخة الاحتياطية');
+    } finally {
+      setBackupRestoring(false);
     }
   };
 
@@ -769,6 +800,29 @@ export default function CashierDashboard() {
               className="rounded-xl bg-[#176f68] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#115b56] disabled:opacity-60"
             >
               {backupDownloading ? 'جارٍ تجهيز النسخة…' : 'تنزيل نسخة احتياطية (JSON)'}
+            </button>
+          </div>
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-[#ecebd6] pt-4">
+            <p className="max-w-2xl text-sm leading-6 text-[#705331]">استرجاع نسخة محفوظة بيستبدل كل البيانات الحالية بمحتوى الملف، ما عدا حسابات المستخدمين وكلمات السر.</p>
+            <input
+              ref={restoreInputRef}
+              type="file"
+              accept="application/json,.json"
+              className="hidden"
+              aria-label="ملف النسخة الاحتياطية"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                event.target.value = '';
+                if (file) void restoreBackupFromFile(file);
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => restoreInputRef.current?.click()}
+              disabled={backupRestoring}
+              className="rounded-xl border border-rose-300 bg-white px-5 py-2.5 text-sm font-semibold text-rose-700 transition hover:bg-rose-50 disabled:opacity-60"
+            >
+              {backupRestoring ? 'جارٍ الاسترجاع…' : 'استرجاع نسخة احتياطية'}
             </button>
           </div>
         </section> : null}

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireStaffRole } from '@/lib/staff-api';
+import { restoreBackup, validateBackupPayload } from '@/lib/backup-restore';
 import { getCatalog } from '@/lib/catalog-repository';
 import { listCustomerFollowUps } from '@/lib/customer-repository';
 import { listDebts } from '@/lib/debt-repository';
@@ -60,5 +61,39 @@ export async function GET() {
   } catch (error) {
     console.error('Unable to export backup:', error);
     return NextResponse.json({ error: 'تعذر تجهيز النسخة الاحتياطية' }, { status: 500 });
+  }
+}
+
+// Restoring ("استرجاع") replaces ALL business data from a backup file.
+// Staff accounts are deliberately excluded so no one locks themselves out.
+export async function POST(request: Request) {
+  const staff = await requireStaffRole(['ADMIN']);
+  if (!staff) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const contentLength = Number(request.headers.get('content-length') ?? 0);
+  if (Number.isFinite(contentLength) && contentLength > 30_000_000) {
+    return NextResponse.json({ error: 'الملف أكبر من الحد المسموح (30 ميجا)' }, { status: 413 });
+  }
+
+  let raw: unknown;
+  try {
+    raw = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'الملف مش JSON صالح' }, { status: 400 });
+  }
+
+  const validation = validateBackupPayload(raw);
+  if (!validation.ok) {
+    return NextResponse.json({ error: validation.error }, { status: 400 });
+  }
+
+  try {
+    const restored = await restoreBackup(validation.data, { id: staff.id, username: staff.username });
+    return NextResponse.json({ ok: true, restored, staffAccountsSkipped: true });
+  } catch (error) {
+    console.error('Unable to restore backup:', error);
+    return NextResponse.json({ error: 'تعذر استرجاع النسخة الاحتياطية؛ لم تكتمل العملية' }, { status: 500 });
   }
 }
