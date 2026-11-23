@@ -39,6 +39,7 @@ export default function InventoryManagement() {
   const [builderName, setBuilderName] = useState('');
   const [builderCategory, setBuilderCategory] = useState('');
   const [builderPrice, setBuilderPrice] = useState('');
+  const [builderProd, setBuilderProd] = useState('');
   const [builderLines, setBuilderLines] = useState<{ itemId: string; quantity: string }[]>([]);
   const [building, setBuilding] = useState(false);
   const [catalogCategories, setCatalogCategories] = useState<{ id: string; ar: string }[]>([]);
@@ -214,8 +215,9 @@ export default function InventoryManagement() {
     const total = lines.reduce((sum, entry) => sum + (entry.lineCost ?? 0), 0);
     const complete = lines.length > 0 && lines.every((entry) => entry.lineCost !== undefined);
     const price = Number(builderPrice);
-    return { lines, total, complete, price: Number.isFinite(price) && price > 0 ? price : undefined };
-  }, [builderLines, builderPrice, allIngredients]);
+    const prod = Number(builderProd);
+    return { lines, total, complete, price: Number.isFinite(price) && price > 0 ? price : undefined, prod: Number.isFinite(prod) && prod > 0 ? prod : undefined };
+  }, [builderLines, builderPrice, builderProd, allIngredients]);
 
   const createProductFromIngredients = async () => {
     if (building) return;
@@ -259,9 +261,11 @@ export default function InventoryManagement() {
         const data = await saveCatalog.json() as { error?: string };
         throw new Error(data.error || 'تعذر حفظ الصنف في المنيو');
       }
+      const prod = Number(builderProd);
       const nextRecipes = [...recipes, {
         productId,
         ingredients: validLines.map((line) => ({ itemId: line.itemId, quantity: Number(line.quantity) })),
+        ...(Number.isFinite(prod) && prod > 0 ? { productionQuantity: prod } : {}),
       }];
       const saveInventory = await fetch('/api/dashboard/inventory', {
         method: 'PUT',
@@ -275,6 +279,7 @@ export default function InventoryManagement() {
       setBuilderName('');
       setBuilderCategory('');
       setBuilderPrice('');
+      setBuilderProd('');
       setBuilderLines([]);
       setMessage(`اتإنشأ الصنف "${name}" بوصفته.`);
       await loadInventory();
@@ -455,6 +460,10 @@ export default function InventoryManagement() {
                   سعر البيع (ج)
                   <input type="number" min="0" step="any" inputMode="decimal" value={builderPrice} onChange={(event) => setBuilderPrice(event.target.value)} placeholder="تدخله انت" className={inputClass} />
                 </label>
+                <label className="grid gap-1.5 text-sm font-semibold text-[#232122] sm:col-span-2">
+                  كمية الإنتاج (اختياري)
+                  <input type="number" min="0" step="any" inputMode="decimal" value={builderProd} onChange={(event) => setBuilderProd(event.target.value)} placeholder="تحددها انت" className={inputClass} />
+                </label>
               </div>
               <h4 className="mt-4 text-sm font-bold text-[#403d33]">الخامات المستخدمة</h4>
               {allIngredients.length === 0 ? (
@@ -487,6 +496,7 @@ export default function InventoryManagement() {
                 <p className="text-xs font-semibold text-white/70">تفاصيل التكلفة</p>
                 {builderCost.lines.length === 0 ? <p className="flex justify-between"><span>لسه مفيش خامات</span><strong>—</strong></p> : null}
                 <p className="flex justify-between"><span>إجمالي تكلفة الوصفة</span><strong dir="ltr">{builderCost.lines.length === 0 || !builderCost.complete ? '—' : `${builderCost.total.toFixed(2)} ج`}</strong></p>
+                {builderCost.complete && builderCost.prod ? <p className="flex justify-between"><span>تكلفة الوحدة المنتجة</span><strong dir="ltr">{`${(builderCost.total / builderCost.prod).toFixed(2)} ج`}</strong></p> : null}
                 <p className="flex justify-between"><span>نسبة تكلفة الأكل من سعر البيع</span><strong dir="ltr">{builderCost.complete && builderCost.price ? `${((builderCost.total / builderCost.price) * 100).toFixed(1)}%` : '—'}</strong></p>
                 <p className="flex justify-between"><span>الربح قبل التشغيل</span><strong dir="ltr">{builderCost.complete && builderCost.price ? `${(builderCost.price - builderCost.total).toFixed(2)} ج` : '—'}</strong></p>
                 {!builderCost.complete && builderCost.lines.length > 0 ? <p className="text-xs text-amber-200">⚠ في خامة من غير سعر — الأرقام ناقصة</p> : null}
@@ -547,9 +557,28 @@ export default function InventoryManagement() {
                           </div>
                         );
                       })}
+                      {hasRecipe ? (
+                        <label className="flex items-center justify-between gap-3 rounded-lg bg-[#f8f8f4] px-3 py-2 text-sm font-semibold text-[#403d33]">
+                          كمية الإنتاج (اختياري)
+                          <input
+                            aria-label={`كمية الإنتاج لوصفة ${product.ar}`}
+                            type="number" min="0" step="any" inputMode="decimal" placeholder="تحددها انت"
+                            value={recipe?.productionQuantity ?? ''}
+                            onChange={(event) => {
+                              const prod = Number(event.target.value);
+                              updateRecipe(product.id, {
+                                ...recipe!,
+                                productionQuantity: Number.isFinite(prod) && prod > 0 ? prod : undefined,
+                              });
+                            }}
+                            className="w-28 rounded-lg border-[#E5E3B2] px-2 py-1.5 text-sm"
+                          />
+                        </label>
+                      ) : null}
                       <div className="grid gap-2 rounded-lg bg-[#f4f6ef] p-3 text-sm sm:grid-cols-2">
                         <p className="flex justify-between gap-2"><span>سعر البيع</span><strong>{sellingPrice.toFixed(2)} ج.م</strong></p>
                         <p className="flex justify-between gap-2"><span>تكلفة الوصفة</span><strong>{recipeCost.totalCost === undefined ? (hasRecipe ? 'أدخل تكلفة كل خامة' : 'أضف مكونات الوصفة') : `${recipeCost.totalCost.toFixed(2)} ج.م`}</strong></p>
+                        {recipe?.productionQuantity && recipeCost.totalCost !== undefined ? <p className="flex justify-between gap-2"><span>تكلفة الوحدة المنتجة</span><strong>{`${(recipeCost.totalCost / recipe.productionQuantity).toFixed(2)} ج.م`}</strong></p> : null}
                         <p className="flex justify-between gap-2"><span>الربح الإجمالي</span><strong>{grossProfit === undefined ? '—' : `${grossProfit.toFixed(2)} ج.م`}</strong></p>
                         <p className="flex justify-between gap-2"><span>هامش الربح</span><strong>{profitMargin === undefined ? '—' : `${profitMargin.toFixed(1)}%`}</strong></p>
                       </div>

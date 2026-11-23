@@ -62,6 +62,7 @@ movementSchema.index({ referenceId: 1, reason: 1 });
 
 const recipeSchema = new Schema<ProductRecipe>({
   productId: { type: String, required: true, unique: true },
+  productionQuantity: { type: Number, min: 0.000001 },
   ingredients: [{
     itemId: { type: String, required: true },
     quantity: { type: Number, required: true, min: 0.000001 },

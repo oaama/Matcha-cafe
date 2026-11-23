@@ -105,6 +105,7 @@ export const inventorySettingsSchema = z.object({
       itemId: z.string().min(1).max(120),
       quantity: z.number().finite().positive().max(1_000_000),
     })).max(100),
+    productionQuantity: z.number().finite().positive().max(1_000_000).optional(),
   })).max(5000),
 }).superRefine((inventory, context) => {
   const itemIds = new Set<string>();

@@ -113,6 +113,7 @@ export type InventoryItem = {
 export type ProductRecipe = {
   productId: string;
   ingredients: Array<{ itemId: string; quantity: number }>;
+  productionQuantity?: number;
 };
 
 export type InventoryMovement = {
