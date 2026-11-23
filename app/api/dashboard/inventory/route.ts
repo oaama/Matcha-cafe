@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
 import { getCatalog } from '@/lib/catalog-repository';
 import { requireStaffRole } from '@/lib/staff-api';
-import { adjustInventory, getInventoryData, InventoryItemNotFoundError, saveInventoryConfiguration } from '@/lib/inventory-repository';
+import { adjustInventory, deleteInventoryItem, getInventoryData, InventoryItemNotFoundError, saveInventoryConfiguration } from '@/lib/inventory-repository';
 import { inventoryAdjustmentSchema, inventorySettingsSchema } from '@/lib/validation';
 
 async function isStaff() {
@@ -47,6 +48,32 @@ export async function PUT(request: Request) {
   } catch (error) {
     console.error('Unable to save inventory settings:', error);
     return NextResponse.json({ error: 'تعذر حفظ إعدادات المخزون' }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: Request) {
+  if (!await isStaff()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'بيانات الحذف غير صالحة' }, { status: 400 });
+  }
+  const parsed = z.object({ itemId: z.string().min(1).max(120) }).safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'بيانات الحذف غير صالحة' }, { status: 400 });
+  }
+
+  try {
+    await deleteInventoryItem(parsed.data.itemId);
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    if (error instanceof InventoryItemNotFoundError) {
+      return NextResponse.json({ error: error.message }, { status: 404 });
+    }
+    console.error('Unable to delete inventory item:', error);
+    return NextResponse.json({ error: 'تعذر حذف الخامة' }, { status: 500 });
   }
 }
 

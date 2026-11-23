@@ -125,6 +125,33 @@ export default function InventoryManagement() {
     }
   };
 
+  const deleteIngredient = async (item: InventoryItem) => {
+    if (!window.confirm(`حذف الخامة "${item.name}" نهائيًا؟ هتتشال من أي وصفة بتستخدمها.`)) return;
+    setSaving(true);
+    setError('');
+    setMessage('');
+    try {
+      const response = await fetch('/api/dashboard/inventory', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ itemId: item.id }),
+      });
+      if (!response.ok) {
+        const data = await response.json() as { error?: string };
+        throw new Error(data.error || 'تعذر حذف الخامة');
+      }
+      setItems((current) => current.filter((entry) => entry.id !== item.id));
+      setRecipes((current) => current
+        .map((recipe) => ({ ...recipe, ingredients: recipe.ingredients.filter((ingredient) => ingredient.itemId !== item.id) }))
+        .filter((recipe) => recipe.ingredients.length > 0));
+      setMessage(`اتحذفت الخامة "${item.name}".`);
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : 'تعذر حذف الخامة');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const updateItem = (itemId: string, patch: Partial<InventoryItem>) => {
     setItems((current) => current.map((item) => item.id === itemId ? { ...item, ...patch } : item));
     setMessage('');
@@ -289,7 +316,7 @@ export default function InventoryManagement() {
               ) : (
                 <div className="grid gap-3 sm:grid-cols-2">
                   {ingredients.map((item) => (
-                    <InventoryCard key={item.id} item={item} onAdjust={() => setAdjustment({ itemId: item.id, quantity: '', note: '', direction: 1 })} onUpdate={updateItem} />
+                    <InventoryCard key={item.id} item={item} onAdjust={() => setAdjustment({ itemId: item.id, quantity: '', note: '', direction: 1 })} onUpdate={updateItem} onDelete={() => void deleteIngredient(item)} />
                   ))}
                 </div>
               )}
@@ -434,10 +461,11 @@ export default function InventoryManagement() {
   );
 }
 
-function InventoryCard({ item, onAdjust, onUpdate }: {
+function InventoryCard({ item, onAdjust, onUpdate, onDelete }: {
   item: InventoryItem;
   onAdjust: () => void;
   onUpdate: (itemId: string, patch: Partial<InventoryItem>) => void;
+  onDelete?: () => void;
 }) {
   const stockTracked = item.trackStock || item.quantity > 0 || item.lowStockThreshold > 0;
   const out = stockTracked && item.quantity === 0;
@@ -445,10 +473,19 @@ function InventoryCard({ item, onAdjust, onUpdate }: {
   return (
     <article className="rounded-2xl border border-[#E5E3B2] bg-white p-4">
       <div className="flex items-start justify-between gap-3">
-        <div>
-          <h4 className="font-bold text-[#403d33]">{item.name}</h4>
+        <div className="min-w-0">
+          {item.type === 'ingredient' ? (
+            <input aria-label={`اسم ${item.name}`} maxLength={150} value={item.name} onChange={(event) => onUpdate(item.id, { name: event.target.value })} className="w-full rounded-lg border border-transparent bg-transparent px-1 py-0.5 font-bold text-[#403d33] transition hover:border-[#E5E3B2] focus:border-[#6B8136] focus:bg-white" />
+          ) : (
+            <h4 className="font-bold text-[#403d33]">{item.name}</h4>
+          )}
           <p className="mt-1 text-sm text-[#705331]">{item.quantity} {item.unit}</p>
         </div>
+        {onDelete ? (
+          <button type="button" onClick={onDelete} aria-label={`حذف ${item.name}`} title="حذف الخامة نهائيًا" className="shrink-0 rounded-lg border border-rose-200 px-2.5 py-1 text-xs font-bold text-rose-700 transition hover:bg-rose-50">
+            حذف
+          </button>
+        ) : null}
         <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${out ? 'bg-rose-50 text-rose-800' : low ? 'bg-amber-50 text-amber-800' : stockTracked ? 'bg-[#f4f6ef] text-[#66764e]' : 'bg-[#f4f3ef] text-[#705331]'}`}>
           {out ? 'نفد المخزون' : low ? 'مخزون منخفض' : stockTracked ? 'متابَع تلقائيًا' : 'الرصيد غير مُسجل'}
         </span>

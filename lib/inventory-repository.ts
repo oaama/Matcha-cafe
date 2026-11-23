@@ -263,6 +263,32 @@ export async function saveInventoryConfiguration(items: InventoryItem[], recipes
   }
 }
 
+export async function deleteInventoryItem(itemId: string) {
+  if (getDataProvider() === 'mock') {
+    const exists = mockStore.items.some((item) => item.id === itemId);
+    if (!exists) throw new InventoryItemNotFoundError();
+    mockStore.items = mockStore.items.filter((item) => item.id !== itemId);
+    mockStore.recipes = mockStore.recipes
+      .map((recipe) => ({ ...recipe, ingredients: recipe.ingredients.filter((ingredient) => ingredient.itemId !== itemId) }))
+      .filter((recipe) => recipe.ingredients.length > 0);
+    return;
+  }
+
+  const { connectToDatabase } = await import('./database');
+  const connection = await connectToDatabase();
+  const session = await connection.startSession();
+  try {
+    await session.withTransaction(async () => {
+      const removed = await InventoryItemModel.deleteOne({ id: itemId }, { session });
+      if (!removed.deletedCount) throw new InventoryItemNotFoundError();
+      await ProductRecipeModel.updateMany({}, { $pull: { ingredients: { itemId } } }, { session });
+      await ProductRecipeModel.deleteMany({ ingredients: { $size: 0 } }, { session });
+    });
+  } finally {
+    await session.endSession();
+  }
+}
+
 export async function adjustInventory(itemId: string, delta: number, note?: string, performedBy?: string) {
   const now = new Date().toISOString();
   if (getDataProvider() === 'mock') {
