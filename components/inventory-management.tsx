@@ -36,6 +36,12 @@ export default function InventoryManagement() {
   const [ingredientCategory, setIngredientCategory] = useState('');
   const [search, setSearch] = useState('');
   const [showAllStock, setShowAllStock] = useState(false);
+  const [builderName, setBuilderName] = useState('');
+  const [builderCategory, setBuilderCategory] = useState('');
+  const [builderPrice, setBuilderPrice] = useState('');
+  const [builderLines, setBuilderLines] = useState<{ itemId: string; quantity: string }[]>([]);
+  const [building, setBuilding] = useState(false);
+  const [catalogCategories, setCatalogCategories] = useState<{ id: string; ar: string }[]>([]);
   const [from, setFrom] = useState(() => {
     const date = new Date();
     date.setDate(date.getDate() - 6);
@@ -65,6 +71,19 @@ export default function InventoryManagement() {
   useEffect(() => {
     const timeout = window.setTimeout(() => void loadInventory(), 0);
     return () => window.clearTimeout(timeout);
+  }, []);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const response = await fetch('/api/dashboard/catalog');
+        if (!response.ok) return;
+        const data = await response.json() as { catalog?: { categories?: { id: string; ar: string }[] } };
+        const categories = data.catalog?.categories ?? [];
+        setCatalogCategories(categories);
+        setBuilderCategory((current) => current || (categories[0]?.id ?? ''));
+      } catch { /* categories stay empty; builder select shows a placeholder */ }
+    })();
   }, []);
 
   // Deep link from the recipe-stock monitor: open this product's recipe editor.
@@ -182,6 +201,88 @@ export default function InventoryManagement() {
     const recipe = recipes.find((entry) => entry.productId === productId) ?? { productId, ingredients: [] };
     if (recipe.ingredients.some((ingredient) => ingredient.itemId === itemId)) return;
     updateRecipe(productId, { ...recipe, ingredients: [...recipe.ingredients, { itemId, quantity }] });
+  };
+
+  const builderCost = useMemo(() => {
+    const lines = builderLines
+      .filter((line) => line.itemId && Number(line.quantity) > 0)
+      .map((line) => {
+        const ingredient = allIngredients.find((item) => item.id === line.itemId);
+        const lineCost = ingredient?.unitCost === undefined ? undefined : ingredient.unitCost * Number(line.quantity);
+        return { line, ingredient, lineCost };
+      });
+    const total = lines.reduce((sum, entry) => sum + (entry.lineCost ?? 0), 0);
+    const complete = lines.length > 0 && lines.every((entry) => entry.lineCost !== undefined);
+    const price = Number(builderPrice);
+    return { lines, total, complete, price: Number.isFinite(price) && price > 0 ? price : undefined };
+  }, [builderLines, builderPrice, allIngredients]);
+
+  const createProductFromIngredients = async () => {
+    if (building) return;
+    const name = builderName.trim();
+    if (!name) { setError('اكتب اسم الصنف'); return; }
+    if (!builderCategory) { setError('اختار التصنيف'); return; }
+    const validLines = builderLines.filter((line) => line.itemId && Number(line.quantity) > 0);
+    if (!validLines.length) { setError('ضيف خامة واحدة على الأقل بكمية أكبر من صفر'); return; }
+    const price = Number(builderPrice);
+    if (!Number.isFinite(price) || price < 0) { setError('اكتب سعر بيع صحيح'); return; }
+    setBuilding(true);
+    setError('');
+    setMessage('');
+    try {
+      const catalogResponse = await fetch('/api/dashboard/catalog');
+      const catalogData = await catalogResponse.json() as { catalog?: { categories: { id: string; ar: string }[]; products: Product[]; groups: Record<string, unknown> }; error?: string };
+      if (!catalogResponse.ok || !catalogData.catalog) throw new Error(catalogData.error || 'تعذر تحميل المنيو');
+      const catalog = catalogData.catalog;
+      const productId = `product-${crypto.randomUUID()}`;
+      const nextCatalog = {
+        ...catalog,
+        products: [...catalog.products, {
+          id: productId,
+          categoryId: builderCategory,
+          ar: name,
+          en: '',
+          descriptionAr: '',
+          descriptionEn: '',
+          price,
+          available: true,
+          groups: [],
+          displayOrder: Math.max(0, ...catalog.products.map((product) => product.displayOrder ?? 0)) + 1,
+        }],
+      };
+      const saveCatalog = await fetch('/api/dashboard/catalog', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(nextCatalog),
+      });
+      if (!saveCatalog.ok) {
+        const data = await saveCatalog.json() as { error?: string };
+        throw new Error(data.error || 'تعذر حفظ الصنف في المنيو');
+      }
+      const nextRecipes = [...recipes, {
+        productId,
+        ingredients: validLines.map((line) => ({ itemId: line.itemId, quantity: Number(line.quantity) })),
+      }];
+      const saveInventory = await fetch('/api/dashboard/inventory', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items, recipes: nextRecipes }),
+      });
+      if (!saveInventory.ok) {
+        const data = await saveInventory.json() as { error?: string };
+        throw new Error(data.error || 'تعذر حفظ الوصفة');
+      }
+      setBuilderName('');
+      setBuilderCategory('');
+      setBuilderPrice('');
+      setBuilderLines([]);
+      setMessage(`اتإنشأ الصنف "${name}" بوصفته.`);
+      await loadInventory();
+    } catch (buildError) {
+      setError(buildError instanceof Error ? buildError.message : 'تعذر إنشاء الصنف');
+    } finally {
+      setBuilding(false);
+    }
   };
 
   const downloadReport = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -333,6 +434,66 @@ export default function InventoryManagement() {
                   ))}
                 </div>
               )}
+            </div>
+
+            <div className="mb-6 rounded-2xl border border-[#dfe2d5] bg-white p-4">
+              <h3 className="font-bold text-[#403d33]">بناء الصنف</h3>
+              <p className="mt-1 text-xs leading-5 text-[#89877c]">صنف جديد — مش هيتسجل إلا لما تضغط «إنشاء الصنف»</p>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <label className="grid gap-1.5 text-sm font-semibold text-[#232122] sm:col-span-2">
+                  اسم الصنف
+                  <input maxLength={150} value={builderName} onChange={(event) => setBuilderName(event.target.value)} placeholder="اسم الصنف" className={inputClass} />
+                </label>
+                <label className="grid gap-1.5 text-sm font-semibold text-[#232122]">
+                  التصنيف
+                  <select value={builderCategory} onChange={(event) => setBuilderCategory(event.target.value)} className={inputClass}>
+                    {catalogCategories.length === 0 ? <option value="">مثال: مشروبات ساخنة</option> : null}
+                    {catalogCategories.map((category) => <option key={category.id} value={category.id}>{category.ar}</option>)}
+                  </select>
+                </label>
+                <label className="grid gap-1.5 text-sm font-semibold text-[#232122]">
+                  سعر البيع (ج)
+                  <input type="number" min="0" step="any" inputMode="decimal" value={builderPrice} onChange={(event) => setBuilderPrice(event.target.value)} placeholder="تدخله انت" className={inputClass} />
+                </label>
+              </div>
+              <h4 className="mt-4 text-sm font-bold text-[#403d33]">الخامات المستخدمة</h4>
+              {allIngredients.length === 0 ? (
+                <p className="mt-2 text-xs leading-5 text-[#89877c]">مفيش خامات مسجلة. ضيف الخامات الأول من قسم الخامات فوق.</p>
+              ) : null}
+              <div className="mt-2 space-y-2">
+                {builderLines.map((line, index) => {
+                  const ingredient = allIngredients.find((item) => item.id === line.itemId);
+                  const lineCost = ingredient?.unitCost === undefined || !(Number(line.quantity) > 0) ? undefined : ingredient.unitCost * Number(line.quantity);
+                  return (
+                    <div key={index} className="flex flex-wrap items-center gap-2 rounded-lg bg-[#f8f8f4] p-2">
+                      <select aria-label={`الخامة في السطر ${index + 1}`} value={line.itemId} onChange={(event) => setBuilderLines((current) => current.map((entry, i) => i === index ? { ...entry, itemId: event.target.value } : entry))} className={inputClass}>
+                        <option value="">— اختار خامة —</option>
+                        {allIngredients.map((item) => <option key={item.id} value={item.id}>{item.name} ({item.unit})</option>)}
+                      </select>
+                      <input aria-label={`الكمية في السطر ${index + 1}`} type="number" min="0" step="any" inputMode="decimal" placeholder="الكمية" value={line.quantity} onChange={(event) => setBuilderLines((current) => current.map((entry, i) => i === index ? { ...entry, quantity: event.target.value } : entry))} className={`${inputClass} w-20`} />
+                      <span className="flex items-center gap-2 text-xs text-[#705331]">
+                        <span>{ingredient?.unit ?? ''}</span>
+                        <span dir="ltr">{lineCost === undefined ? '—' : `${lineCost.toFixed(2)} ج`}</span>
+                        <button type="button" aria-label={`حذف السطر ${index + 1}`} onClick={() => setBuilderLines((current) => current.filter((_, i) => i !== index))} className="font-bold text-rose-700">×</button>
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+              <button type="button" onClick={() => setBuilderLines((current) => [...current, { itemId: '', quantity: '' }])} disabled={allIngredients.length === 0} className="mt-3 w-full rounded-xl bg-[#6B8136] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#5d702f] disabled:opacity-50">
+                + إضافة خامة
+              </button>
+              <div className="mt-4 space-y-1.5 rounded-xl bg-[#176f68] p-4 text-sm text-white">
+                <p className="text-xs font-semibold text-white/70">تفاصيل التكلفة</p>
+                {builderCost.lines.length === 0 ? <p className="flex justify-between"><span>لسه مفيش خامات</span><strong>—</strong></p> : null}
+                <p className="flex justify-between"><span>إجمالي تكلفة الوصفة</span><strong dir="ltr">{builderCost.lines.length === 0 || !builderCost.complete ? '—' : `${builderCost.total.toFixed(2)} ج`}</strong></p>
+                <p className="flex justify-between"><span>نسبة تكلفة الأكل من سعر البيع</span><strong dir="ltr">{builderCost.complete && builderCost.price ? `${((builderCost.total / builderCost.price) * 100).toFixed(1)}%` : '—'}</strong></p>
+                <p className="flex justify-between"><span>الربح قبل التشغيل</span><strong dir="ltr">{builderCost.complete && builderCost.price ? `${(builderCost.price - builderCost.total).toFixed(2)} ج` : '—'}</strong></p>
+                {!builderCost.complete && builderCost.lines.length > 0 ? <p className="text-xs text-amber-200">⚠ في خامة من غير سعر — الأرقام ناقصة</p> : null}
+              </div>
+              <button type="button" disabled={building} onClick={() => void createProductFromIngredients()} className="mt-3 w-full rounded-xl bg-[#176f68] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#115b56] disabled:opacity-50">
+                {building ? 'جارٍ الإنشاء…' : '✓ إنشاء الصنف'}
+              </button>
             </div>
 
             <div className="space-y-2">
