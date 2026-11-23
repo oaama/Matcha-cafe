@@ -104,6 +104,7 @@ export type InventoryItem = {
   unit: string;
   category?: string;
   unitCost?: number;
+  costQuantity?: number;
   quantity: number;
   lowStockThreshold: number;
   trackStock: boolean;

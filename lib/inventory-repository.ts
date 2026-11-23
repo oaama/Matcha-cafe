@@ -37,6 +37,7 @@ const itemSchema = new Schema<InventoryItem>({
   unit: { type: String, required: true },
   category: { type: String, trim: true, maxlength: 60 },
   unitCost: { type: Number, min: 0 },
+  costQuantity: { type: Number, min: 0.000001 },
   quantity: { type: Number, required: true, min: 0 },
   lowStockThreshold: { type: Number, required: true, min: 0 },
   trackStock: { type: Boolean, required: true },
@@ -248,6 +249,8 @@ export async function saveInventoryConfiguration(items: InventoryItem[], recipes
         else set.category = item.category;
         if (item.unitCost === undefined) unset.unitCost = 1;
         else set.unitCost = item.unitCost;
+        if (item.costQuantity === undefined) unset.costQuantity = 1;
+        else set.costQuantity = item.costQuantity;
 
         await InventoryItemModel.updateOne(
           { id: item.id },

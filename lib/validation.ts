@@ -84,6 +84,7 @@ const inventoryItemSchema = z.object({
   unit: z.string().trim().min(1).max(30),
   category: z.string().trim().max(60).optional(),
   unitCost: z.number().finite().min(0).max(1_000_000_000).optional(),
+  costQuantity: z.number().finite().positive().max(1_000_000_000).optional(),
   quantity: z.number().finite().min(0).max(1_000_000_000),
   lowStockThreshold: z.number().finite().min(0).max(1_000_000_000),
   trackStock: z.boolean(),

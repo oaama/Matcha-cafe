@@ -679,20 +679,48 @@ function InventoryCard({ item, onAdjust, onUpdate, onDelete }: {
         </label>
       </div>
       {item.type === 'ingredient' ? (
-        <label className="mt-3 block text-xs text-[#705331]">
-          تكلفة الوحدة (ج.م)
-          <input
-            aria-label={`تكلفة وحدة ${item.name}`}
-            min="0"
-            step="any"
-            type="number"
-            value={item.unitCost ?? ''}
-            onChange={(event) => onUpdate(item.id, {
-              unitCost: event.target.value === '' ? undefined : Number(event.target.value),
-            })}
-            className="mt-1 w-full rounded-lg border-[#E5E3B2] px-2 py-1.5 text-sm"
-          />
-        </label>
+        <div className="mt-3">
+          <div className="grid grid-cols-2 gap-2">
+            <label className="text-xs text-[#705331]">
+              السعر (ج)
+              <input
+                aria-label={`سعر ${item.name}`}
+                min="0"
+                step="any"
+                type="number"
+                value={item.unitCost === undefined ? '' : Number((item.unitCost * (item.costQuantity ?? 1)).toFixed(4))}
+                onChange={(event) => {
+                  const per = item.costQuantity ?? 1;
+                  onUpdate(item.id, {
+                    costQuantity: per,
+                    unitCost: event.target.value === '' ? undefined : Number(event.target.value) / per,
+                  });
+                }}
+                className="mt-1 w-full rounded-lg border-[#E5E3B2] px-2 py-1.5 text-sm"
+              />
+            </label>
+            <label className="text-xs text-[#705331]">
+              لكل ({item.unit})
+              <input
+                aria-label={`لكل كمية ${item.name}`}
+                min="0.000001"
+                step="any"
+                type="number"
+                value={item.costQuantity ?? 1}
+                onChange={(event) => {
+                  const per = Number(event.target.value) > 0 ? Number(event.target.value) : 1;
+                  const price = item.unitCost === undefined ? undefined : item.unitCost * (item.costQuantity ?? 1);
+                  onUpdate(item.id, {
+                    costQuantity: per,
+                    unitCost: price === undefined ? undefined : price / per,
+                  });
+                }}
+                className="mt-1 w-full rounded-lg border-[#E5E3B2] px-2 py-1.5 text-sm"
+              />
+            </label>
+          </div>
+          <p className="mt-1 text-[11px] leading-4 text-[#89877c]">سعر الوحدة: {item.unitCost === undefined ? 'غير مسجل' : `${Number(item.unitCost.toFixed(6))} ج`}</p>
+        </div>
       ) : null}
       <div className="mt-3 flex items-center justify-between gap-3 border-t border-[#E5E3B2] pt-3">
         <span className="text-xs font-semibold text-[#705331]">{stockTracked ? 'الخصم التلقائي مفعّل' : 'أضف الرصيد لتفعيل الخصم'}</span>
