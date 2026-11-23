@@ -19,7 +19,7 @@ const statusLabels = {
 
 const money = (value: number) => `${value.toFixed(2)} ج.م`;
 
-export default function RecipeStockMonitor() {
+export default function RecipeStockMonitor({ onEditRecipe }: { onEditRecipe?: (productId: string) => void }) {
   const [inventory, setInventory] = useState<RecipeMonitoringData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -150,6 +150,11 @@ export default function RecipeStockMonitor() {
                   </div>
                 </dl>
                 {row.isLowStock ? <p role="status" className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-900">المخزون المسجل يكفي {row.availableServings} حصص فقط. راجع الرصيد قبل تأكيد طلبات جديدة.</p> : null}
+                {onEditRecipe ? (
+                  <button type="button" onClick={() => onEditRecipe(row.product.id)} aria-label={`تعديل وصفة ${row.product.ar}`} className="mt-3 w-full rounded-xl border border-[#c9d19e] bg-[#f4f6ef] px-4 py-2.5 text-sm font-semibold text-[#6B8136] transition hover:bg-[#e9efdf]">
+                    {row.status === 'no-recipe' ? 'إضافة وصفة' : 'تعديل الوصفة'}
+                  </button>
+                ) : null}
               </article>
             ))}
           </div>

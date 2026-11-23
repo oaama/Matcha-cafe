@@ -654,7 +654,10 @@ export default function CashierDashboard() {
         {dashboardSection === 'expenses' && staff ? <ExpenseManagement staff={staff} activeShift={activeShift} /> : null}
         {dashboardSection === 'menu' ? <MenuManagement /> : null}
         {dashboardSection === 'inventory' ? <InventoryManagement /> : null}
-        {dashboardSection === 'recipe-stock' && staff?.role === 'ADMIN' ? <RecipeStockMonitor /> : null}
+        {dashboardSection === 'recipe-stock' && staff?.role === 'ADMIN' ? <RecipeStockMonitor onEditRecipe={(productId) => {
+          window.sessionStorage.setItem('matcha-edit-recipe', productId);
+          setDashboardSection('inventory');
+        }} /> : null}
         {dashboardSection === 'purchases' && staff?.role === 'ADMIN' ? <PurchaseManagement /> : null}
         {dashboardSection === 'debts' && staff?.role === 'ADMIN' ? <DebtManagement /> : null}
         {dashboardSection === 'payroll' && staff?.role === 'ADMIN' ? <PayrollManagement /> : null}

@@ -67,6 +67,19 @@ export default function InventoryManagement() {
     return () => window.clearTimeout(timeout);
   }, []);
 
+  // Deep link from the recipe-stock monitor: open this product's recipe editor.
+  useEffect(() => {
+    if (!products.length) return;
+    const productId = window.sessionStorage.getItem('matcha-edit-recipe');
+    if (!productId) return;
+    window.sessionStorage.removeItem('matcha-edit-recipe');
+    const card = document.querySelector(`[data-recipe-product="${CSS.escape(productId)}"]`);
+    if (card instanceof HTMLDetailsElement) {
+      card.open = true;
+      card.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    }
+  }, [products]);
+
   const productItems = useMemo(() => items.filter((item) => item.type === 'product'
     && (!search.trim() || item.name.toLowerCase().includes(search.trim().toLowerCase()))), [items, search]);
   const allIngredients = useMemo(() => items.filter((item) => item.type === 'ingredient'), [items]);
@@ -334,7 +347,7 @@ export default function InventoryManagement() {
                   ? undefined
                   : (grossProfit / sellingPrice) * 100;
                 return (
-                  <details key={product.id} className="group rounded-xl border border-[#E5E3B2] bg-white">
+                  <details key={product.id} data-recipe-product={product.id} className="group rounded-xl border border-[#E5E3B2] bg-white">
                     <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 font-semibold text-[#403d33]">
                       <span>{product.ar}</span>
                       <span className="text-xs font-medium text-[#705331]">{recipe?.ingredients.length ? `${recipe.ingredients.length} خامة` : 'من غير وصفة'}</span>
