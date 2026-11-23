@@ -407,7 +407,7 @@ export default function InventoryManagement() {
             </div>
             <form onSubmit={(event) => void addIngredient(event)} className="mb-6 grid gap-3 rounded-2xl border border-dashed border-[#dfe2d5] bg-[#fafbf7] p-4 sm:grid-cols-2 xl:grid-cols-4 xl:items-end">
               <label className="grid gap-1.5 text-sm font-semibold text-[#232122]">
-                خامة جديدة
+                إضافة صنف للمخزون
                 <input required maxLength={150} value={ingredientName} onChange={(event) => setIngredientName(event.target.value)} placeholder="مثال: لبن كامل الدسم" className={inputClass} />
               </label>
               <label className="grid gap-1.5 text-sm font-semibold text-[#232122]">

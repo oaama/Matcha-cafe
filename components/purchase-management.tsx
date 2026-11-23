@@ -266,7 +266,7 @@ export default function PurchaseManagement() {
       {formOpen ? (
         <form onSubmit={(event) => void saveDraft(event)} className="space-y-4 rounded-[1.5rem] border border-[#E5E3B2] bg-white/75 p-5">
           <div className="flex items-center justify-between gap-3">
-            <div><h3 className="font-bold text-[#232122]">{editing ? 'تعديل مسودة فاتورة' : 'مسودة فاتورة جديدة'}</h3><p className="mt-1 text-xs text-[#705331]">الحفظ لا يضيف الكميات إلى المخزون؛ التحديث يحدث عند الاعتماد فقط.</p></div>
+            <div><h3 className="font-bold text-[#232122]">{editing ? 'تعديل مسودة فاتورة' : 'فاتورة مشتريات جديدة'}</h3><p className="mt-1 text-xs text-[#705331]">الحفظ لا يضيف الكميات إلى المخزون؛ التحديث يحدث عند الاعتماد فقط.</p></div>
             <button type="button" onClick={startNew} className="rounded-lg px-3 py-2 text-sm text-[#705331]">مسودة جديدة</button>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

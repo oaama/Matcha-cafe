@@ -121,7 +121,7 @@ export default function FinancialOverview() {
   const summary = data?.summary;
   const chartMax = useMemo(() => Math.max(1, ...(data?.daily ?? []).flatMap((day) => [day.online, day.manual, day.expenses])), [data?.daily]);
   const cards = summary ? [
-    { label: 'إجمالي المبيعات', value: money(summary.sales), note: `${summary.orderCount} طلب مكتمل` },
+    { label: 'إجمالي إيراد', value: money(summary.sales), note: `${summary.orderCount} طلب مكتمل` },
     { label: 'إيرادات الطلبات الإلكترونية', value: money(summary.onlineOrderRevenue), note: 'مصدرها الطلبات المكتملة' },
     { label: 'الإيرادات اليدوية', value: money(summary.manualRevenue), note: 'مفصولة عن الطلبات الإلكترونية' },
     { label: 'تكلفة المنتجات', value: money(summary.productCosts), note: `${money(summary.savedProductCosts)} محفوظة · ${money(summary.estimatedProductCosts)} تقديرية` },
@@ -132,7 +132,7 @@ export default function FinancialOverview() {
     { label: 'الديون القائمة', value: money(summary.outstandingDebts), note: 'التزامات حالية' },
     { label: 'المشتريات المعتمدة', value: money(summary.approvedPurchases), note: 'تُعرض منفصلة ولا تُخصم كمصروف' },
     { label: 'متوسط قيمة الطلب', value: money(summary.averageOrderValue), note: 'على الطلبات المكتملة' },
-    { label: 'النتيجة التشغيلية التقديرية', value: money(summary.operationalResult), note: 'المبيعات + الإيراد اليدوي − التكلفة والمصروفات والأجور', emphasis: true },
+    { label: 'صافي ربح', value: money(summary.operationalResult), note: 'المبيعات + الإيراد اليدوي − التكلفة والمصروفات والأجور', emphasis: true },
   ] : [];
 
   return (

@@ -76,7 +76,7 @@ export default function DailyReportSection() {
           ) : null}
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <div className="rounded-2xl border border-[#e0eae7] bg-white p-4">
-              <p className="text-xs font-semibold text-[#647b77]">إجمالي الإيراد ({report.orderCount} طلب + إيراد يدوي)</p>
+              <p className="text-xs font-semibold text-[#647b77]">إجمالي إيراد اليوم ({report.orderCount} طلب + إيراد يدوي)</p>
               <p className="mt-2 text-2xl font-bold text-[#176f68]">{money(report.totalRevenue)}</p>
             </div>
             <div className="rounded-2xl border border-[#e0eae7] bg-white p-4">
@@ -84,12 +84,12 @@ export default function DailyReportSection() {
               <p className="mt-2 text-2xl font-bold text-[#403d33]">{money(report.productCosts)}</p>
             </div>
             <div className="rounded-2xl border border-[#e0eae7] bg-white p-4">
-              <p className="text-xs font-semibold text-[#647b77]">مصاريف + أجور + تشغيل ثابت</p>
+              <p className="text-xs font-semibold text-[#647b77]">مصاريف اليوم + أجور العمال اليوم + تشغيل شهري موزع يومياً</p>
               <p className="mt-2 text-2xl font-bold text-[#403d33]">{money(report.expenses + report.wages + report.fixedOverhead)}</p>
-              <p className="mt-1 text-xs text-[#80918d]">مصاريف {money(report.expenses)} · أجور {money(report.wages)} · تشغيل {money(report.fixedOverhead)}</p>
+              <p className="mt-1 text-xs text-[#80918d]">مصاريف اليوم {money(report.expenses)} · أجور العمال اليوم {money(report.wages)} · تشغيل شهري موزع يومياً {money(report.fixedOverhead)}</p>
             </div>
             <div className={`rounded-2xl border p-4 ${report.net >= 0 ? 'border-[#b8d7d1] bg-[#f1f8f6]' : 'border-rose-200 bg-rose-50'}`}>
-              <p className="text-xs font-semibold text-[#647b77]">صافي اليوم</p>
+              <p className="text-xs font-semibold text-[#647b77]">صافي ربح اليوم</p>
               <p className={`mt-2 text-2xl font-bold ${report.net >= 0 ? 'text-[#176f68]' : 'text-rose-700'}`}>{money(report.net)}</p>
             </div>
           </div>

@@ -120,13 +120,13 @@ export default function OverheadPricing() {
       <section aria-labelledby="overhead-heading" className="rounded-[1.5rem] border border-[#E5E3B2] bg-white/85 p-4 shadow-[0_8px_24px_rgba(44,43,35,.04)] sm:p-6">
         <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 id="overhead-heading" className="text-xl font-bold text-[#232122]">التشغيل الثابت الشهري</h2>
+            <h2 id="overhead-heading" className="text-xl font-bold text-[#232122]">التشغيل الشهري</h2>
             <p className="mt-1.5 max-w-2xl text-sm leading-6 text-[#705331]">المصاريف الثابتة بتتوزع على عدد الأصناف المتوقع بيعها في الشهر عشان تعرف التكلفة الكاملة وصافي ربح كل صنف.</p>
           </div>
           {!loading && !error ? (
             <div className="rounded-2xl bg-[#f4f6ef] px-4 py-3 text-sm font-semibold text-[#403d33]">
-              <p>إجمالي التشغيل الشهري: {money(totals.monthlyFixed)}</p>
-              <p className="mt-1">نصيب التشغيل للوحدة: {money(totals.perUnit)}</p>
+              <p>إجمالي المصاريف الشهرية: {money(totals.monthlyFixed)}</p>
+              <p className="mt-1">تشغيل على كل صنف: {money(totals.perUnit)}</p>
             </div>
           ) : null}
         </div>
@@ -147,7 +147,7 @@ export default function OverheadPricing() {
                 ['internet', 'نت'],
                 ['other', 'أخرى'],
                 ['expectedMonthlyUnits', 'عدد الأصناف المتوقع شهريًا'],
-                ['targetFoodCostPercent', 'نسبة تكلفة الأكل المستهدفة ٪'],
+                ['targetFoodCostPercent', 'النسبة المستهدفة %'],
               ] as Array<[keyof OverheadConfig, string]>).map(([key, label]) => (
                 <label key={key} className="flex items-center justify-between gap-3 rounded-2xl border border-[#E5E3B2] bg-[#fcfcf9] px-4 py-3 text-sm font-medium text-[#705331]">
                   {label}
@@ -198,10 +198,10 @@ export default function OverheadPricing() {
                 <tr className="text-right text-xs text-[#705331]">
                   <th className="px-3 py-1">الصنف</th>
                   <th className="px-3 py-1">سعر البيع</th>
-                  <th className="px-3 py-1">تكلفة الخامات</th>
-                  <th className="px-3 py-1">نصيب التشغيل</th>
+                  <th className="px-3 py-1">تكلفة المكونات</th>
+                  <th className="px-3 py-1">تكلفة التشغيل للوحدة</th>
                   <th className="px-3 py-1">التكلفة الكاملة</th>
-                  <th className="px-3 py-1">صافي الربح</th>
+                  <th className="px-3 py-1">الربح الصافي بعد التشغيل</th>
                   <th className="px-3 py-1">السعر المقترح</th>
                 </tr>
               </thead>

@@ -9,7 +9,7 @@ const today = () => new Date().toISOString().slice(0, 10);
 const emptyDebt = (): DebtFields => ({ person: '', originalAmount: '', debtDate: today(), reason: '', description: '', notes: '' });
 const emptyPayment = (): PaymentFields => ({ amount: '', paymentDate: today(), description: '' });
 const inputClass = 'min-h-11 w-full rounded-xl border border-[#E5E3B2] bg-white px-3 py-2 text-sm';
-const statusLabels = { UNPAID: 'غير مسدد', PARTIAL: 'مسدد جزئيًا', PAID: 'مسدد بالكامل' } as const;
+const statusLabels = { UNPAID: 'غير مسددة', PARTIAL: 'مسددة جزئياً', PAID: 'مسددة' } as const;
 
 function money(amount: number) {
   return `${amount.toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ج.م`;
@@ -22,6 +22,8 @@ export default function DebtManagement() {
   const [editingDebt, setEditingDebt] = useState<DebtRecord | null>(null);
   const [paymentForm, setPaymentForm] = useState<PaymentFields>(emptyPayment);
   const [paymentTarget, setPaymentTarget] = useState<string | null>(null);
+  const [debtQuery, setDebtQuery] = useState('');
+  const [debtStatusFilter, setDebtStatusFilter] = useState('');
   const [editingPayment, setEditingPayment] = useState<{ debtId: string; payment: DebtPayment } | null>(null);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -168,26 +170,33 @@ export default function DebtManagement() {
     setPaymentForm({ amount: String(payment.amount), paymentDate: payment.paymentDate, description: payment.description });
   };
 
+  const q = debtQuery.trim().toLowerCase();
+  const filteredDebts = debts.filter((debt) => {
+    if (debtStatusFilter && debt.status !== debtStatusFilter) return false;
+    if (q && !`${debt.person} ${debt.reason} ${debt.description} ${debt.notes ?? ''}`.toLowerCase().includes(q)) return false;
+    return true;
+  });
+
   return (
     <section className="space-y-5" dir="rtl">
       <header className="rounded-[1.5rem] border border-[#E5E3B2] bg-white/75 p-5">
-        <h2 className="text-xl font-bold text-[#232122]">إدارة الديون اليدوية</h2>
+        <h2 className="text-xl font-bold text-[#232122]">المديونيات</h2>
         <p className="mt-1 text-sm leading-6 text-[#705331]">تُسجل الديون والدفعات يدويًا فقط، ولا تُنشأ ديون تلقائيًا من فواتير المشتريات.</p>
       </header>
       {message ? <p role="status" className="rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{message}</p> : null}
       {error ? <p role="alert" className="rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</p> : null}
 
       {totals ? <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        <Summary label="إجمالي الديون" value={money(totals.originalAmount)} />
-        <Summary label="إجمالي المسدد" value={money(totals.paidAmount)} />
-        <Summary label="المتبقي" value={money(totals.remainingAmount)} strong />
-        <Summary label="غير مسدد" value={String(totals.unpaidCount)} />
-        <Summary label="مسدد جزئيًا" value={String(totals.partiallyPaidCount)} />
-        <Summary label="مسدد بالكامل" value={String(totals.paidCount)} />
+        <Summary label="إجمالي المديونيات" value={money(totals.originalAmount)} />
+        <Summary label="إجمالي المبالغ المسددة" value={money(totals.paidAmount)} />
+        <Summary label="إجمالي المبالغ المتبقية" value={money(totals.remainingAmount)} strong />
+        <Summary label="عدد غير المسددة" value={String(totals.unpaidCount)} />
+        <Summary label="عدد المسددة جزئياً" value={String(totals.partiallyPaidCount)} />
+        <Summary label="عدد المديونيات المسددة" value={String(totals.paidCount)} />
       </dl> : null}
 
       <form onSubmit={(event) => void saveDebt(event)} className="grid gap-3 rounded-[1.5rem] border border-[#E5E3B2] bg-white/75 p-5 sm:grid-cols-2 lg:grid-cols-3">
-        <h3 className="text-lg font-bold sm:col-span-2 lg:col-span-3">{editingDebt ? 'تعديل الدين' : 'تسجيل دين يدوي'}</h3>
+        <h3 className="text-lg font-bold sm:col-span-2 lg:col-span-3">{editingDebt ? 'تعديل المديونية' : 'تسجيل مديونية يدوياً'}</h3>
         <label className="grid gap-1 text-xs font-semibold text-[#705331]">الشخص أو المورد<input required minLength={2} maxLength={200} value={form.person} onChange={(event) => setForm({ ...form, person: event.target.value })} className={inputClass} /></label>
         <label className="grid gap-1 text-xs font-semibold text-[#705331]">المبلغ الأصلي<input required min="0.01" max="10000000" step="0.01" type="number" value={form.originalAmount} onChange={(event) => setForm({ ...form, originalAmount: event.target.value })} className={inputClass} /></label>
         <label className="grid gap-1 text-xs font-semibold text-[#705331]">التاريخ<input required type="date" value={form.debtDate} onChange={(event) => setForm({ ...form, debtDate: event.target.value })} className={inputClass} /></label>
@@ -202,7 +211,17 @@ export default function DebtManagement() {
 
       <div className="space-y-3">
         <h3 className="font-bold text-[#232122]">سجل الديون</h3>
-        {loading ? <p className="rounded-xl bg-white/75 p-5 text-sm text-[#705331]">جارٍ تحميل السجل…</p> : debts.length ? debts.map((debt) => (
+        <div className="grid gap-3 rounded-[1.5rem] border border-[#E5E3B2] bg-white/75 p-4 sm:grid-cols-2">
+          <h4 className="font-bold text-[#232122] sm:col-span-2">بحث وتصفية</h4>
+          <input aria-label="بحث بالاسم أو الوصف" placeholder="بحث بالاسم أو الوصف" value={debtQuery} onChange={(event) => setDebtQuery(event.target.value)} className={inputClass} />
+          <select aria-label="تصفية بالحالة" value={debtStatusFilter} onChange={(event) => setDebtStatusFilter(event.target.value)} className={inputClass}>
+            <option value="">كل الحالات</option>
+            <option value="PAID">مسددة</option>
+            <option value="PARTIAL">مسددة جزئياً</option>
+            <option value="UNPAID">غير مسددة</option>
+          </select>
+        </div>
+        {loading ? <p className="rounded-xl bg-white/75 p-5 text-sm text-[#705331]">جارٍ تحميل السجل…</p> : filteredDebts.length ? filteredDebts.map((debt) => (
           <details key={debt.id} className="rounded-[1.5rem] border border-[#E5E3B2] bg-white/75 p-4">
             <summary className="flex cursor-pointer flex-wrap items-center justify-between gap-3 text-sm">
               <span className="font-bold">{debt.person} · {debt.reason}</span><span>{debt.debtDate}</span>
@@ -239,7 +258,7 @@ export default function DebtManagement() {
               </div>
             </div>
           </details>
-        )) : <p className="rounded-xl bg-white/75 p-5 text-sm text-[#705331]">لا توجد ديون مسجلة.</p>}
+        )) : <p className="rounded-xl bg-white/75 p-5 text-sm text-[#705331]">{debts.length ? 'مفيش نتايج بالفلتر ده.' : 'لا توجد ديون مسجلة.'}</p>}
       </div>
     </section>
   );

@@ -195,12 +195,11 @@ export default function PayrollManagement() {
             {startDate > endDate ? <p className="mt-3 text-sm text-rose-700">تاريخ البداية يجب أن يسبق تاريخ النهاية.</p> : statement ? (
               <>
                 <dl className="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3 lg:grid-cols-6">
-                  <Summary label="ساعات العمل المنتظمة" value={`${statement.regularHours.toFixed(2)} ساعة`} />
-                  <Summary label="الأجر الأساسي" value={statement.baseWages.toFixed(2)} />
-                  <Summary label="ساعات إضافية" value={`${statement.overtimeHours.toFixed(2)} ساعة`} />
-                  <Summary label="أجر الإضافي" value={statement.overtimeEarnings.toFixed(2)} />
+                  <Summary label="إجمالي ساعات العمل الأساسية" value={`${statement.regularHours.toFixed(2)} س`} />
+                  <Summary label="إجمالي الساعات الإضافية" value={`${statement.overtimeHours.toFixed(2)} س`} />
+                  <Summary label="إجمالي المرتبات (أساسي + إضافي)" value={(statement.baseWages + statement.overtimeEarnings).toFixed(2)} />
                   <Summary label="إجمالي السلف" value={statement.totalAdvances.toFixed(2)} />
-                  <Summary label="صافي المستحق" value={statement.netPay.toFixed(2)} strong />
+                  <Summary label="صافي المستحقات بعد خصم السلف" value={statement.netPay.toFixed(2)} strong />
                 </dl>
                 <p className="mt-3 text-xs text-[#705331]">الأجر الأساسي = ساعات العمل المسجلة × أجر الساعة. السلف منفصلة عن أجر الإضافي.</p>
               </>
