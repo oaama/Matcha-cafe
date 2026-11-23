@@ -652,7 +652,7 @@ export default function CustomerOrdering() {
         <div className="border-t border-[#E5E3B2] bg-[#FCF5ED] p-2 sm:p-3">
           <iframe
             title="خريطة موقع Matcha Café"
-            src="https://www.google.com/maps?q=Matcha%20Cafe&output=embed"
+            src="https://maps.google.com/maps?cid=15904730424418738549&output=embed"
             className="h-64 w-full rounded-xl border-0 sm:h-72"
             loading="lazy"
             referrerPolicy="no-referrer-when-downgrade"
