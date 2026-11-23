@@ -16,6 +16,8 @@ export type PurchaseInvoiceHistoryEntry = {
   at: string;
 };
 
+export type PurchasePaymentMethod = 'cash' | 'credit' | 'partial';
+
 export type PurchaseInvoice = {
   id: string;
   supplier: string;
@@ -23,6 +25,8 @@ export type PurchaseInvoice = {
   invoiceDate: string;
   items: PurchaseInvoiceItem[];
   total: number;
+  paymentMethod?: PurchasePaymentMethod;
+  paidAmount?: number;
   notes?: string;
   status: PurchaseInvoiceStatus;
   createdById: string;

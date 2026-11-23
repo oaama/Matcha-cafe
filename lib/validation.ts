@@ -161,7 +161,15 @@ export const purchaseInvoiceInputSchema = z.object({
     unitPrice: z.number().finite().min(0).max(1_000_000_000),
   })).min(1).max(200),
   notes: z.string().trim().max(1000).optional(),
+  paymentMethod: z.enum(['cash', 'credit', 'partial']).optional(),
+  paidAmount: z.number().finite().min(0).max(1_000_000_000).optional(),
 }).superRefine((invoice, context) => {
+  if (invoice.paymentMethod === 'partial') {
+    const total = invoice.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+    if (invoice.paidAmount === undefined || invoice.paidAmount > total + 0.005) {
+      context.addIssue({ code: 'custom', message: 'المدفوع الآن لازم يكون بين صفر وإجمالي الفاتورة' });
+    }
+  }
   const itemTotals = new Map<string, number>();
   for (const item of invoice.items) {
     const total = (itemTotals.get(item.itemId) ?? 0) + item.quantity;

@@ -5,7 +5,7 @@ import type { InventoryItem } from '@/lib/types';
 import type { PurchaseInvoice, PurchaseInvoiceItem } from '@/lib/purchase-types';
 
 type InvoiceLineInput = { itemId: string; quantity: string; unitPrice: string };
-type InvoiceForm = { supplier: string; invoiceNumber: string; invoiceDate: string; notes: string };
+type InvoiceForm = { supplier: string; invoiceNumber: string; invoiceDate: string; notes: string; paymentMethod: 'cash' | 'credit' | 'partial'; paidNow: string };
 
 const inputClass = 'min-h-11 w-full rounded-xl border border-[#E5E3B2] bg-white px-3 py-2 text-sm text-[#232122]';
 const statusLabels: Record<PurchaseInvoice['status'], string> = {
@@ -19,11 +19,15 @@ const historyLabels: Record<PurchaseInvoice['history'][number]['action'], string
   APPROVED: 'اعتماد وإضافة للمخزون',
   CANCELLED: 'إلغاء المسودة',
 };
+const paymentMethodLabels = { cash: 'نقدي', credit: 'آجل', partial: 'دفع جزئي' } as const;
+
 const emptyForm = (): InvoiceForm => ({
   supplier: '',
   invoiceNumber: '',
   invoiceDate: new Date().toISOString().slice(0, 10),
   notes: '',
+  paymentMethod: 'cash',
+  paidNow: '',
 });
 const emptyLine = (): InvoiceLineInput => ({ itemId: '', quantity: '', unitPrice: '' });
 
@@ -104,6 +108,8 @@ export default function PurchaseManagement() {
       invoiceNumber: invoice.invoiceNumber,
       invoiceDate: invoice.invoiceDate,
       notes: invoice.notes ?? '',
+      paymentMethod: invoice.paymentMethod ?? 'cash',
+      paidNow: invoice.paymentMethod === 'partial' ? String(invoice.paidAmount ?? '') : '',
     });
     setLines(invoice.items.map((item) => ({
       itemId: item.itemId,
@@ -120,6 +126,13 @@ export default function PurchaseManagement() {
       setError('أكمل بيانات كل صنف في الفاتورة.');
       return;
     }
+    if (form.paymentMethod === 'partial') {
+      const paid = Number(form.paidNow);
+      if (!Number.isFinite(paid) || paid < 0 || paid > formTotal + 0.005) {
+        setError('المدفوع الآن لازم يكون بين صفر وإجمالي الفاتورة.');
+        return;
+      }
+    }
     setSaving(true);
     setError('');
     setMessage('');
@@ -130,6 +143,8 @@ export default function PurchaseManagement() {
         invoiceDate: form.invoiceDate,
         notes: form.notes,
         items: invoiceItems(lines),
+        paymentMethod: form.paymentMethod,
+        paidAmount: form.paymentMethod === 'partial' ? Number(form.paidNow) : undefined,
       };
       const response = await fetch('/api/dashboard/purchases', {
         method: editing ? 'PATCH' : 'POST',
@@ -181,6 +196,18 @@ export default function PurchaseManagement() {
 
   const total = useMemo(() => invoices.reduce((sum, invoice) => sum + invoice.total, 0), [invoices]);
 
+  const supplierDebts = useMemo(() => {
+    const bySupplier = new Map<string, number>();
+    for (const invoice of invoices) {
+      if (invoice.status !== 'APPROVED' || !invoice.paymentMethod) continue;
+      const remaining = Math.max(0, invoice.total - (invoice.paidAmount ?? 0));
+      if (remaining <= 0.004) continue;
+      bySupplier.set(invoice.supplier, (bySupplier.get(invoice.supplier) ?? 0) + remaining);
+    }
+    return [...bySupplier.entries()].map(([supplier, remaining]) => ({ supplier, remaining })).sort((a, b) => b.remaining - a.remaining);
+  }, [invoices]);
+  const totalDebt = supplierDebts.reduce((sum, entry) => sum + entry.remaining, 0);
+
   return (
     <section className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-3 rounded-[1.5rem] border border-[#E5E3B2] bg-white/75 p-5">
@@ -231,11 +258,43 @@ export default function PurchaseManagement() {
             ))}
             <button type="button" onClick={() => setLines((current) => [...current, emptyLine()])} className="rounded-xl border border-[#E5E3B2] px-4 py-2 text-sm font-semibold text-[#536342]">＋ إضافة صنف</button>
           </div>
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#ecebd6] pt-4">
-            <strong className="text-[#232122]">إجمالي المسودة: {formatMoney(formTotal)}</strong>
+          <div className="space-y-3 rounded-xl bg-[#176f68] p-4 text-sm text-white">
+            <p className="flex flex-wrap items-center justify-between gap-2"><span>إجمالي الفاتورة</span><strong dir="ltr">{formatMoney(formTotal)}</strong></p>
+            <p className="flex flex-wrap items-center justify-between gap-2">
+              <span>طريقة الدفع</span>
+              <select aria-label="طريقة الدفع" value={form.paymentMethod} onChange={(event) => setForm({ ...form, paymentMethod: event.target.value as InvoiceForm['paymentMethod'] })} className="min-h-11 w-44 rounded-xl border border-white/30 bg-white px-3 py-2 text-sm text-[#232122]">
+                <option value="cash">نقدي</option>
+                <option value="credit">آجل</option>
+                <option value="partial">دفع جزئي</option>
+              </select>
+            </p>
+            {form.paymentMethod === 'partial' ? (
+              <p className="flex flex-wrap items-center justify-between gap-2">
+                <span>المدفوع الآن</span>
+                <input aria-label="المدفوع الآن" type="number" min="0" step="any" inputMode="decimal" value={form.paidNow} onChange={(event) => setForm({ ...form, paidNow: event.target.value })} className="min-h-11 w-36 rounded-xl border border-white/30 bg-white px-3 py-2 text-sm text-[#232122]" />
+              </p>
+            ) : null}
+            <p className="flex flex-wrap items-center justify-between gap-2 border-t border-white/20 pt-2"><span>المتبقي للمورد</span><strong dir="ltr">{formatMoney(Math.max(0, formTotal - (form.paymentMethod === 'cash' ? formTotal : form.paymentMethod === 'credit' ? 0 : Number(form.paidNow) || 0)))}</strong></p>
+          </div>
+          <div className="flex flex-wrap items-center justify-end gap-3 border-t border-[#ecebd6] pt-4">
             <button type="submit" disabled={saving} className="min-h-11 rounded-xl bg-[#6B8136] px-5 py-2.5 font-semibold text-white disabled:opacity-50">{saving ? 'جارٍ الحفظ…' : 'حفظ كمسودة'}</button>
           </div>
         </form>
+      ) : null}
+
+      {supplierDebts.length ? (
+        <div className="rounded-[1.5rem] border border-[#E5E3B2] bg-white/75 p-5">
+          <h3 className="font-bold text-[#232122]">المديونيات</h3>
+          <p className="mt-1 rounded-xl bg-[#FCF5ED] px-3 py-2 text-sm font-semibold text-[#705331]">إجمالي المديونيات (المتبقي للموردين): {formatMoney(totalDebt)}</p>
+          <ul className="mt-3 space-y-2">
+            {supplierDebts.map((entry) => (
+              <li key={entry.supplier} className="flex items-center justify-between gap-3 rounded-xl border border-[#ecebd6] bg-white px-4 py-2.5 text-sm">
+                <span className="font-semibold text-[#232122]">{entry.supplier}</span>
+                <span className="text-[#705331]">المتبقي: <strong className="text-rose-700">{formatMoney(entry.remaining)}</strong></span>
+              </li>
+            ))}
+          </ul>
+        </div>
       ) : null}
 
       <div className="rounded-[1.5rem] border border-[#E5E3B2] bg-white/75 p-5">
@@ -255,6 +314,11 @@ export default function PurchaseManagement() {
                 </summary>
                 <div className="space-y-4 border-t border-[#ecebd6] p-4">
                   {invoice.notes ? <p className="text-sm text-[#705331]">{invoice.notes}</p> : null}
+                  {invoice.paymentMethod ? (
+                    <p className="rounded-lg bg-[#f4f6ef] px-3 py-2 text-sm text-[#403d33]">
+                      طريقة الدفع: {paymentMethodLabels[invoice.paymentMethod]} · المدفوع {formatMoney(invoice.paidAmount ?? 0)} · المتبقي للمورد {formatMoney(Math.max(0, invoice.total - (invoice.paidAmount ?? 0)))}
+                    </p>
+                  ) : null}
                   <div className="overflow-x-auto"><table className="w-full min-w-[460px] text-right text-sm"><thead className="text-xs text-[#705331]"><tr><th className="px-2 py-2">الصنف</th><th className="px-2 py-2">الكمية</th><th className="px-2 py-2">سعر الوحدة</th><th className="px-2 py-2">الإجمالي</th></tr></thead><tbody>{invoice.items.map((item: PurchaseInvoiceItem, index) => <tr key={`${item.itemId}-${index}`} className="border-t border-[#f0efdf]"><td className="px-2 py-2">{item.itemName}</td><td className="px-2 py-2">{item.quantity} {item.unit}</td><td className="px-2 py-2">{formatMoney(item.unitPrice)}</td><td className="px-2 py-2">{formatMoney(item.lineTotal)}</td></tr>)}</tbody></table></div>
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <p className="text-xs text-[#705331]">أنشأها {invoice.createdBy}{invoice.approvedBy ? ` · اعتمدها ${invoice.approvedBy}` : ''}</p>

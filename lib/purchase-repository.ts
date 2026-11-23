@@ -4,7 +4,7 @@ import { recordActivity } from './activity-log-repository';
 import { connectToDatabase } from './database';
 import { getDataProvider } from './data-mode';
 import { InventoryItemNotFoundError, receiveInventoryPurchase } from './inventory-repository';
-import type { PurchaseInvoice, PurchaseInvoiceHistoryEntry, PurchaseInvoiceItem } from './purchase-types';
+import type { PurchaseInvoice, PurchaseInvoiceHistoryEntry, PurchaseInvoiceItem, PurchasePaymentMethod } from './purchase-types';
 
 type PurchaseInput = {
   supplier: string;
@@ -12,6 +12,8 @@ type PurchaseInput = {
   invoiceDate: string;
   items: Array<{ itemId: string; quantity: number; unitPrice: number }>;
   notes?: string;
+  paymentMethod?: PurchasePaymentMethod;
+  paidAmount?: number;
 };
 
 type MockPurchaseStore = { invoices: PurchaseInvoice[] };
@@ -49,6 +51,8 @@ const purchaseInvoiceSchema = new Schema<PurchaseInvoice & { supplierKey: string
   items: { type: [invoiceItemSchema], required: true },
   total: { type: Number, required: true, min: 0 },
   notes: { type: String, maxlength: 1000 },
+  paymentMethod: { type: String, enum: ['cash', 'credit', 'partial'] },
+  paidAmount: { type: Number, min: 0 },
   status: { type: String, enum: ['DRAFT', 'APPROVED', 'CANCELLED'], required: true, index: true },
   createdById: { type: String, required: true },
   createdBy: { type: String, required: true },
@@ -95,6 +99,13 @@ function key(value: string) {
 
 function roundMoney(value: number) {
   return Math.round((value + Number.EPSILON) * 100) / 100;
+}
+
+function resolvePayment(input: PurchaseInput, total: number): Pick<PurchaseInvoice, 'paymentMethod' | 'paidAmount'> {
+  if (!input.paymentMethod) return {};
+  if (input.paymentMethod === 'cash') return { paymentMethod: 'cash', paidAmount: total };
+  if (input.paymentMethod === 'credit') return { paymentMethod: 'credit', paidAmount: 0 };
+  return { paymentMethod: 'partial', paidAmount: roundMoney(Math.min(Math.max(input.paidAmount ?? 0, 0), total)) };
 }
 
 function buildItems(input: PurchaseInput, inventoryItems: Array<{ id: string; name: string; unit: string }>): PurchaseInvoiceItem[] {
@@ -167,13 +178,15 @@ export async function createPurchaseInvoice(
 ) {
   const items = await prepareItems(input, inventoryItems);
   const now = new Date().toISOString();
+  const total = roundMoney(items.reduce((sum, item) => sum + item.lineTotal, 0));
   const invoice: PurchaseInvoice = {
     id: `purchase-${randomUUID()}`,
     supplier: input.supplier.trim(),
     invoiceNumber: input.invoiceNumber.trim(),
     invoiceDate: input.invoiceDate,
     items,
-    total: roundMoney(items.reduce((sum, item) => sum + item.lineTotal, 0)),
+    total,
+    ...resolvePayment(input, total),
     notes: input.notes?.trim() || undefined,
     status: 'DRAFT',
     createdById: actor.id,
@@ -236,14 +249,23 @@ export async function updatePurchaseInvoice(
     if (!invoice) throw new PurchaseInvoiceNotFoundError();
     if (invoice.status !== 'DRAFT') throw new PurchaseInvoiceStateError('يمكن تعديل الفواتير المسودة فقط');
     if (findDuplicate(input.supplier, input.invoiceNumber, id)) throw new DuplicatePurchaseInvoiceError();
+    const total = roundMoney(items.reduce((sum, item) => sum + item.lineTotal, 0));
     Object.assign(invoice, {
       supplier: input.supplier.trim(),
       invoiceNumber: input.invoiceNumber.trim(),
       invoiceDate: input.invoiceDate,
       items,
-      total: roundMoney(items.reduce((sum, item) => sum + item.lineTotal, 0)),
+      total,
       notes: input.notes?.trim() || undefined,
     });
+    const payment = resolvePayment(input, total);
+    if (payment.paymentMethod) {
+      invoice.paymentMethod = payment.paymentMethod;
+      invoice.paidAmount = payment.paidAmount;
+    } else {
+      delete invoice.paymentMethod;
+      delete invoice.paidAmount;
+    }
     addHistory(invoice, 'UPDATED', actor.id, actor.username, now);
     await recordActivity({
       actorId: actor.id,
@@ -259,6 +281,8 @@ export async function updatePurchaseInvoice(
     const session = await connection.startSession();
     let updated: PurchaseInvoice | null = null;
     try {
+      const total = roundMoney(items.reduce((sum, item) => sum + item.lineTotal, 0));
+      const payment = resolvePayment(input, total);
       await session.withTransaction(async () => {
         updated = await PurchaseInvoiceModel.findOneAndUpdate(
           { id, status: 'DRAFT' },
@@ -270,10 +294,12 @@ export async function updatePurchaseInvoice(
               invoiceNumberKey: key(input.invoiceNumber),
               invoiceDate: input.invoiceDate,
               items,
-              total: roundMoney(items.reduce((sum, item) => sum + item.lineTotal, 0)),
+              total,
               notes: input.notes?.trim() || undefined,
               updatedAt: now,
+              ...(payment.paymentMethod ? { paymentMethod: payment.paymentMethod, paidAmount: payment.paidAmount } : {}),
             },
+            ...(payment.paymentMethod ? {} : { $unset: { paymentMethod: 1, paidAmount: 1 } }),
             $push: { history: { action: 'UPDATED', actorId: actor.id, actorName: actor.username, at: now } },
           },
           { new: true, runValidators: true, session },
