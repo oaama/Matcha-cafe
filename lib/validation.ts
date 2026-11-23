@@ -186,6 +186,7 @@ export const purchaseInvoiceInputSchema = z.object({
 export const purchaseInvoiceActionSchema = z.discriminatedUnion('action', [
   z.object({ action: z.literal('UPDATE'), id: z.string().min(1).max(120), invoice: purchaseInvoiceInputSchema }),
   z.object({ action: z.literal('APPROVE'), id: z.string().min(1).max(120) }),
+  z.object({ action: z.literal('PAY'), id: z.string().min(1).max(120), amount: z.number().finite().positive().max(1_000_000_000) }),
   z.object({ action: z.literal('CANCEL'), id: z.string().min(1).max(120) }),
 ]);
 

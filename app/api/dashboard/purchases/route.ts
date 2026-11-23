@@ -9,6 +9,7 @@ import {
   PurchaseInvoiceNotFoundError,
   PurchaseInvoiceStateError,
   updatePurchaseInvoice,
+  recordPurchasePayment,
 } from '@/lib/purchase-repository';
 import { getInventoryData, InventoryItemNotFoundError } from '@/lib/inventory-repository';
 import { requireStaffRole } from '@/lib/staff-api';
@@ -120,6 +121,8 @@ export async function PATCH(request: Request) {
       invoice = await updatePurchaseInvoice(parsed.data.id, parsed.data.invoice, staff, inventory.items);
     } else if (parsed.data.action === 'APPROVE') {
       invoice = await approvePurchaseInvoice(parsed.data.id, staff);
+    } else if (parsed.data.action === 'PAY') {
+      invoice = await recordPurchasePayment(parsed.data.id, parsed.data.amount, staff);
     } else {
       invoice = await cancelPurchaseInvoice(parsed.data.id, staff);
     }

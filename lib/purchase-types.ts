@@ -10,7 +10,7 @@ export type PurchaseInvoiceItem = {
 };
 
 export type PurchaseInvoiceHistoryEntry = {
-  action: 'CREATED' | 'UPDATED' | 'APPROVED' | 'CANCELLED';
+  action: 'CREATED' | 'UPDATED' | 'APPROVED' | 'CANCELLED' | 'PAYMENT';
   actorId: string;
   actorName: string;
   at: string;

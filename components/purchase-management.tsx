@@ -18,6 +18,7 @@ const historyLabels: Record<PurchaseInvoice['history'][number]['action'], string
   UPDATED: 'تعديل الفاتورة',
   APPROVED: 'اعتماد وإضافة للمخزون',
   CANCELLED: 'إلغاء المسودة',
+  PAYMENT: 'تسديد دفعة',
 };
 const paymentMethodLabels = { cash: 'نقدي', credit: 'آجل', partial: 'دفع جزئي' } as const;
 
@@ -56,6 +57,7 @@ export default function PurchaseManagement() {
   const [form, setForm] = useState<InvoiceForm>(emptyForm);
   const [lines, setLines] = useState<InvoiceLineInput[]>([emptyLine()]);
   const [formOpen, setFormOpen] = useState(false);
+  const [settleAmounts, setSettleAmounts] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -194,17 +196,48 @@ export default function PurchaseManagement() {
     }
   };
 
+  const settlePayment = async (invoiceId: string) => {
+    const amount = Number(settleAmounts[invoiceId]);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setError('اكتب مبلغ التسديد الصحيح.');
+      return;
+    }
+    setSaving(true);
+    setError('');
+    setMessage('');
+    try {
+      const response = await fetch('/api/dashboard/purchases', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'PAY', id: invoiceId, amount }),
+      });
+      const data = await response.json() as { error?: string };
+      if (!response.ok) throw new Error(data.error || 'تعذر تسجيل الدفعة');
+      setSettleAmounts((current) => ({ ...current, [invoiceId]: '' }));
+      setMessage('تم تسجيل الدفعة وتحديث المتبقي للمورد.');
+      await load();
+    } catch (payError) {
+      setError(payError instanceof Error ? payError.message : 'تعذر تسجيل الدفعة');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const total = useMemo(() => invoices.reduce((sum, invoice) => sum + invoice.total, 0), [invoices]);
 
   const supplierDebts = useMemo(() => {
-    const bySupplier = new Map<string, number>();
+    const bySupplier = new Map<string, { remaining: number; open: { id: string; invoiceNumber: string; invoiceDate: string; total: number; paid: number; remaining: number }[] }>();
     for (const invoice of invoices) {
       if (invoice.status !== 'APPROVED' || !invoice.paymentMethod) continue;
-      const remaining = Math.max(0, invoice.total - (invoice.paidAmount ?? 0));
+      const paid = invoice.paidAmount ?? 0;
+      const remaining = Math.max(0, invoice.total - paid);
       if (remaining <= 0.004) continue;
-      bySupplier.set(invoice.supplier, (bySupplier.get(invoice.supplier) ?? 0) + remaining);
+      const entry = bySupplier.get(invoice.supplier) ?? { remaining: 0, open: [] };
+      entry.remaining += remaining;
+      entry.open.push({ id: invoice.id, invoiceNumber: invoice.invoiceNumber, invoiceDate: invoice.invoiceDate, total: invoice.total, paid, remaining });
+      bySupplier.set(invoice.supplier, entry);
     }
-    return [...bySupplier.entries()].map(([supplier, remaining]) => ({ supplier, remaining })).sort((a, b) => b.remaining - a.remaining);
+    return [...bySupplier.entries()].map(([supplier, entry]) => ({ supplier, remaining: entry.remaining, open: entry.open })).sort((a, b) => b.remaining - a.remaining);
   }, [invoices]);
   const totalDebt = supplierDebts.reduce((sum, entry) => sum + entry.remaining, 0);
 
@@ -288,9 +321,36 @@ export default function PurchaseManagement() {
           <p className="mt-1 rounded-xl bg-[#FCF5ED] px-3 py-2 text-sm font-semibold text-[#705331]">إجمالي المديونيات (المتبقي للموردين): {formatMoney(totalDebt)}</p>
           <ul className="mt-3 space-y-2">
             {supplierDebts.map((entry) => (
-              <li key={entry.supplier} className="flex items-center justify-between gap-3 rounded-xl border border-[#ecebd6] bg-white px-4 py-2.5 text-sm">
-                <span className="font-semibold text-[#232122]">{entry.supplier}</span>
-                <span className="text-[#705331]">المتبقي: <strong className="text-rose-700">{formatMoney(entry.remaining)}</strong></span>
+              <li key={entry.supplier} className="rounded-xl border border-[#ecebd6] bg-white px-4 py-2.5 text-sm">
+                <span className="flex items-center justify-between gap-3">
+                  <span className="font-semibold text-[#232122]">{entry.supplier}</span>
+                  <span className="text-[#705331]">المتبقي: <strong className="text-rose-700">{formatMoney(entry.remaining)}</strong></span>
+                </span>
+                <span className="mt-2 block space-y-2 border-t border-dashed border-[#ecebd6] pt-2">
+                  {entry.open.map((invoice) => (
+                    <span key={invoice.id} className="block">
+                      <span className="flex flex-wrap items-center justify-between gap-2 text-xs text-[#705331]">
+                        <span>#{invoice.invoiceNumber} · {invoice.invoiceDate}</span>
+                        <span>الفاتورة {formatMoney(invoice.total)} · المدفوع {formatMoney(invoice.paid)} · <strong className="text-rose-700">المتبقي {formatMoney(invoice.remaining)}</strong></span>
+                      </span>
+                      <span className="mt-1 flex items-center gap-2">
+                        <input
+                          aria-label={`مبلغ التسديد لفاتورة ${invoice.invoiceNumber}`}
+                          type="number" min="0" step="any" inputMode="decimal" placeholder="مبلغ التسديد"
+                          value={settleAmounts[invoice.id] ?? ''}
+                          onChange={(event) => setSettleAmounts((current) => ({ ...current, [invoice.id]: event.target.value }))}
+                          className="min-h-9 w-32 rounded-lg border-[#E5E3B2] px-2 py-1.5 text-xs"
+                        />
+                        <button
+                          type="button"
+                          disabled={saving}
+                          onClick={() => void settlePayment(invoice.id)}
+                          className="min-h-9 rounded-lg bg-[#176f68] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
+                        >تسديد</button>
+                      </span>
+                    </span>
+                  ))}
+                </span>
               </li>
             ))}
           </ul>

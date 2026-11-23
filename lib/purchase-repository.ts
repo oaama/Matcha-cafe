@@ -35,7 +35,7 @@ const invoiceItemSchema = new Schema<PurchaseInvoiceItem>({
 }, { _id: false });
 
 const historySchema = new Schema<PurchaseInvoiceHistoryEntry>({
-  action: { type: String, enum: ['CREATED', 'UPDATED', 'APPROVED', 'CANCELLED'], required: true },
+  action: { type: String, enum: ['CREATED', 'UPDATED', 'APPROVED', 'CANCELLED', 'PAYMENT'], required: true },
   actorId: { type: String, required: true },
   actorName: { type: String, required: true },
   at: { type: String, required: true },
@@ -413,6 +413,61 @@ export async function approvePurchaseInvoice(id: string, actor: { id: string; us
   } finally {
     await session.endSession();
   }
+}
+
+export async function recordPurchasePayment(id: string, amount: number, actor: { id: string; username: string }) {
+  const now = new Date().toISOString();
+  const applyPayment = (invoice: PurchaseInvoice) => {
+    if (invoice.status !== 'APPROVED') throw new PurchaseInvoiceStateError('التسديد بيكون على الفواتير المعتمدة فقط');
+    if (!invoice.paymentMethod || invoice.paymentMethod === 'cash') throw new PurchaseInvoiceStateError('الفاتورة دي مسددة بالكامل');
+    const paid = invoice.paidAmount ?? 0;
+    const remaining = roundMoney(invoice.total - paid);
+    if (amount > remaining + 0.005) throw new PurchaseInvoiceStateError(`المبلغ أكبر من المتبقي على الفاتورة (${remaining} ج)`);
+    invoice.paidAmount = amount >= remaining - 0.005 ? invoice.total : roundMoney(paid + amount);
+    addHistory(invoice, 'PAYMENT', actor.id, actor.username, now);
+  };
+
+  if (getDataProvider() === 'mock') {
+    const invoice = mockStore.invoices.find((item) => item.id === id);
+    if (!invoice) throw new PurchaseInvoiceNotFoundError();
+    applyPayment(invoice);
+    await recordActivity({
+      actorId: actor.id,
+      actorName: actor.username,
+      action: 'PURCHASE_PAYMENT',
+      entityType: 'purchase-invoice',
+      entityId: id,
+      details: { invoiceNumber: invoice.invoiceNumber, supplier: invoice.supplier, amount, paidAmount: invoice.paidAmount ?? 0 },
+    });
+    return structuredClone(invoice);
+  }
+
+  const connection = await connectToDatabase();
+  const session = await connection.startSession();
+  let updated: PurchaseInvoice | null = null;
+  try {
+    await session.withTransaction(async () => {
+      const current = await PurchaseInvoiceModel.findOne({ id }).session(session);
+      if (!current) throw new PurchaseInvoiceNotFoundError();
+      const invoice = current.toObject() as PurchaseInvoice;
+      applyPayment(invoice);
+      current.set({ paidAmount: invoice.paidAmount, updatedAt: now });
+      current.history.push({ action: 'PAYMENT', actorId: actor.id, actorName: actor.username, at: now });
+      await current.save({ session });
+      updated = current.toObject() as PurchaseInvoice;
+      await recordActivity({
+        actorId: actor.id,
+        actorName: actor.username,
+        action: 'PURCHASE_PAYMENT',
+        entityType: 'purchase-invoice',
+        entityId: id,
+        details: { invoiceNumber: invoice.invoiceNumber, supplier: invoice.supplier, amount, paidAmount: invoice.paidAmount ?? 0 },
+      }, session);
+    });
+  } finally {
+    await session.endSession();
+  }
+  return updated;
 }
 
 export async function cancelPurchaseInvoice(id: string, actor: { id: string; username: string }) {
