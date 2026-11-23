@@ -123,10 +123,10 @@ export default function FinancialOverview() {
   const cards = summary ? [
     { label: 'إجمالي إيراد', value: money(summary.sales), note: `${summary.orderCount} طلب مكتمل` },
     { label: 'إيرادات الطلبات الإلكترونية', value: money(summary.onlineOrderRevenue), note: 'مصدرها الطلبات المكتملة' },
-    { label: 'الإيرادات اليدوية', value: money(summary.manualRevenue), note: 'مفصولة عن الطلبات الإلكترونية' },
+    { label: 'إيرادات الشيفتات (مسجّلة يدوياً)', value: money(summary.manualRevenue), note: 'مفصولة عن الطلبات الإلكترونية' },
     { label: 'تكلفة المنتجات', value: money(summary.productCosts), note: `${money(summary.savedProductCosts)} محفوظة · ${money(summary.estimatedProductCosts)} تقديرية` },
-    { label: 'المصروفات التشغيلية', value: money(summary.operatingExpenses), note: 'من سجل المصروفات' },
-    { label: 'الأجور الأساسية', value: money(summary.baseWages), note: 'من ساعات الشيفتات' },
+    { label: 'المصاريف', value: money(summary.operatingExpenses), note: 'من سجل المصروفات' },
+    { label: 'أجور العمال', value: money(summary.baseWages), note: 'من ساعات الشيفتات' },
     { label: 'تكلفة العمل الإضافي', value: money(summary.overtimeCosts), note: 'من سجلات الإضافي' },
     { label: 'السلف المسجلة', value: money(summary.advances), note: 'عرض منفصل؛ لا تخصم مرتين من النتيجة' },
     { label: 'الديون القائمة', value: money(summary.outstandingDebts), note: 'التزامات حالية' },

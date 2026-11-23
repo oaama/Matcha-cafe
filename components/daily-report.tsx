@@ -78,6 +78,7 @@ export default function DailyReportSection() {
             <div className="rounded-2xl border border-[#e0eae7] bg-white p-4">
               <p className="text-xs font-semibold text-[#647b77]">إجمالي إيراد اليوم ({report.orderCount} طلب + إيراد يدوي)</p>
               <p className="mt-2 text-2xl font-bold text-[#176f68]">{money(report.totalRevenue)}</p>
+              <p className="mt-1 text-xs text-[#80918d]">إيراد اليوم {money(report.ordersRevenue)} · إيرادات الشيفتات (مسجّلة يدوياً) {money(report.manualRevenue)}</p>
             </div>
             <div className="rounded-2xl border border-[#e0eae7] bg-white p-4">
               <p className="text-xs font-semibold text-[#647b77]">تكلفة الخامات</p>
