@@ -472,7 +472,7 @@ export default function CustomerOrdering() {
         </div>
       ) : null}
 
-      <div className="grid items-start gap-7 lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_390px]">
+      <div id="menu" className="grid items-start gap-7 lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_390px]">
         <div className="min-w-0 space-y-8">
           {(menu?.categories ?? []).map((category) => {
             if (selectedCategory !== 'all' && selectedCategory !== category.id) return null;

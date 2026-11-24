@@ -70,6 +70,8 @@ Use only a separate development database when testing persistent data. Never poi
 | `CRON_SECRET` | If the Vercel cleanup schedule remains enabled | Random token of at least 32 characters used to authorize the order cleanup request. |
 | `STAFF_EMAIL` | Initial account setup | Email for creating the first Admin account when no staff account exists. |
 | `STAFF_PASSWORD` | Initial account setup | Initial Admin password; use at least 12 characters. |
+| `NEXT_PUBLIC_SITE_URL` | SEO (optional) | Canonical production origin, e.g. `https://matcha-cafe-two.vercel.app`. Used for canonical URLs, Open Graph, sitemap, and structured data. |
+| `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` | SEO (optional) | Google Search Console verification token. Renders the verification meta tag when set; omitted otherwise. |
 
 The initial Admin credentials are used to bootstrap the first account only. The password is stored as a salted hash. There is no public account-registration endpoint. Once the first Admin is created, manage staff accounts from the dashboard.
 
@@ -144,6 +146,22 @@ npm run build
 ### Scheduled order cleanup
 
 `vercel.json` schedules `/api/cron/clear-orders` for Sundays at 00:00 UTC. When configured with `CRON_SECRET`, this endpoint permanently deletes **all documents in the `orders` collection**. It does not delete staff, catalog, inventory, or pricing data. Export any order history that must be retained before enabling the schedule; remove or change the cron configuration if automatic deletion is not intended.
+
+## SEO
+
+The public menu is indexable; the dashboard and API are excluded from crawling.
+
+- Metadata (titles, descriptions, canonical, Open Graph, Twitter Card) lives in `app/layout.tsx`; Arabic content with an English alternate locale.
+- `app/sitemap.ts` serves `/sitemap.xml` (public pages only) and `app/robots.ts` serves `/robots.txt` (blocks `/dashboard` and `/api`, links the sitemap).
+- `app/manifest.ts` serves the web app manifest; `app/not-found.tsx` is the branded 404 page.
+- `app/dashboard/layout.tsx` marks staff pages `noindex, nofollow`.
+- JSON-LD structured data (`CafeOrCoffeeShop` + `WebSite`) is rendered in `app/page.tsx` using only information shown on the site (name, menu, phone, Google Maps listing). Do not add addresses, ratings, or prices that are not published on the site.
+
+### Google Search Console
+
+1. Add a **URL prefix** property for `https://matcha-cafe-two.vercel.app`.
+2. Choose the **HTML tag** verification method, copy the token, and set it as `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` in Vercel, then redeploy.
+3. Verify the property, submit `https://matcha-cafe-two.vercel.app/sitemap.xml` under Sitemaps, and request indexing for the home page with URL Inspection.
 
 ## Known limitations
 
