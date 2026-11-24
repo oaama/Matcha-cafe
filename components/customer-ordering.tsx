@@ -492,7 +492,7 @@ export default function CustomerOrdering() {
                       <div className="flex min-w-0 flex-col">
                         {product.image ? (
                           <div className="relative mb-1.5 aspect-[4/3] w-full overflow-hidden rounded-xl bg-[#f4f6f2] sm:mb-3 sm:aspect-square sm:rounded-2xl">
-                            <Image src={product.image} alt={product.ar} fill sizes="(max-width: 640px) 45vw, 240px" unoptimized className="object-cover transition duration-300 group-hover:scale-105" />
+                            <Image src={product.image} alt={product.ar} fill sizes="(max-width: 640px) 45vw, 240px" unoptimized className="object-contain transition duration-300 group-hover:scale-105 sm:object-cover" />
                             {product.featured || product.bestSeller ? (
                               <div className="absolute start-1.5 top-1.5 flex min-w-0 flex-wrap gap-1">
                                 {product.featured ? <span className="rounded-full bg-white/90 px-1.5 py-1 text-[8px] font-semibold leading-3 text-[#795b3e] shadow-sm sm:px-2.5 sm:py-1.5 sm:text-[10px]">صنف مميز</span> : null}
