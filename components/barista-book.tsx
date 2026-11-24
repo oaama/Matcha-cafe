@@ -104,7 +104,7 @@ function ProductLeaf({ page }: { page: BookPage }) {
       <section className="rounded-2xl border border-[#c9a96a] bg-gradient-to-b from-[#fff4d6] to-[#f8e7bd] p-4 shadow-inner">
         <h2 className="mb-2 text-xl font-bold" style={{ color: ink }}>نصايح تفرّق</h2>
         <ul className="space-y-2 text-[17px] leading-8" style={{ color: ink }}>
-          {r.tips.map((tip) => <li key={tip} className="flex gap-2"><span style={{ color: gold }}>✦</span><span>{tip}</span></li>)}
+          {r.tips.map((tip) => <li key={tip} className="flex gap-2"><span style={{ color: gold }}>•</span><span>{tip}</span></li>)}
         </ul>
       </section>
 
@@ -112,7 +112,7 @@ function ProductLeaf({ page }: { page: BookPage }) {
         <div className="grid gap-3">
           <section className="rounded-2xl border border-[#d8b0a5] bg-[#fff1ee] p-4">
             <h2 className="mb-1.5 text-xl font-bold text-[#7a2e22]">غلطات بتحصل كتير</h2>
-            <ul className="space-y-1.5 text-[17px] leading-8 text-[#5a2a22]">{page.guide.mistakes.map((m) => <li key={m} className="flex gap-2"><span>✕</span><span>{m}</span></li>)}</ul>
+            <ul className="space-y-1.5 text-[17px] leading-8 text-[#5a2a22]">{page.guide.mistakes.map((m) => <li key={m} className="flex gap-2"><span>×</span><span>{m}</span></li>)}</ul>
           </section>
           <section className="rounded-2xl border border-[#b8c79a] bg-[#f1f6e4] p-4">
             <h2 className="mb-1.5 text-xl font-bold text-[#3f5a1d]">إزاي تعرف إنه مظبوط</h2>
@@ -149,7 +149,7 @@ function LeafView({ leaf, categories, go, foundations }: { leaf: Leaf; categorie
         <div className="mb-4 rounded-2xl border border-[#d9c49b] bg-[#fffaf0] p-3">
           <p className="mb-1 font-bold" style={{ color: ink }}>أساسيات</p>
           <div className="flex flex-wrap gap-2">
-            {foundations.map((f, i) => <button key={f.id} type="button" onClick={() => go(2 + i)} className="rounded-full border border-[#d9c49b] bg-[#f6ead0] px-3 py-1.5 text-sm" style={{ color: ink }}>{f.icon} {f.title}</button>)}
+            {foundations.map((f, i) => <button key={f.id} type="button" onClick={() => go(2 + i)} className="rounded-full border border-[#d9c49b] bg-[#f6ead0] px-3 py-1.5 text-sm" style={{ color: ink }}>{f.title}</button>)}
           </div>
         </div>
         {categories.map((c) => (
@@ -166,8 +166,7 @@ function LeafView({ leaf, categories, go, foundations }: { leaf: Leaf; categorie
     return (
       <div className="space-y-4">
         <header className="text-center">
-          <p className="text-5xl">{leaf.page.icon}</p>
-          <h1 className="mt-2 text-3xl font-bold" style={{ color: ink }}>{leaf.page.title}</h1>
+          <h1 className="text-3xl font-bold" style={{ color: ink }}>{leaf.page.title}</h1>
           <Ornament />
         </header>
         {leaf.page.points.map(([title, text]) => (
@@ -289,7 +288,7 @@ export default function BaristaBook({ pages, foundations, categories }: { pages:
           <a href="/" className="rounded-full bg-white/10 px-3 py-1 hover:bg-white/20">المنيو</a>
           <span>{label}</span>
           <span className="flex items-center gap-2">
-            <button type="button" aria-label={muted ? 'تشغيل صوت التقليب' : 'كتم صوت التقليب'} onClick={() => { mutedRef.current = !muted; setMuted(!muted); }} className="rounded-full bg-white/10 px-3 py-1 hover:bg-white/20">{muted ? '🔇' : '🔊'}</button>
+            <button type="button" aria-label={muted ? 'تشغيل صوت التقليب' : 'كتم صوت التقليب'} onClick={() => { mutedRef.current = !muted; setMuted(!muted); }} className="rounded-full bg-white/10 px-3 py-1 hover:bg-white/20"><svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor" />{muted ? <path d="M17 9l5 6M22 9l-5 6" /> : <path d="M16 8.5a5 5 0 010 7M18.5 6a8.5 8.5 0 010 12" />}</svg></button>
             <a href="/dashboard/cashier" className="rounded-full bg-white/10 px-3 py-1 hover:bg-white/20">الداشبورد</a>
           </span>
         </div>
