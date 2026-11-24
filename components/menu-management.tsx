@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useEffect, useMemo, useState } from 'react';
 import type { CatalogGroup, Category, Product } from '@/lib/types';
 
@@ -270,6 +271,7 @@ export default function MenuManagement() {
                 const category = catalog.categories.find((item) => item.id === product.categoryId);
                 return (
                   <article key={product.id} className={`flex min-w-0 flex-col rounded-2xl border p-2.5 transition sm:p-4 ${product.available ? 'border-[#e9e7df] bg-white' : 'border-dashed border-[#dedbd0] bg-[#f8f7f3] opacity-75'}`}>
+                    {product.image ? <div className="relative mb-2 aspect-[4/3] w-full overflow-hidden rounded-xl bg-[#f4f6f2]"><Image src={product.image} alt={product.ar} fill sizes="(max-width: 640px) 45vw, 240px" unoptimized className="object-cover" /></div> : null}
                     <div className="flex min-w-0 flex-col items-start gap-2 sm:flex-row sm:justify-between sm:gap-3">
                       <div className="min-w-0">
                         <h3 className="line-clamp-1 text-sm font-bold text-[#232122] sm:text-base">{product.ar}</h3>
@@ -357,7 +359,7 @@ export default function MenuManagement() {
               <label className={labelClass}>السعر الأساسي (ج.م)<input required type="number" min="0" max="1000000" step="0.01" value={productEditor.price} onChange={(event) => setProductEditor({ ...productEditor, price: Number(event.target.value) })} className={fieldClass} /></label>
               <label className={labelClass}>سعر العرض (اختياري)<input type="number" min="0" max={productEditor.price} step="0.01" value={productEditor.offerPrice ?? ''} onChange={(event) => setProductEditor({ ...productEditor, offerPrice: event.target.value === '' ? undefined : Number(event.target.value) })} className={fieldClass} placeholder="اتركه فارغًا بدون عرض" /></label>
               <label className={labelClass}>ترتيب الظهور<input type="number" min="0" step="1" value={productEditor.displayOrder ?? 1} onChange={(event) => setProductEditor({ ...productEditor, displayOrder: Number(event.target.value) })} className={fieldClass} /></label>
-              <label className={labelClass}>رابط صورة (اختياري)<input type="url" maxLength={500} value={productEditor.image ?? ''} onChange={(event) => setProductEditor({ ...productEditor, image: event.target.value || undefined })} className={fieldClass} placeholder="https://..." /></label>
+              <label className={labelClass}>رابط صورة (اختياري)<input type="text" inputMode="url" maxLength={500} value={productEditor.image ?? ''} onChange={(event) => setProductEditor({ ...productEditor, image: event.target.value || undefined })} className={fieldClass} placeholder="https://..." /></label>
               <label className={`${labelClass} sm:col-span-2`}>الوصف بالعربي<textarea maxLength={500} rows={2} value={productEditor.descriptionAr} onChange={(event) => setProductEditor({ ...productEditor, descriptionAr: event.target.value })} className={fieldClass} /></label>
               <label className={`${labelClass} sm:col-span-2`}>الوصف بالإنجليزي<textarea maxLength={500} rows={2} value={productEditor.descriptionEn} onChange={(event) => setProductEditor({ ...productEditor, descriptionEn: event.target.value })} className={fieldClass} /></label>
             </div>

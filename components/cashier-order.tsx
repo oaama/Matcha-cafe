@@ -1,15 +1,18 @@
 'use client';
 
+import Image from 'next/image';
 import { useEffect, useMemo, useState } from 'react';
-import type { Product } from '@/lib/types';
+import type { Category, Product } from '@/lib/types';
 import { getProductPrice } from '@/lib/pricing';
 
-type MenuResponse = { products: Product[] };
+type MenuResponse = { products: Product[]; categories?: Category[] };
 
-const inputClass = 'w-full rounded-xl border border-[#E5E3B2] bg-white px-3 py-2.5 text-sm transition placeholder:text-[#a6a99b] focus:border-[#6B8136] focus:outline-none focus:ring-2 focus:ring-[#91A560]/15';
+const inputClass = 'w-full rounded-xl border border-[#dbe7e3] bg-white px-3 py-2.5 text-sm transition placeholder:text-[#a6b3b0] focus:border-[#176f68] focus:outline-none focus:ring-2 focus:ring-[#4b9b91]/20';
 
 export default function CashierOrder({ onCreated }: { onCreated: () => void }) {
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [activeCategory, setActiveCategory] = useState('all');
   const [search, setSearch] = useState('');
   const [items, setItems] = useState<Array<{ productId: string; quantity: number }>>([]);
   const [orderType, setOrderType] = useState<'DINE_IN' | 'TAKEAWAY' | 'DELIVERY'>('DINE_IN');
@@ -29,6 +32,7 @@ export default function CashierOrder({ onCreated }: { onCreated: () => void }) {
         const data = await response.json() as MenuResponse & { error?: string };
         if (!response.ok) throw new Error(data.error || 'تعذر تحميل المنيو');
         setProducts(data.products.filter((product) => product.available));
+        setCategories((data.categories ?? []).filter((category) => category.active).sort((a, b) => a.displayOrder - b.displayOrder));
       })
       .catch((loadError: unknown) => setError(loadError instanceof Error ? loadError.message : 'تعذر تحميل المنيو'))
       .finally(() => setLoading(false));
@@ -37,8 +41,15 @@ export default function CashierOrder({ onCreated }: { onCreated: () => void }) {
   const productsById = useMemo(() => new Map(products.map((product) => [product.id, product])), [products]);
   const filteredProducts = useMemo(() => {
     const query = search.trim().toLowerCase();
-    return products.filter((product) => !query || `${product.ar} ${product.en}`.toLowerCase().includes(query));
-  }, [products, search]);
+    const rank = new Map(categories.map((category, index) => [category.id, index]));
+    return products
+      .filter((product) => (Boolean(query) || activeCategory === 'all' || product.categoryId === activeCategory)
+        && (!query || `${product.ar} ${product.en}`.toLowerCase().includes(query)))
+      .map((product, index) => ({ product, index }))
+      .sort((a, b) => (rank.get(a.product.categoryId) ?? 99) - (rank.get(b.product.categoryId) ?? 99)
+        || (a.product.displayOrder ?? a.index) - (b.product.displayOrder ?? b.index))
+      .map(({ product }) => product);
+  }, [products, categories, activeCategory, search]);
   const total = items.reduce((sum, item) => sum + (productsById.get(item.productId) ? getProductPrice(productsById.get(item.productId)!) * item.quantity : 0), 0);
 
   const addItem = (productId: string) => {
@@ -101,12 +112,12 @@ export default function CashierOrder({ onCreated }: { onCreated: () => void }) {
 
   return (
     <section className="space-y-5">
-      <div className="rounded-[1.5rem] border border-[#E5E3B2] bg-white/75 p-5">
+      <div className="rounded-[1.5rem] border border-[#dbe7e3] bg-white p-5">
         <h2 className="text-xl font-bold text-[#232122]">إنشاء طلب من الكاشير</h2>
         <p className="mt-1 text-sm text-[#705331]">سجّل طلب العميل مباشرة من نفس مسار الطلبات.</p>
       </div>
-      <form onSubmit={submit} className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,.7fr)]">
-        <div className="min-w-0 rounded-[1.5rem] border border-[#E5E3B2] bg-white/75 p-4 sm:p-5">
+      <form onSubmit={submit} className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,.7fr)]">
+        <div className="min-w-0 rounded-[1.5rem] border border-[#dbe7e3] bg-white p-4 sm:p-5">
           <label className="mb-3 block">
             <span className="sr-only">ابحث عن صنف في المنيو</span>
             <input
@@ -118,28 +129,52 @@ export default function CashierOrder({ onCreated }: { onCreated: () => void }) {
               className={inputClass}
             />
           </label>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {loading ? <p className="text-sm text-[#705331]">جارٍ تحميل المنيو…</p> : filteredProducts.map((product) => {
+          {categories.length ? (
+            <nav aria-label="تصنيفات المنيو" className="category-scroll mb-4 flex gap-2 overflow-x-auto pb-1">
+              {[{ id: 'all', ar: 'الكل' }, ...categories].map((category) => (
+                <button key={category.id} type="button" aria-pressed={activeCategory === category.id} onClick={() => setActiveCategory(category.id)} className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition active:scale-95 ${activeCategory === category.id ? 'bg-[#176f68] text-white shadow-sm' : 'bg-[#eef5f3] text-[#4f6762] hover:bg-[#dfeeea]'}`}>{category.ar}</button>
+              ))}
+            </nav>
+          ) : null}
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 xl:grid-cols-4">
+            {loading ? <p className="col-span-full text-sm text-[#705331]">جارٍ تحميل المنيو…</p> : filteredProducts.map((product) => {
               const quantity = items.find((item) => item.productId === product.id)?.quantity ?? 0;
-              return <button key={product.id} type="button" onClick={() => addItem(product.id)} className={`flex min-w-0 items-center justify-between gap-2 rounded-xl border px-3 py-3 text-right transition active:scale-[.98] ${quantity ? 'border-[#6B8136] bg-[#f3f6ec]' : 'border-[#E5E3B2] bg-white hover:bg-[#FCF5ED]'}`}><span className="min-w-0 break-words"><strong className="block">{product.ar}</strong><span className="text-xs text-[#705331]">{getProductPrice(product).toFixed(2)} ج.م</span></span>{quantity ? <span className="shrink-0 rounded-full bg-[#6B8136] px-2 py-1 text-xs text-white">{quantity}</span> : <span className="shrink-0 text-[#6B8136]">+ إضافة</span>}</button>;
+              return (
+                <button key={product.id} type="button" onClick={() => addItem(product.id)} className={`group relative flex min-w-0 flex-col rounded-2xl border bg-white p-2 text-right transition active:scale-[.97] hover:-translate-y-0.5 hover:shadow-md ${quantity ? 'border-[#4b9b91] ring-2 ring-[#4b9b91]/25' : 'border-[#e0eae7]'}`}>
+                  <span className="relative block aspect-square w-full overflow-hidden rounded-xl bg-[#f1f6f4]">
+                    {product.image ? <Image src={product.image} alt={product.ar} fill sizes="(max-width: 640px) 45vw, 180px" unoptimized className="object-cover transition duration-300 group-hover:scale-105" /> : <span className="flex h-full w-full items-center justify-center text-3xl text-[#8bb5ae]" aria-hidden="true">☕</span>}
+                    {quantity ? <span className="absolute start-1.5 top-1.5 flex h-6 min-w-6 items-center justify-center rounded-full bg-[#176f68] px-1.5 text-xs font-bold text-white shadow">{quantity}</span> : null}
+                  </span>
+                  <span className="mt-2 line-clamp-2 min-h-[2.5rem] text-sm font-bold leading-5 text-[#232122]">{product.ar}</span>
+                  <span className="mt-1 flex items-center justify-between gap-2">
+                    <span className="text-sm font-bold text-[#176f68]">{getProductPrice(product).toFixed(2)} <span className="text-[10px] font-medium text-[#647b77]">ج.م</span></span>
+                    <span aria-hidden="true" className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#176f68] text-lg leading-none text-white transition group-hover:bg-[#115b56]">+</span>
+                  </span>
+                </button>
+              );
             })}
-            {!loading && filteredProducts.length === 0 ? <p className="text-sm text-[#705331] sm:col-span-2">ملقيناش صنف بالاسم ده. جرّب كلمة تانية.</p> : null}
+            {!loading && filteredProducts.length === 0 ? <p className="col-span-full text-sm text-[#705331]">ملقيناش صنف بالاسم ده. جرّب كلمة تانية.</p> : null}
           </div>
         </div>
-        <div className="min-w-0 space-y-3 rounded-[1.5rem] border border-[#E5E3B2] bg-white/75 p-4 sm:p-5">
-          <div className="flex gap-2" role="group" aria-label="نوع الطلب">{([['DINE_IN', 'داخلي'], ['TAKEAWAY', 'تيك أواي'], ['DELIVERY', 'توصيل']] as const).map(([value, label]) => <button key={value} type="button" aria-pressed={orderType === value} onClick={() => setOrderType(value)} className={`flex-1 rounded-xl px-2 py-2 text-sm font-semibold transition active:scale-95 ${orderType === value ? 'bg-[#6B8136] text-white' : 'bg-[#FCF5ED] text-[#705331] hover:bg-[#f3ecdd]'}`}>{label}</button>)}</div>
+        <div className="min-w-0 space-y-3 rounded-[1.5rem] border border-[#dbe7e3] bg-white p-4 sm:p-5">
+          <div className="flex gap-2" role="group" aria-label="نوع الطلب">{([['DINE_IN', 'داخلي'], ['TAKEAWAY', 'تيك أواي'], ['DELIVERY', 'توصيل']] as const).map(([value, label]) => <button key={value} type="button" aria-pressed={orderType === value} onClick={() => setOrderType(value)} className={`flex-1 rounded-xl px-2 py-2 text-sm font-semibold transition active:scale-95 ${orderType === value ? 'bg-[#176f68] text-white' : 'bg-[#eef5f3] text-[#4f6762] hover:bg-[#dfeeea]'}`}>{label}</button>)}</div>
 
           {items.length === 0 ? (
-            <p className="rounded-xl border border-dashed border-[#E5E3B2] bg-[#FCF5ED]/60 px-3 py-4 text-center text-xs text-[#8b8b7b]">السلة فاضية — اختار أصناف من المنيو.</p>
+            <p className="rounded-xl border border-dashed border-[#dbe7e3] bg-[#f4f9f7] px-3 py-4 text-center text-xs text-[#8b8b7b]">السلة فاضية — اختار أصناف من المنيو.</p>
           ) : items.map((item) => {
-            const name = productsById.get(item.productId)?.ar ?? '';
+            const product = productsById.get(item.productId);
+            const name = product?.ar ?? '';
             return (
-              <div key={item.productId} className="flex items-center justify-between gap-2 text-sm">
-                <span className="min-w-0 flex-1 truncate font-semibold text-[#403d33]">{name}</span>
-                <div className="flex shrink-0 items-center gap-1.5">
-                  <button type="button" aria-label={`تقليل كمية ${name}`} onClick={() => changeQuantity(item.productId, item.quantity - 1)} className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#E5E3B2] bg-white text-base font-bold text-[#705331] transition hover:bg-[#FCF5ED] active:scale-95">−</button>
+              <div key={item.productId} className="flex items-center gap-2.5 rounded-xl border border-[#e0eae7] bg-white p-2 text-sm">
+                <span className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg bg-[#f1f6f4]">{product?.image ? <Image src={product.image} alt={name} fill sizes="44px" unoptimized className="object-cover" /> : null}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-semibold text-[#232122]">{name}</span>
+                  <span className="text-xs text-[#647b77]">{product ? getProductPrice(product).toFixed(2) : ''} ج.م</span>
+                </span>
+                <div className="flex shrink-0 items-center gap-1">
+                  <button type="button" aria-label={`تقليل كمية ${name}`} onClick={() => changeQuantity(item.productId, item.quantity - 1)} className="flex h-7 w-7 items-center justify-center rounded-lg border border-[#dbe7e3] bg-white text-base font-bold text-[#176f68] transition hover:bg-[#edf6f3] active:scale-95">−</button>
                   <span aria-label={`كمية ${name}`} className="w-6 text-center font-bold tabular-nums">{item.quantity}</span>
-                  <button type="button" aria-label={`زيادة كمية ${name}`} onClick={() => changeQuantity(item.productId, item.quantity + 1)} className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#E5E3B2] bg-white text-base font-bold text-[#6B8136] transition hover:bg-[#FCF5ED] active:scale-95">+</button>
+                  <button type="button" aria-label={`زيادة كمية ${name}`} onClick={() => changeQuantity(item.productId, item.quantity + 1)} className="flex h-7 w-7 items-center justify-center rounded-lg border border-[#dbe7e3] bg-white text-base font-bold text-[#176f68] transition hover:bg-[#edf6f3] active:scale-95">+</button>
                 </div>
               </div>
             );
@@ -185,8 +220,8 @@ export default function CashierOrder({ onCreated }: { onCreated: () => void }) {
               <option value="card">بطاقة</option>
             </select>
           </label>
-          <div className="flex items-center justify-between border-t border-[#E5E3B2] pt-3 font-bold"><span>الإجمالي التقريبي</span><span>{total.toFixed(2)} ج.م</span></div>
-          <button type="submit" disabled={submitting || loading || items.length === 0} className="w-full rounded-xl bg-[#6B8136] px-4 py-3 font-semibold text-white transition hover:bg-[#5d702f] active:scale-[.99] disabled:opacity-50">{submitting ? 'جارٍ إنشاء الطلب…' : 'تأكيد الطلب'}</button>
+          <div className="flex items-center justify-between border-t border-[#dbe7e3] pt-3 font-bold"><span>الإجمالي التقريبي</span><span>{total.toFixed(2)} ج.م</span></div>
+          <button type="submit" disabled={submitting || loading || items.length === 0} className="w-full rounded-xl bg-[#176f68] px-4 py-3 font-semibold text-white transition hover:bg-[#115b56] active:scale-[.99] disabled:opacity-50">{submitting ? 'جارٍ إنشاء الطلب…' : 'تأكيد الطلب'}</button>
           {message ? <p role="status" className="rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2.5 text-sm text-emerald-800 motion-enter">{message}</p> : null}
           {error ? <p role="alert" className="rounded-xl border border-rose-100 bg-rose-50 px-3 py-2.5 text-sm text-rose-700 motion-enter">{error}</p> : null}
         </div>

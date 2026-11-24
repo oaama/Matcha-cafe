@@ -2,6 +2,7 @@ import mongoose, { Schema } from 'mongoose';
 import { menuSeed } from './menu-data';
 import { getDataProvider } from './data-mode';
 import type { CatalogData } from './catalog';
+import { withProductImage } from './product-images';
 
 const CATALOG_ID = 'main-menu';
 type StoredCatalog = CatalogData & { _id: string };
@@ -29,10 +30,14 @@ function cloneCatalog(catalog: CatalogData): CatalogData {
   return structuredClone(catalog);
 }
 
+function withImages(catalog: CatalogData): CatalogData {
+  return { ...catalog, products: catalog.products.map(withProductImage) };
+}
+
 export async function getCatalog(): Promise<CatalogData> {
   if (getDataProvider() === 'mock') {
     globalThis.matchaCatalog ??= cloneCatalog(seedCatalog);
-    return cloneCatalog(globalThis.matchaCatalog);
+    return withImages(cloneCatalog(globalThis.matchaCatalog));
   }
 
   const { connectToDatabase } = await import('./database');
@@ -42,7 +47,7 @@ export async function getCatalog(): Promise<CatalogData> {
     { $setOnInsert: seedCatalog },
     { upsert: true, new: true, setDefaultsOnInsert: true },
   ).lean() as StoredCatalog;
-  return { categories: stored.categories, products: stored.products, groups: stored.groups };
+  return withImages({ categories: stored.categories, products: stored.products, groups: stored.groups });
 }
 
 export async function saveCatalog(catalog: CatalogData): Promise<CatalogData> {

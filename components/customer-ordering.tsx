@@ -488,8 +488,19 @@ export default function CustomerOrdering() {
                 </div>
                 <div className="grid grid-cols-2 gap-2.5 sm:gap-3.5 xl:grid-cols-3">
                   {items.map((product, index) => (
-                    <article key={product.id} className="group flex min-h-[196px] min-w-0 flex-col justify-between rounded-[1.1rem] border border-[#eae8e0] bg-white p-2.5 shadow-[0_3px_14px_rgba(44,43,35,.035)] transition duration-200 active:scale-[.985] hover:-translate-y-1 hover:border-[#d9dfcc] hover:shadow-[0_16px_32px_rgba(44,43,35,.085)] sm:min-h-44 sm:rounded-[1.35rem] sm:p-4">
-                      <div className="flex min-h-[112px] min-w-0 flex-col sm:min-h-[112px]">
+                    <article key={product.id} className="group flex min-w-0 flex-col justify-between rounded-[1.1rem] border border-[#eae8e0] bg-white p-2.5 shadow-[0_3px_14px_rgba(44,43,35,.035)] transition duration-200 active:scale-[.985] hover:-translate-y-1 hover:border-[#d9dfcc] hover:shadow-[0_16px_32px_rgba(44,43,35,.085)] sm:min-h-44 sm:rounded-[1.35rem] sm:p-4">
+                      <div className="flex min-w-0 flex-col">
+                        {product.image ? (
+                          <div className="relative mb-2 aspect-square w-full overflow-hidden rounded-xl bg-[#f4f6f2] sm:mb-3 sm:rounded-2xl">
+                            <Image src={product.image} alt={product.ar} fill sizes="(max-width: 640px) 45vw, 240px" unoptimized className="object-cover transition duration-300 group-hover:scale-105" />
+                            {product.featured || product.bestSeller ? (
+                              <div className="absolute start-1.5 top-1.5 flex min-w-0 flex-wrap gap-1">
+                                {product.featured ? <span className="rounded-full bg-white/90 px-1.5 py-1 text-[8px] font-semibold leading-3 text-[#795b3e] shadow-sm sm:px-2.5 sm:py-1.5 sm:text-[10px]">صنف مميز</span> : null}
+                                {product.bestSeller ? <span className="rounded-full bg-white/90 px-1.5 py-1 text-[8px] font-semibold leading-3 text-[#93733b] shadow-sm sm:px-2.5 sm:py-1.5 sm:text-[10px]">الأكثر طلبًا</span> : null}
+                              </div>
+                            ) : null}
+                          </div>
+                        ) : (
                         <div className="mb-2 flex items-start justify-between gap-1.5 sm:mb-3 sm:gap-3">
                           <div className={`relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl sm:h-12 sm:w-12 sm:rounded-2xl ${index % 3 === 0 ? 'bg-[#edf1e5] text-[#587044]' : index % 3 === 1 ? 'bg-[#f4eee7] text-[#967354]' : 'bg-[#f2f0e6] text-[#89804d]'}`}>
                             <span className="absolute -bottom-3 -left-2 h-8 w-8 rounded-full bg-current opacity-[.07]" />
@@ -503,6 +514,7 @@ export default function CustomerOrdering() {
                             {product.bestSeller ? <span className="rounded-full bg-[#fbf4e4] px-1.5 py-1 text-[8px] font-semibold leading-3 text-[#93733b] sm:px-2.5 sm:py-1.5 sm:text-[10px]">الأكثر طلبًا</span> : null}
                           </div>
                         </div>
+                        )}
                         <h3 className="line-clamp-2 text-sm font-bold leading-5 text-[#232122] transition-colors group-hover:text-[#6B8136] sm:text-base">{product.ar}</h3>
                         <p className="mt-1 line-clamp-2 text-[11px] leading-4 text-[#858378] sm:text-xs sm:leading-5">{product.descriptionAr}</p>
                       </div>

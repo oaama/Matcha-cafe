@@ -648,19 +648,19 @@ export default function CashierDashboard() {
 
 
       <div className="mx-auto flex min-h-[calc(100svh-4.5rem)] w-full max-w-[1600px] gap-4 px-2 py-3 sm:px-4 lg:gap-6 lg:px-6 lg:py-5">
-        <aside className={`hidden shrink-0 self-start rounded-[1.5rem] border border-[#dbe7e3] bg-white/80 p-3 shadow-[0_4px_18px_rgba(29,73,68,.04)] xl:sticky xl:top-[5.75rem] xl:block ${sidebarCollapsed ? 'w-[4.75rem]' : 'w-[17rem]'}`}>
+        <aside className={`hidden shrink-0 self-start rounded-[1.5rem] border border-[#12625b] bg-gradient-to-b from-[#1b8077] to-[#12625b] p-3 text-white shadow-[0_10px_28px_rgba(18,98,91,.28)] xl:sticky xl:top-[5.75rem] xl:block ${sidebarCollapsed ? 'w-[4.75rem]' : 'w-[17rem]'}`}>
           <div className={`flex items-center gap-2 px-2 pb-2 pt-3 ${sidebarCollapsed ? 'justify-center' : 'justify-between'}`}>
-            {!sidebarCollapsed ? <p className="text-xs font-semibold text-[#80918d]">أقسام لوحة التحكم</p> : null}
-            <button type="button" onClick={() => setSidebarCollapsed((current) => !current)} className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#dbe7e3] text-sm text-[#315d58]" aria-label={sidebarCollapsed ? 'توسيع القائمة' : 'تصغير القائمة'} aria-expanded={!sidebarCollapsed}>{sidebarCollapsed ? '»' : '«'}</button>
+            {!sidebarCollapsed ? <p className="text-xs font-semibold text-white/70">أقسام لوحة التحكم</p> : null}
+            <button type="button" onClick={() => setSidebarCollapsed((current) => !current)} className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/30 text-sm text-white transition hover:bg-white/10" aria-label={sidebarCollapsed ? 'توسيع القائمة' : 'تصغير القائمة'} aria-expanded={!sidebarCollapsed}>{sidebarCollapsed ? '»' : '«'}</button>
           </div>
           <nav aria-label="أقسام لوحة التحكم" className="space-y-2">
             {navigationGroups.map((group) => {
               return <div key={group.title}>
                 {!sidebarCollapsed ? (
-                  <p className="px-3 pb-1 pt-2 text-[11px] font-semibold text-[#80918d]">{group.title}</p>
+                  <p className="px-3 pb-1 pt-2 text-[11px] font-semibold text-white/60">{group.title}</p>
                 ) : null}
                 <div className="space-y-1">
-                  {group.items.map(({ section, title, icon }) => <button key={section} type="button" aria-pressed={dashboardSection === section} aria-label={sidebarCollapsed ? title : undefined} title={sidebarCollapsed ? title : undefined} onClick={() => setDashboardSection(section)} className={`flex min-h-11 w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-start text-sm font-semibold transition ${sidebarCollapsed ? 'justify-center' : ''} ${dashboardSection === section ? 'border-[#4b9b91] bg-[#d8f3ee] text-[#176f68]' : 'border-transparent text-[#566b67] hover:border-[#dbe7e3] hover:bg-[#f4f9f7]'}`}><span aria-hidden="true" className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/80 text-base">{icon}</span>{!sidebarCollapsed ? title : null}</button>)}
+                  {group.items.map(({ section, title, icon }) => <button key={section} type="button" aria-pressed={dashboardSection === section} aria-label={sidebarCollapsed ? title : undefined} title={sidebarCollapsed ? title : undefined} onClick={() => setDashboardSection(section)} className={`flex min-h-11 w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-start text-sm font-semibold transition ${sidebarCollapsed ? 'justify-center' : ''} ${dashboardSection === section ? 'border-white bg-white text-[#12625b] shadow-sm' : 'border-transparent text-white/90 hover:bg-white/12'}`}><span aria-hidden="true" className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-base ${dashboardSection === section ? 'bg-[#e5f5f1]' : 'bg-white/15'}`}>{icon}</span>{!sidebarCollapsed ? title : null}</button>)}
                 </div>
               </div>;
             })}
@@ -668,10 +668,10 @@ export default function CashierDashboard() {
         </aside>
 
         <main key={dashboardSection} className="motion-enter min-w-0 flex-1 rounded-[1.5rem] border border-[#dbe7e3] bg-[#f8fcfa] p-3 shadow-[0_5px_22px_rgba(29,73,68,.045)] sm:p-5 lg:p-7">
-          <section className="dashboard-hero mb-6 flex flex-wrap items-center justify-between gap-5 rounded-[1.35rem] bg-gradient-to-l from-[#56766f] to-[#18756d] px-5 py-5 text-white shadow-sm sm:px-7 sm:py-6">
+          <section className="dashboard-hero mb-6 flex flex-wrap items-center justify-between gap-5 rounded-[1.35rem] border border-[#dbe7e3] bg-white px-5 py-4 text-[#12625b] shadow-[0_4px_18px_rgba(29,73,68,.05)] sm:px-7 sm:py-5">
             <div>
               <h1 className="text-2xl font-bold sm:text-3xl">{staff?.role === 'ADMIN' ? 'لوحة إدارة المقهى' : 'لوحة الكاشير'}</h1>
-              {staff ? <p className="mt-1 text-sm text-white/75">{staff.username}</p> : null}
+              {staff ? <p className="mt-1 text-sm text-[#647b77]">{staff.username}</p> : null}
             </div>
           </section>
 
