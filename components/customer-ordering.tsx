@@ -488,10 +488,10 @@ export default function CustomerOrdering() {
                 </div>
                 <div className="grid grid-cols-2 gap-2.5 sm:gap-3.5 xl:grid-cols-3">
                   {items.map((product, index) => (
-                    <article key={product.id} className="group flex min-w-0 flex-col justify-between rounded-[1.1rem] border border-[#eae8e0] bg-white p-2.5 shadow-[0_3px_14px_rgba(44,43,35,.035)] transition duration-200 active:scale-[.985] hover:-translate-y-1 hover:border-[#d9dfcc] hover:shadow-[0_16px_32px_rgba(44,43,35,.085)] sm:min-h-44 sm:rounded-[1.35rem] sm:p-4">
+                    <article key={product.id} className="group flex min-w-0 flex-col justify-between rounded-[1.1rem] border border-[#eae8e0] bg-white p-2 shadow-[0_3px_14px_rgba(44,43,35,.035)] transition duration-200 active:scale-[.985] hover:-translate-y-1 hover:border-[#d9dfcc] hover:shadow-[0_16px_32px_rgba(44,43,35,.085)] sm:min-h-44 sm:rounded-[1.35rem] sm:p-4">
                       <div className="flex min-w-0 flex-col">
                         {product.image ? (
-                          <div className="relative mb-2 aspect-square w-full overflow-hidden rounded-xl bg-[#f4f6f2] sm:mb-3 sm:rounded-2xl">
+                          <div className="relative mb-1.5 aspect-[4/3] w-full overflow-hidden rounded-xl bg-[#f4f6f2] sm:mb-3 sm:aspect-square sm:rounded-2xl">
                             <Image src={product.image} alt={product.ar} fill sizes="(max-width: 640px) 45vw, 240px" unoptimized className="object-cover transition duration-300 group-hover:scale-105" />
                             {product.featured || product.bestSeller ? (
                               <div className="absolute start-1.5 top-1.5 flex min-w-0 flex-wrap gap-1">
@@ -515,17 +515,18 @@ export default function CustomerOrdering() {
                           </div>
                         </div>
                         )}
-                        <h3 className="line-clamp-2 text-sm font-bold leading-5 text-[#232122] transition-colors group-hover:text-[#6B8136] sm:text-base">{product.ar}</h3>
-                        <p className="mt-1 line-clamp-2 text-[11px] leading-4 text-[#858378] sm:text-xs sm:leading-5">{product.descriptionAr}</p>
+                        <h3 className="line-clamp-1 text-[13px] font-bold leading-5 text-[#232122] transition-colors group-hover:text-[#6B8136] sm:line-clamp-2 sm:text-base">{product.ar}</h3>
+                        <p className="mt-0.5 line-clamp-1 text-[11px] leading-4 text-[#858378] sm:mt-1 sm:line-clamp-2 sm:text-xs sm:leading-5">{product.descriptionAr}</p>
                       </div>
-                      <div className="mt-3 flex flex-col items-stretch gap-2 border-t border-[#f0efe9] pt-2.5 sm:mt-4 sm:flex-row sm:items-center sm:justify-between sm:gap-2 sm:pt-3">
-                        <p className="text-base font-bold text-[#6B8136] sm:text-lg">{getProductPrice(product)} <span className="text-[10px] font-medium text-[#705331] sm:text-xs">ج.م</span>{product.offerPrice !== undefined ? <span className="ms-1 text-[10px] font-medium text-[#99978d] line-through sm:text-xs">{product.price}</span> : null}</p>
+                      <div className="mt-2 flex items-center justify-between gap-1.5 border-t border-[#f0efe9] pt-2 sm:mt-4 sm:gap-2 sm:pt-3">
+                        <p className="min-w-0 text-sm font-bold text-[#6B8136] sm:text-lg">{getProductPrice(product)} <span className="text-[10px] font-medium text-[#705331] sm:text-xs">ج.م</span>{product.offerPrice !== undefined ? <span className="ms-1 text-[10px] font-medium text-[#99978d] line-through sm:text-xs">{product.price}</span> : null}</p>
                         <button
                           type="button"
                           onClick={() => addToCart(product)}
-                          className="min-h-10 w-full rounded-full bg-[#edf1e7] px-2 py-2.5 text-[11px] font-bold text-[#6B8136] transition active:scale-95 hover:bg-[#6B8136] hover:text-white sm:min-h-0 sm:w-auto sm:px-3.5 sm:text-xs"
+                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#edf1e7] text-base font-bold leading-none text-[#6B8136] transition active:scale-95 hover:bg-[#6B8136] hover:text-white sm:h-auto sm:w-auto sm:px-3.5 sm:py-2 sm:text-xs"
+                          aria-label={product.groups.length ? `خصص ${product.ar}` : `أضف ${product.ar} للسلة`}
                         >
-                          <span className="sm:hidden">{product.groups.length ? 'خصص +' : 'أضف +'}</span>
+                          <span className="sm:hidden">+</span>
                           <span className="hidden sm:inline">{product.groups.length ? 'خصص و أضف +' : 'أضف للسلة +'}</span>
                         </button>
                       </div>
