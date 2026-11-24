@@ -187,6 +187,9 @@ export async function saveInventorySettings(items: InventoryItem[], recipes: Pro
   const session = await connection.startSession();
   try {
     await session.withTransaction(async () => {
+      const countedIds = new Set(
+        await InventoryMovementModel.distinct('itemId').session(session) as string[],
+      );
       for (const item of items) {
         await InventoryItemModel.updateOne(
           { id: item.id },
@@ -205,13 +208,15 @@ export async function saveInventorySettings(items: InventoryItem[], recipes: Pro
 export async function saveInventoryConfiguration(items: InventoryItem[], recipes: ProductRecipe[]) {
   if (getDataProvider() === 'mock') {
     const existingItems = new Map(mockStore.items.map((item) => [item.id, item]));
+    const countedIds = new Set(mockStore.movements.map((movement) => movement.itemId));
     const updatedItems = items.map((item) => {
       const current = existingItems.get(item.id);
+      const quantity = current?.quantity ?? 0;
       return {
         ...item,
-        quantity: current?.quantity ?? 0,
-        trackStock: current
-          ? current.trackStock || item.trackStock || current.quantity > 0 || item.lowStockThreshold > 0
+        quantity,
+        trackStock: quantity > 0 || item.lowStockThreshold > 0 || countedIds.has(item.id)
+          ? true
           : item.trackStock,
       };
     });
@@ -229,6 +234,9 @@ export async function saveInventoryConfiguration(items: InventoryItem[], recipes
   const session = await connection.startSession();
   try {
     await session.withTransaction(async () => {
+      const countedIds = new Set(
+        await InventoryMovementModel.distinct('itemId').session(session) as string[],
+      );
       for (const item of items) {
         const current = await InventoryItemModel.findOne({ id: item.id }).session(session).lean() as InventoryItem | null;
         if (!current) {
@@ -241,7 +249,9 @@ export async function saveInventoryConfiguration(items: InventoryItem[], recipes
           name: item.name,
           unit: item.unit,
           lowStockThreshold: item.lowStockThreshold,
-          trackStock: current.trackStock || item.trackStock || current.quantity > 0 || item.lowStockThreshold > 0,
+          trackStock: current.quantity > 0 || item.lowStockThreshold > 0 || countedIds.has(item.id)
+            ? true
+            : item.trackStock,
         };
         const unset: Record<string, 1> = {};
         if (item.productId === undefined) unset.productId = 1;

@@ -547,6 +547,48 @@ describe('inventory configuration', () => {
       else process.env.DATA_PROVIDER = previousProvider;
     }
   });
+  it('lets never-counted items stop tracking while counted items stay tracked', async () => {
+    const previousProvider = process.env.DATA_PROVIDER;
+    process.env.DATA_PROVIDER = 'mock';
+    clearMockInventory();
+    const neverCounted = {
+      id: 'ingredient:never-counted',
+      type: 'ingredient' as const,
+      name: 'خامة جديدة',
+      unit: 'جرام',
+      quantity: 0,
+      lowStockThreshold: 0,
+      trackStock: true,
+    };
+    const counted = {
+      id: 'ingredient:counted-then-emptied',
+      type: 'ingredient' as const,
+      name: 'خامة نفدت',
+      unit: 'جرام',
+      quantity: 0,
+      lowStockThreshold: 0,
+      trackStock: true,
+    };
+
+    try {
+      await saveInventorySettings([neverCounted, counted], []);
+      await adjustInventory(counted.id, 5, 'رصيد افتتاحي');
+      await adjustInventory(counted.id, -5, 'استهلاك اختبار');
+
+      let inventory = await getInventoryData([]);
+      expect(inventory.items.find((item) => item.id === counted.id)).toMatchObject({ quantity: 0, trackStock: true });
+
+      await saveInventoryConfiguration(inventory.items.map((item) => ({ ...item, trackStock: false })), []);
+
+      inventory = await getInventoryData([]);
+      expect(inventory.items.find((item) => item.id === neverCounted.id)?.trackStock).toBe(false);
+      expect(inventory.items.find((item) => item.id === counted.id)?.trackStock).toBe(true);
+    } finally {
+      clearMockInventory();
+      if (previousProvider === undefined) delete process.env.DATA_PROVIDER;
+      else process.env.DATA_PROVIDER = previousProvider;
+    }
+  });
 });
 
 describe('pricing settings', () => {
