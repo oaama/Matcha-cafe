@@ -628,6 +628,25 @@ export default function CashierDashboard() {
         </div>
       </header>
 
+        <div className={`fixed inset-0 z-50 bg-[#183a36]/40 backdrop-blur-[1px] transition-opacity duration-300 xl:hidden ${drawerOpen ? 'opacity-100' : 'pointer-events-none opacity-0'}`} onClick={() => setDrawerOpen(false)} aria-hidden={!drawerOpen}>
+          <aside className={`me-auto flex h-full w-72 max-w-[85vw] flex-col bg-white shadow-2xl transition-transform duration-300 ease-out ${drawerOpen ? 'translate-x-0' : 'translate-x-full'}`} onClick={(event) => event.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-[#edf2ef] px-5 py-4"><h2 className="text-lg font-bold text-[#232122]">أقسام الداشبورد</h2><button type="button" onClick={() => setDrawerOpen(false)} className="flex h-9 w-9 items-center justify-center rounded-lg text-xl text-[#315d58] transition hover:bg-[#edf6f3]" aria-label="إغلاق القائمة">×</button></div>
+            <nav aria-label="أقسام لوحة التحكم" className="flex-1 space-y-2 overflow-y-auto p-4">
+              {navigationGroups.map((group) => {
+                return <div key={group.title}>
+                  <p className="px-4 pb-1 pt-2 text-xs font-semibold text-[#80918d]">{group.title}</p>
+                  <div className="space-y-1">
+                    {group.items.map(({ section, title, icon }) => (
+                      <button key={section} type="button" aria-pressed={dashboardSection === section} onClick={() => { setDashboardSection(section); setDrawerOpen(false); }} className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-start text-sm font-semibold transition ${dashboardSection === section ? 'bg-[#176f68] text-white shadow-sm' : 'text-[#315d58] hover:bg-[#edf6f3]'}`}><span aria-hidden="true">{icon}</span>{title}</button>
+                    ))}
+                  </div>
+                </div>;
+              })}
+            </nav>
+          </aside>
+        </div>
+
+
       <div className="mx-auto flex min-h-[calc(100svh-4.5rem)] w-full max-w-[1600px] gap-4 px-2 py-3 sm:px-4 lg:gap-6 lg:px-6 lg:py-5">
         <aside className={`hidden shrink-0 self-start rounded-[1.5rem] border border-[#dbe7e3] bg-white/80 p-3 shadow-[0_4px_18px_rgba(29,73,68,.04)] xl:sticky xl:top-[5.75rem] xl:block ${sidebarCollapsed ? 'w-[4.75rem]' : 'w-[17rem]'}`}>
           <div className={`flex items-center gap-2 px-2 pb-2 pt-3 ${sidebarCollapsed ? 'justify-center' : 'justify-between'}`}>
@@ -656,23 +675,6 @@ export default function CashierDashboard() {
             </div>
           </section>
 
-        <div className={`fixed inset-0 z-50 bg-[#183a36]/40 backdrop-blur-[1px] transition-opacity duration-300 xl:hidden ${drawerOpen ? 'opacity-100' : 'pointer-events-none opacity-0'}`} onClick={() => setDrawerOpen(false)} aria-hidden={!drawerOpen}>
-          <aside className={`me-auto flex h-full w-72 max-w-[85vw] flex-col bg-white shadow-2xl transition-transform duration-300 ease-out ${drawerOpen ? 'translate-x-0' : 'translate-x-full'}`} onClick={(event) => event.stopPropagation()}>
-            <div className="flex items-center justify-between border-b border-[#edf2ef] px-5 py-4"><h2 className="text-lg font-bold text-[#232122]">أقسام الداشبورد</h2><button type="button" onClick={() => setDrawerOpen(false)} className="flex h-9 w-9 items-center justify-center rounded-lg text-xl text-[#315d58] transition hover:bg-[#edf6f3]" aria-label="إغلاق القائمة">×</button></div>
-            <nav aria-label="أقسام لوحة التحكم" className="flex-1 space-y-2 overflow-y-auto p-4">
-              {navigationGroups.map((group) => {
-                return <div key={group.title}>
-                  <p className="px-4 pb-1 pt-2 text-xs font-semibold text-[#80918d]">{group.title}</p>
-                  <div className="space-y-1">
-                    {group.items.map(({ section, title, icon }) => (
-                      <button key={section} type="button" aria-pressed={dashboardSection === section} onClick={() => { setDashboardSection(section); setDrawerOpen(false); }} className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-start text-sm font-semibold transition ${dashboardSection === section ? 'bg-[#176f68] text-white shadow-sm' : 'text-[#315d58] hover:bg-[#edf6f3]'}`}><span aria-hidden="true">{icon}</span>{title}</button>
-                    ))}
-                  </div>
-                </div>;
-              })}
-            </nav>
-          </aside>
-        </div>
         {shiftMessage ? <p role="status" className="mb-5 rounded-xl border border-[#E5E3B2] bg-[#FCF5ED] px-4 py-3 text-sm text-[#705331]">{shiftMessage}</p> : null}
 
         {demoMode ? (
