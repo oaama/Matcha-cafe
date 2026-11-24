@@ -16,6 +16,7 @@ export default function BaristaPage() {
   for (const category of baristaCategories) {
     for (const product of baristaProducts().filter((item) => item.categoryId === category.id)) {
       const recipe = recipeById.get(product.id)!;
+      const cut = path.join(process.cwd(), 'public', 'barista', `${product.id}.webp`);
       const file = path.join(process.cwd(), 'public', 'menu', `${product.id}.webp`);
       pages.push({
         kind: 'product',
@@ -24,7 +25,7 @@ export default function BaristaPage() {
         categoryId: category.id,
         ar: product.ar,
         en: product.en,
-        image: fs.existsSync(file) ? `/menu/${product.id}.webp` : undefined,
+        image: fs.existsSync(cut) ? `/barista/${product.id}.webp` : fs.existsSync(file) ? `/menu/${product.id}.webp` : undefined,
         recipe,
         guide: categoryGuides[category.id],
       });
