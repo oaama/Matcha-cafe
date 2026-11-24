@@ -594,46 +594,42 @@ export default function InventoryManagement() {
             </div>
 
             {Object.keys(groups).length ? (
-              <div className="mt-7 space-y-2" data-extras-recipes>
-                <h3 className="font-bold text-[#403d33]">وصفة الإضافات (بوبا، ويفر، صوصات...)</h3>
-                <p className="text-xs text-[#705331]">اربط كل إضافة بالخامات اللي بتستهلكها. كل ما إضافة تتطلب في أوردر، الخامات دي بتتخصم لوحدها (الكمية × عدد الأصناف).</p>
+              <div className="mt-7 space-y-3" data-extras-recipes>
+                <h3 className="font-bold text-[#403d33]">الإضافات والخامات</h3>
+                <p className="text-xs text-[#705331]">اختار لكل إضافة الخامة من المخزون وكميتها. لما الإضافة تتطلب في أوردر بتتخصم من الخامة دي مباشرة.</p>
                 {Object.values(groups).map((group) => (
-                  <details key={group.id} className="rounded-xl border border-[#E5E3B2] bg-white">
-                    <summary className="cursor-pointer list-none px-4 py-3 font-semibold text-[#403d33]">{group.ar}</summary>
-                    <div className="space-y-2 border-t border-[#E5E3B2] p-3">
+                  <div key={group.id} className="rounded-xl border border-[#E5E3B2] bg-white p-3">
+                    <p className="mb-2 text-sm font-bold text-[#403d33]">{group.ar}</p>
+                    <div className="space-y-2">
                       {group.options.map((option) => {
                         const key = extraRecipeKey(group.id, option.ar, option.en);
-                        const recipe = recipes.find((entry) => entry.productId === key);
+                        const linked = recipes.find((entry) => entry.productId === key)?.ingredients[0];
+                        const linkable = items.filter((item) => item.type === 'ingredient' || item.trackStock);
                         return (
-                          <details key={key} data-extra-recipe={key} className="rounded-lg border border-[#eceedd]">
-                            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5 text-sm font-medium">
-                              <span>{option.ar}{option.price ? ` (+${option.price})` : ''}</span>
-                              <span className="text-xs text-[#705331]">{recipe?.ingredients.length ? `${recipe.ingredients.length} خامة` : 'من غير وصفة'}</span>
-                            </summary>
-                            <div className="space-y-2 border-t border-[#eceedd] p-3">
-                              {(recipe?.ingredients ?? []).map((entry) => {
-                                const ingredient = allIngredients.find((item) => item.id === entry.itemId);
-                                return (
-                                  <div key={entry.itemId} className="flex items-center justify-between gap-2 rounded-lg bg-[#f8f8f4] px-3 py-2 text-sm">
-                                    <span className="min-w-0 flex-1 truncate">{ingredient?.name ?? 'خامة محذوفة'}</span>
-                                    <span className="flex items-center gap-2 text-[#705331]">
-                                      <RecipeQuantityInput value={entry.quantity} onChange={(quantity) => updateRecipe(key, { ...recipe!, ingredients: recipe!.ingredients.map((row) => row.itemId === entry.itemId ? { ...row, quantity } : row) })} />
-                                      <span>{ingredient?.unit}</span>
-                                      <button type="button" aria-label={`إزالة ${ingredient?.name ?? 'الخامة'} من ${option.ar}`} onClick={() => {
-                                        const next = recipe!.ingredients.filter((row) => row.itemId !== entry.itemId);
-                                        updateRecipe(key, next.length ? { ...recipe!, ingredients: next } : null);
-                                      }} className="font-bold text-rose-700">×</button>
-                                    </span>
-                                  </div>
-                                );
-                              })}
-                              <RecipeIngredientForm ingredients={allIngredients} onAdd={(itemId, quantity) => addRecipeIngredient(key, itemId, quantity)} />
-                            </div>
-                          </details>
+                          <div key={key} data-extra-recipe={key} className="grid grid-cols-[1fr_auto] items-center gap-2 rounded-lg bg-[#f8f8f4] p-2 text-sm">
+                            <span className="font-medium">{option.ar}{option.price ? ` (+${option.price})` : ''}</span>
+                            <span className="flex items-center gap-1.5">
+                              <input aria-label={`كمية ${option.ar}`} type="number" min="0" step="any" inputMode="decimal" placeholder="الكمية" disabled={!linked}
+                                value={linked?.quantity ?? ''}
+                                onChange={(event) => {
+                                  const quantity = Number(event.target.value);
+                                  if (linked && quantity > 0) updateRecipe(key, { productId: key, ingredients: [{ itemId: linked.itemId, quantity }] });
+                                }}
+                                className="w-20 rounded-lg border-[#E5E3B2] px-2 py-1.5 text-sm disabled:opacity-40" />
+                            </span>
+                            <select aria-label={`خامة ${option.ar}`} value={linked?.itemId ?? ''} className="col-span-2 w-full rounded-lg border-[#E5E3B2] px-2 py-1.5 text-sm"
+                              onChange={(event) => {
+                                const itemId = event.target.value;
+                                updateRecipe(key, itemId ? { productId: key, ingredients: [{ itemId, quantity: linked?.quantity ?? 1 }] } : null);
+                              }}>
+                              <option value="">من غير خامة</option>
+                              {linkable.map((item) => <option key={item.id} value={item.id}>{item.name} ({item.unit})</option>)}
+                            </select>
+                          </div>
                         );
                       })}
                     </div>
-                  </details>
+                  </div>
                 ))}
               </div>
             ) : null}
