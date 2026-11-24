@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { clearMockInventory, getInventoryData, InventoryStockError, saveInventorySettings } from './inventory-repository';
 import { clearMockOrders, getOrderRepository } from './order-repository';
+import { extraRecipeKey } from './extra-recipe';
 import type { OrderRecord } from './types';
 
 const item = (id: string, quantity: number, unitCost = 1) => ({ id, type: 'ingredient' as const, name: id, unit: 'جرام', unitCost, quantity, lowStockThreshold: 1, trackStock: true });
@@ -37,5 +38,23 @@ describe('order -> inventory recipe flow', () => {
     expect(await stock()).toMatchObject({ milk: 100, matcha: 20 });
     await repo.updateStatus(order.id, 'CANCELLED', 'CANCELLED', new Date().toISOString());
     expect(await stock()).toMatchObject({ milk: 100, matcha: 20 });
+  });
+
+  it('deducts the extras recipe (boba) per ordered item and returns it on cancel', async () => {
+    const key = extraRecipeKey('extras', 'بوبا', 'Boba');
+    await saveInventorySettings([item('milk', 100), item('matcha', 20), item('pearls', 50)], [
+      { productId: 'latte', ingredients: [{ itemId: 'milk', quantity: 10 }] },
+      { productId: key, ingredients: [{ itemId: 'pearls', quantity: 15 }] },
+    ]);
+    const order = mkOrder('d', 2);
+    order.items[0].selectedOptions = [{ groupId: 'extras', optionAr: 'بوبا', optionEn: 'Boba', price: 25 }];
+    const { order: created } = await getOrderRepository().createWithInventory(order, 'key-d');
+    expect(await stock()).toMatchObject({ milk: 80, pearls: 20 });
+    await getOrderRepository().updateStatus(created.id, 'NEW', 'CANCELLED', new Date().toISOString());
+    expect(await stock()).toMatchObject({ milk: 100, pearls: 50 });
+    const tooMany = mkOrder('e', 4);
+    tooMany.items[0].selectedOptions = order.items[0].selectedOptions;
+    await expect(getOrderRepository().createWithInventory(tooMany, 'key-e')).rejects.toBeInstanceOf(InventoryStockError);
+    expect(await stock()).toMatchObject({ milk: 100, pearls: 50 });
   });
 });

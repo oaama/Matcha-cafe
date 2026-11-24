@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import type { InventoryItem, InventoryMovement, Product, ProductRecipe } from '@/lib/types';
+import { extraRecipeKey } from '@/lib/extra-recipe';
+import type { CatalogGroup, InventoryItem, InventoryMovement, Product, ProductRecipe } from '@/lib/types';
 import { getProductPrice } from '@/lib/pricing';
 import { calculateRecipeCost } from '@/lib/recipe-cost';
 
@@ -9,6 +10,7 @@ type InventoryData = {
   items: InventoryItem[];
   recipes: ProductRecipe[];
   products: Product[];
+  groups?: Record<string, CatalogGroup>;
   movements: InventoryMovement[];
 };
 
@@ -25,6 +27,7 @@ export default function InventoryManagement() {
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [recipes, setRecipes] = useState<ProductRecipe[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [groups, setGroups] = useState<Record<string, CatalogGroup>>({});
   const [movements, setMovements] = useState<InventoryMovement[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -61,6 +64,7 @@ export default function InventoryManagement() {
       setItems(data.items);
       setRecipes(data.recipes);
       setProducts(data.products);
+      setGroups(data.groups ?? {});
       setMovements(data.movements);
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : 'تعذر تحميل المخزون');
@@ -588,6 +592,51 @@ export default function InventoryManagement() {
                 );
               })}
             </div>
+
+            {Object.keys(groups).length ? (
+              <div className="mt-7 space-y-2" data-extras-recipes>
+                <h3 className="font-bold text-[#403d33]">وصفة الإضافات (بوبا، ويفر، صوصات...)</h3>
+                <p className="text-xs text-[#705331]">اربط كل إضافة بالخامات اللي بتستهلكها. كل ما إضافة تتطلب في أوردر، الخامات دي بتتخصم لوحدها (الكمية × عدد الأصناف).</p>
+                {Object.values(groups).map((group) => (
+                  <details key={group.id} className="rounded-xl border border-[#E5E3B2] bg-white">
+                    <summary className="cursor-pointer list-none px-4 py-3 font-semibold text-[#403d33]">{group.ar}</summary>
+                    <div className="space-y-2 border-t border-[#E5E3B2] p-3">
+                      {group.options.map((option) => {
+                        const key = extraRecipeKey(group.id, option.ar, option.en);
+                        const recipe = recipes.find((entry) => entry.productId === key);
+                        return (
+                          <details key={key} data-extra-recipe={key} className="rounded-lg border border-[#eceedd]">
+                            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5 text-sm font-medium">
+                              <span>{option.ar}{option.price ? ` (+${option.price})` : ''}</span>
+                              <span className="text-xs text-[#705331]">{recipe?.ingredients.length ? `${recipe.ingredients.length} خامة` : 'من غير وصفة'}</span>
+                            </summary>
+                            <div className="space-y-2 border-t border-[#eceedd] p-3">
+                              {(recipe?.ingredients ?? []).map((entry) => {
+                                const ingredient = allIngredients.find((item) => item.id === entry.itemId);
+                                return (
+                                  <div key={entry.itemId} className="flex items-center justify-between gap-2 rounded-lg bg-[#f8f8f4] px-3 py-2 text-sm">
+                                    <span className="min-w-0 flex-1 truncate">{ingredient?.name ?? 'خامة محذوفة'}</span>
+                                    <span className="flex items-center gap-2 text-[#705331]">
+                                      <RecipeQuantityInput value={entry.quantity} onChange={(quantity) => updateRecipe(key, { ...recipe!, ingredients: recipe!.ingredients.map((row) => row.itemId === entry.itemId ? { ...row, quantity } : row) })} />
+                                      <span>{ingredient?.unit}</span>
+                                      <button type="button" aria-label={`إزالة ${ingredient?.name ?? 'الخامة'} من ${option.ar}`} onClick={() => {
+                                        const next = recipe!.ingredients.filter((row) => row.itemId !== entry.itemId);
+                                        updateRecipe(key, next.length ? { ...recipe!, ingredients: next } : null);
+                                      }} className="font-bold text-rose-700">×</button>
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                              <RecipeIngredientForm ingredients={allIngredients} onAdd={(itemId, quantity) => addRecipeIngredient(key, itemId, quantity)} />
+                            </div>
+                          </details>
+                        );
+                      })}
+                    </div>
+                  </details>
+                ))}
+              </div>
+            ) : null}
 
             <div className="mt-7">
               <h3 className="mb-3 font-bold text-[#403d33]">آخر حركات المخزون</h3>

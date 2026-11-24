@@ -1,6 +1,7 @@
 import mongoose, { Schema, type ClientSession } from 'mongoose';
 import { randomUUID } from 'node:crypto';
 import { getDataProvider } from './data-mode';
+import { extraRecipeKey } from './extra-recipe';
 import type { InventoryItem, InventoryMovement, OrderRecord, Product, ProductRecipe } from './types';
 
 type MockInventoryStore = {
@@ -483,6 +484,14 @@ export function calculateOrderInventoryConsumption(order: OrderRecord, items: In
     for (const ingredient of recipeMap.get(orderItem.productId)?.ingredients ?? []) {
       const stockItem = items.find((item) => item.id === ingredient.itemId);
       if (stockItem?.trackStock) add(stockItem.id, ingredient.quantity * orderItem.quantity);
+    }
+    // Extras (boba, wafer...) have their own recipes keyed by extraRecipeKey.
+    for (const option of orderItem.selectedOptions ?? []) {
+      const optionRecipe = recipeMap.get(extraRecipeKey(option.groupId, option.optionAr, option.optionEn));
+      for (const ingredient of optionRecipe?.ingredients ?? []) {
+        const stockItem = items.find((item) => item.id === ingredient.itemId);
+        if (stockItem?.trackStock) add(stockItem.id, ingredient.quantity * orderItem.quantity);
+      }
     }
   }
 
