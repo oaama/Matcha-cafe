@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { randomBytes, randomUUID } from 'node:crypto';
-import { createOrderSchema } from '@/lib/validation';
+import { createOrderSchema, staffCreateOrderSchema } from '@/lib/validation';
+import { requireStaffRole } from '@/lib/staff-api';
 import { calculateOrderTotal, validateProductSelections } from '@/lib/store';
 import { getOrderRepository } from '@/lib/order-repository';
 import { getPricingSettings } from '@/lib/pricing-settings';
@@ -17,7 +18,8 @@ export async function POST(request: Request) {
     } catch {
       return NextResponse.json({ error: 'Request body must be valid JSON' }, { status: 400 });
     }
-    const parsed = createOrderSchema.safeParse(body);
+    const isStaff = Boolean(await requireStaffRole());
+    const parsed = (isStaff ? staffCreateOrderSchema : createOrderSchema).safeParse(body);
 
     if (!parsed.success) {
       return NextResponse.json({ error: 'Invalid order payload' }, { status: 400 });

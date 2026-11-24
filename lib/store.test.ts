@@ -9,7 +9,7 @@ import { clearMockOrders, getOrderRepository } from './order-repository';
 import { clearMockExpenses, createExpense, deleteExpense, listExpenses, updateExpense } from './expense-repository';
 import { clearMockPricingSettings, getPricingSettings, updatePricingSettings } from './pricing-settings';
 import { clearMockCatalog, getCatalog, saveCatalog } from './catalog-repository';
-import { catalogSchema, createOrderSchema } from './validation';
+import { catalogSchema, createOrderSchema, staffCreateOrderSchema } from './validation';
 import { adjustInventory, clearMockInventory, getInventoryData, saveInventoryConfiguration, saveInventorySettings } from './inventory-repository';
 import { deleteStaffAccount, listStaffAccounts, createStaffAccount, updateStaffAccount } from './staff-user-repository';
 import { createStaffPasswordHash, verifyStaffPassword } from './staff-account-repository';
@@ -131,6 +131,13 @@ describe('customer follow-up', () => {
     expect(createOrderSchema.safeParse({ ...order, customerPhone: 'café please' }).success).toBe(false);
     expect(normalizeCustomerPhone('010 1234 5678')).toBe('201012345678');
     expect(normalizeCustomerPhone('+20 (10) 1234-5678')).toBe('201012345678');
+  });
+
+  it('lets staff orders skip the phone but still rejects a bad one', () => {
+    const order = { orderType: 'TAKEAWAY' as const, items: [{ productId: 'matcha-2', quantity: 1, customizations: [] }] };
+    expect(staffCreateOrderSchema.safeParse(order).success).toBe(true);
+    expect(staffCreateOrderSchema.safeParse({ ...order, customerPhone: 'café please' }).success).toBe(false);
+    expect(staffCreateOrderSchema.safeParse({ orderType: 'DELIVERY', customerName: 'A', customerAddress: 'x', items: order.items }).success).toBe(false);
   });
 
   it('groups customer orders by normalized phone and keeps follow-up notes in mock storage', async () => {
