@@ -221,7 +221,7 @@ export const catalogSchema = z.object({
     descriptionAr: z.string().trim().max(500),
     descriptionEn: z.string().trim().max(500),
     price: z.number().finite().min(0).max(1_000_000),
-    image: z.string().max(500).optional(),
+    image: z.string().max(300_000).optional(),
     available: z.boolean(),
     bestSeller: z.boolean().optional(),
     featured: z.boolean().optional(),

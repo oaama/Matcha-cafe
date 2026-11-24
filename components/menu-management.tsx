@@ -52,6 +52,30 @@ function newId(prefix: string) {
   return `${prefix}-${crypto.randomUUID()}`;
 }
 
+async function resizeImageFile(file: File, maxSize = 640): Promise<string> {
+  const bitmapUrl = URL.createObjectURL(file);
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const el = new window.Image();
+      el.onload = () => resolve(el);
+      el.onerror = reject;
+      el.src = bitmapUrl;
+    });
+    const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(img.width * scale));
+    canvas.height = Math.max(1, Math.round(img.height * scale));
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('canvas');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL('image/jpeg', 0.82);
+  } finally {
+    URL.revokeObjectURL(bitmapUrl);
+  }
+}
+
 export default function MenuManagement() {
   const [catalog, setCatalog] = useState<CatalogData>({ categories: [], products: [], groups: {} });
   const [section, setSection] = useState<Section>('products');
@@ -359,7 +383,29 @@ export default function MenuManagement() {
               <label className={labelClass}>السعر الأساسي (ج.م)<input required type="number" min="0" max="1000000" step="0.01" value={productEditor.price} onChange={(event) => setProductEditor({ ...productEditor, price: Number(event.target.value) })} className={fieldClass} /></label>
               <label className={labelClass}>سعر العرض (اختياري)<input type="number" min="0" max={productEditor.price} step="0.01" value={productEditor.offerPrice ?? ''} onChange={(event) => setProductEditor({ ...productEditor, offerPrice: event.target.value === '' ? undefined : Number(event.target.value) })} className={fieldClass} placeholder="اتركه فارغًا بدون عرض" /></label>
               <label className={labelClass}>ترتيب الظهور<input type="number" min="0" step="1" value={productEditor.displayOrder ?? 1} onChange={(event) => setProductEditor({ ...productEditor, displayOrder: Number(event.target.value) })} className={fieldClass} /></label>
-              <label className={labelClass}>رابط صورة (اختياري)<input type="text" inputMode="url" maxLength={500} value={productEditor.image ?? ''} onChange={(event) => setProductEditor({ ...productEditor, image: event.target.value || undefined })} className={fieldClass} placeholder="https://..." /></label>
+              <div className={`${labelClass} sm:col-span-2`}>
+                <span>صورة الصنف (اختياري)</span>
+                <div className="mt-1 flex items-center gap-3">
+                  {productEditor.image ? <img src={productEditor.image} alt="" className="h-16 w-16 shrink-0 rounded-xl border border-[#e9e9df] bg-[#f4f6f2] object-contain" /> : <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl border border-dashed border-[#d9dfcc] text-xs text-[#99978d]">بدون</div>}
+                  <div className="flex flex-wrap gap-2">
+                    <label className="inline-flex min-h-10 cursor-pointer items-center rounded-xl bg-[#edf1e7] px-4 text-sm font-semibold text-[#6B8136]">
+                      رفع صورة من الجهاز
+                      <input type="file" accept="image/*" className="sr-only" onChange={async (event) => {
+                        const file = event.target.files?.[0];
+                        event.target.value = '';
+                        if (!file) return;
+                        try {
+                          const image = await resizeImageFile(file);
+                          setProductEditor((current) => (current ? { ...current, image } : current));
+                        } catch {
+                          window.alert('تعذر قراءة الصورة، جرّب صورة تانية.');
+                        }
+                      }} />
+                    </label>
+                    {productEditor.image ? <button type="button" onClick={() => setProductEditor({ ...productEditor, image: undefined })} className="min-h-10 rounded-xl border border-[#e9e9df] px-4 text-sm text-[#705331]">حذف الصورة</button> : null}
+                  </div>
+                </div>
+              </div>
               <label className={`${labelClass} sm:col-span-2`}>الوصف بالعربي<textarea maxLength={500} rows={2} value={productEditor.descriptionAr} onChange={(event) => setProductEditor({ ...productEditor, descriptionAr: event.target.value })} className={fieldClass} /></label>
               <label className={`${labelClass} sm:col-span-2`}>الوصف بالإنجليزي<textarea maxLength={500} rows={2} value={productEditor.descriptionEn} onChange={(event) => setProductEditor({ ...productEditor, descriptionEn: event.target.value })} className={fieldClass} /></label>
             </div>

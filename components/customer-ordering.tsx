@@ -491,7 +491,7 @@ export default function CustomerOrdering() {
                     <article key={product.id} className="group flex min-w-0 flex-col justify-between rounded-[1.1rem] border border-[#eae8e0] bg-white p-2 shadow-[0_3px_14px_rgba(44,43,35,.035)] transition duration-200 active:scale-[.985] hover:-translate-y-1 hover:border-[#d9dfcc] hover:shadow-[0_16px_32px_rgba(44,43,35,.085)] sm:min-h-44 sm:rounded-[1.35rem] sm:p-4">
                       <div className="flex min-w-0 flex-col">
                         {product.image ? (
-                          <div className="relative mb-1.5 aspect-[4/3] w-full overflow-hidden rounded-xl bg-[#f4f6f2] sm:mb-3 sm:aspect-square sm:rounded-2xl">
+                          <div className="relative mb-1.5 aspect-square w-full overflow-hidden rounded-xl bg-[#f4f6f2] sm:mb-3 sm:rounded-2xl">
                             <Image src={product.image} alt={product.ar} fill sizes="(max-width: 640px) 45vw, 240px" unoptimized className="object-contain transition duration-300 group-hover:scale-105 sm:object-cover" />
                             {product.featured || product.bestSeller ? (
                               <div className="absolute start-1.5 top-1.5 flex min-w-0 flex-wrap gap-1">
