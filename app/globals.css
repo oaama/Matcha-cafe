@@ -511,3 +511,21 @@ button:disabled {
     margin: 0;
   }
 }
+
+/* Barista catalog book */
+.paper {
+  background:
+    radial-gradient(ellipse at 20% 0%, rgba(255,255,255,.55), transparent 55%),
+    repeating-linear-gradient(0deg, rgba(120,85,40,.035) 0 1px, transparent 1px 3px),
+    linear-gradient(180deg, #fbf3df 0%, #f4e6c6 100%);
+}
+@keyframes book-float {
+  0%, 100% { transform: rotateX(var(--rx,0deg)) rotateY(calc(var(--ry,0deg) - 10deg)) translateY(0); }
+  50% { transform: rotateX(var(--rx,0deg)) rotateY(calc(var(--ry,0deg) + 10deg)) translateY(-6px); }
+}
+.book-float { animation: book-float 7s ease-in-out infinite; will-change: transform; }
+@keyframes turn-next { from { transform: rotateY(0deg); opacity: 1; } 70% { opacity: 1; } to { transform: rotateY(-100deg); opacity: 0; } }
+@keyframes turn-prev { from { transform: rotateY(-100deg); opacity: 0; } 30% { opacity: 1; } to { transform: rotateY(0deg); opacity: 1; } }
+.turn-next { transform-origin: right center; animation: turn-next .6s cubic-bezier(.5,0,.3,1) forwards; box-shadow: -20px 0 40px rgba(0,0,0,.35); backface-visibility: hidden; }
+.turn-prev { transform-origin: right center; animation: turn-prev .6s cubic-bezier(.3,0,.3,1) forwards; box-shadow: -20px 0 40px rgba(0,0,0,.35); }
+@media (prefers-reduced-motion: reduce) { .book-float, .turn-next, .turn-prev { animation: none; } }

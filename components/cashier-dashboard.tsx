@@ -642,6 +642,7 @@ export default function CashierDashboard() {
                   </div>
                 </div>;
               })}
+              <a href="/barista" className="mt-2 flex w-full items-center gap-3 rounded-xl px-4 py-3 text-start text-sm font-semibold text-[#315d58] hover:bg-[#edf6f3]"><span aria-hidden="true">📖</span>كتالوج الباريستا</a>
             </nav>
           </aside>
         </div>
@@ -664,6 +665,7 @@ export default function CashierDashboard() {
                 </div>
               </div>;
             })}
+            <a href="/barista" title="كتالوج الباريستا" className={`mt-1 flex min-h-11 w-full items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 text-start text-sm font-semibold text-white/90 transition hover:bg-white/12 ${sidebarCollapsed ? 'justify-center' : ''}`}><span aria-hidden="true" className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/15 text-base">📖</span>{!sidebarCollapsed ? 'كتالوج الباريستا' : null}</a>
           </nav>
         </aside>
 
