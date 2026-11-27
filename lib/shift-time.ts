@@ -17,12 +17,21 @@ export function getShiftBusinessDate(value: string | Date | number) {
 
 // A shift belongs to the work day it started in. Hours before 06:00 still count as the
 // previous work day, so a night shift that closes after midnight does not block the next night.
-const WORK_DAY_START_HOUR = 6;
+export const WORK_DAY_START_HOUR = 6;
 
 function getWorkDay(value: string | Date | number) {
   const time = value instanceof Date ? value.getTime() : typeof value === 'number' ? value : Date.parse(value);
   if (!Number.isFinite(time)) return null;
   return getShiftBusinessDate(time - WORK_DAY_START_HOUR * 3_600_000);
+}
+
+// Work day (YYYY-MM-DD, Cairo) a moment belongs to: before 06:00 still counts as the previous day.
+export function getCurrentWorkDay(now: Date | number = Date.now()) {
+  return getWorkDay(now) ?? getShiftBusinessDate(now) ?? '';
+}
+
+export function getWorkDayOf(value: string | Date | number) {
+  return getWorkDay(value);
 }
 
 export function shiftEndedToday(shift: Pick<ShiftRecord, 'endedAt'> & Partial<Pick<ShiftRecord, 'startedAt'>>, now: Date | number = Date.now()) {

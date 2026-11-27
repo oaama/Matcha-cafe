@@ -2,6 +2,10 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import type { DailyReport } from '@/lib/daily-report';
+import { WORK_DAY_START_HOUR } from '@/lib/shift-time';
+
+// "Today" for the daily report runs 06:00 to 06:00, so a night shift past midnight stays on its day.
+const workDayNow = () => new Date(Date.now() - WORK_DAY_START_HOUR * 3_600_000);
 
 function localDate(date: Date) {
   const year = date.getFullYear();
@@ -15,7 +19,7 @@ function money(value: number) {
 }
 
 export default function DailyReportSection() {
-  const [date, setDate] = useState(() => localDate(new Date()));
+  const [date, setDate] = useState(() => localDate(workDayNow()));
   const [report, setReport] = useState<DailyReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -54,7 +58,7 @@ export default function DailyReportSection() {
           <input
             type="date"
             value={date}
-            max={localDate(new Date())}
+            max={localDate(workDayNow())}
             onChange={(event) => event.target.value && setDate(event.target.value)}
             className="rounded-xl border-[#dbe7e3] bg-white px-3 py-2 text-sm"
           />

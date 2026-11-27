@@ -2,8 +2,8 @@ import { describe, expect, it, vi } from 'vitest';
 import { calculateOrderTotal, SERVICE_FEE_RATE, TAX_RATE, validateProductSelections } from './store';
 import { menuSeed } from './menu-data';
 import { createStaffSessionToken, hasStaffCredentials, isValidStaffSessionToken, verifyStaffCredentials } from './staff-auth';
-import { endShift, getActiveShift, listShifts, reactivateShift, startShift } from './shift-repository';
-import { formatShiftDuration, getShiftDurationMinutes, getShiftBusinessDate, getShiftsCoveringTimestamp, shiftEndedToday } from './shift-time';
+import { endShift, getActiveShift, getShiftForEntry, listShifts, reactivateShift, startShift } from './shift-repository';
+import { getCurrentWorkDay, formatShiftDuration, getShiftDurationMinutes, getShiftBusinessDate, getShiftsCoveringTimestamp, shiftEndedToday } from './shift-time';
 import { getShiftReportOrders } from './shift-attribution';
 import { clearMockOrders, getOrderRepository } from './order-repository';
 import { clearMockExpenses, createExpense, deleteExpense, listExpenses, updateExpense } from './expense-repository';
@@ -284,6 +284,25 @@ describe('shift tracking', () => {
     if (!first.shift || !nextShift.shift) throw new Error('Expected shifts to be created');
     expect(nextShift.shift.id).not.toBe(first.shift.id);
     expect((await listShifts('employee-a')).map((shift) => shift.id)).toEqual([nextShift.shift.id, first.shift.id]);
+  });
+
+  it('keeps a night shift on the work day it started, past midnight and until 06:00', async () => {
+    const store = (globalThis as { matchaMockShiftStore?: { shifts: Array<{ employeeId: string }> } }).matchaMockShiftStore ??= { shifts: [] };
+    store.shifts = [];
+    // Started 20:00 Cairo Fri Nov 27 (18:00Z). Still active at 00:40 Sat and 05:30 Sat.
+    const started = await startShift({ employeeId: 'night-b', username: 'Night B', shiftType: 'NIGHT' }, new Date('2026-11-27T18:00:00.000Z'));
+    expect(started.created).toBe(true);
+    expect(getCurrentWorkDay(new Date('2026-11-27T22:40:00.000Z'))).toBe('2026-11-27'); // 00:40 Cairo Sat
+    expect(getCurrentWorkDay(new Date('2026-11-28T03:30:00.000Z'))).toBe('2026-11-27'); // 05:30 Cairo Sat
+    expect(getCurrentWorkDay(new Date('2026-11-28T04:00:00.000Z'))).toBe('2026-11-28'); // 06:00 Cairo Sat
+    expect((await getShiftForEntry('night-b', new Date('2026-11-27T22:40:00.000Z')))?.id).toBe(started.shift?.id);
+    // Closes at 00:30 Sat: still the same work day, so money entries can still go on it, and no new shift yet.
+    await endShift('night-b', new Date('2026-11-27T22:30:00.000Z'));
+    expect((await getShiftForEntry('night-b', new Date('2026-11-27T22:40:00.000Z')))?.id).toBe(started.shift?.id);
+    expect((await startShift({ employeeId: 'night-b', username: 'Night B', shiftType: 'NIGHT' }, new Date('2026-11-27T22:45:00.000Z'))).completedToday).toBe(true);
+    // Next evening everything resets.
+    expect(await getShiftForEntry('night-b', new Date('2026-11-28T18:00:00.000Z'))).toBeNull();
+    expect((await startShift({ employeeId: 'night-b', username: 'Night B', shiftType: 'NIGHT' }, new Date('2026-11-28T18:00:00.000Z'))).created).toBe(true);
   });
 
   it('lets an employee start a new night shift the evening after one that closed past midnight', async () => {

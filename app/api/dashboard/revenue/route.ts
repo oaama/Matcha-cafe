@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { deleteManualRevenue, createManualRevenue, listManualRevenue, updateManualRevenue } from '@/lib/revenue-repository';
 import { getRequestStaff } from '@/lib/staff-api';
-import { getActiveShift, getShiftById } from '@/lib/shift-repository';
+import { getActiveShift, getShiftForEntry, getShiftById } from '@/lib/shift-repository';
 
 const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((value) => {
   const date = new Date(`${value}T00:00:00.000Z`);
@@ -73,7 +73,7 @@ export async function POST(request: Request) {
 
   try {
     const shift = staff.role === 'EMPLOYEE'
-      ? await getActiveShift(staff.id)
+      ? await getShiftForEntry(staff.id)
       : parsed.data.shiftId ? await getShiftById(parsed.data.shiftId) : null;
     if (!shift) {
       return NextResponse.json({ error: staff.role === 'EMPLOYEE' ? 'ابدأ شيفتك قبل تسجيل الإيراد اليدوي' : 'اختر شيفتًا مسجلًا للإيراد' }, { status: 409 });

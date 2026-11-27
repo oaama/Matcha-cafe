@@ -82,6 +82,15 @@ export async function startShift(input: Omit<ShiftRecord, 'id' | 'startedAt'>, n
   }
 }
 
+// Shift an employee may still log money entries on: the active one, or the one they closed
+// earlier in the same work day (e.g. closed at 00:30 before registering the night's revenue).
+export async function getShiftForEntry(employeeId: string, now = new Date()) {
+  const active = await getActiveShift(employeeId);
+  if (active) return active;
+  const latest = await getLatestShift(employeeId);
+  return latest && shiftEndedToday(latest, now) ? latest : null;
+}
+
 export async function endShift(employeeId: string, now = new Date()) {
   const shift = await getActiveShift(employeeId);
   if (!shift) return null;

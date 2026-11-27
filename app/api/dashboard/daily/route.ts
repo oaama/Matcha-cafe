@@ -11,6 +11,7 @@ import { calculateRecipeCost } from '@/lib/recipe-cost';
 import { dailyFixedOverhead } from '@/lib/overhead-costing';
 import { getOverheadConfig } from '@/lib/overhead-settings';
 import { computeDailyReport, type DailyReportItemSale } from '@/lib/daily-report';
+import { WORK_DAY_START_HOUR } from '@/lib/shift-time';
 import type { OrderRecord } from '@/lib/types';
 
 function roundMoney(value: number) {
@@ -53,7 +54,7 @@ export async function GET(request: Request) {
     const recipesByProduct = new Map(inventory.recipes.map((recipe) => [recipe.productId, recipe]));
 
     const dayOrders = orders.filter((order) =>
-      order.status === 'COMPLETED' && localDateKey(order.createdAt, timezoneOffset) === date);
+      order.status === 'COMPLETED' && localDateKey(order.createdAt, timezoneOffset - WORK_DAY_START_HOUR * 60) === date);
 
     let productCosts = 0;
     let uncostedOrderCount = 0;
