@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { getCurrentWorkDay } from '@/lib/shift-time';
 import type { ExpenseCategory, ExpenseRecord, ShiftRecord, StaffIdentity, ShiftType } from '@/lib/staff-types';
 
 const categoryLabels: Record<ExpenseCategory, string> = {
@@ -14,7 +15,7 @@ const categoryLabels: Record<ExpenseCategory, string> = {
 };
 
 export default function ExpenseManagement({ staff, activeShift }: { staff: StaffIdentity; activeShift: ShiftRecord | null }) {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = getCurrentWorkDay();
   const [date, setDate] = useState(today);
   const [expenses, setExpenses] = useState<ExpenseRecord[]>([]);
   const [form, setForm] = useState({ amount: '', category: 'FOOD' as ExpenseCategory, description: '', shiftType: staff.shiftType as ShiftType });

@@ -457,6 +457,11 @@ export default function CashierDashboard() {
   const visibleOrders = orderFilter === 'ALL' ? orders : orders.filter((order) => order.status === orderFilter);
   const completedShiftToday = staff?.role === 'EMPLOYEE'
     && shiftRows.some((shift) => shift.employeeId === staff.id && shiftEndedToday(shift, clockNow));
+  // Shift money entries can go on: the active shift, or the one just closed in the same work day.
+  const entryShift = activeShift ?? (staff?.role === 'EMPLOYEE'
+    ? shiftRows.filter((shift) => shift.employeeId === staff.id && shiftEndedToday(shift, clockNow))
+      .sort((a, b) => Date.parse(b.startedAt) - Date.parse(a.startedAt))[0] ?? null
+    : null);
   const pricingHasChanges = JSON.stringify(pricingSettings) !== JSON.stringify(savedPricingSettings);
   const navigationItems: NavigationItem[] = staff?.role === 'ADMIN'
     ? [
@@ -717,7 +722,7 @@ export default function CashierDashboard() {
             انتهى شيفتك اليوم، لذلك لا يمكنك إنشاء طلبات مرتبطة بشيفت. يمكنك بدء شيفت جديد غدًا.
           </section>
         ) : dashboardSection === 'new-order' ? <CashierOrder onCreated={() => void fetchOrders()} /> : null}
-        {dashboardSection === 'expenses' && staff ? <ExpenseManagement staff={staff} activeShift={activeShift} /> : null}
+        {dashboardSection === 'expenses' && staff ? <ExpenseManagement staff={staff} activeShift={entryShift} /> : null}
         {dashboardSection === 'menu' ? <MenuManagement /> : null}
         {dashboardSection === 'inventory' ? <InventoryManagement /> : null}
         {dashboardSection === 'recipe-stock' && staff?.role === 'ADMIN' ? <RecipeStockMonitor onEditRecipe={(productId) => {
@@ -907,7 +912,7 @@ export default function CashierDashboard() {
             </div>
           )}
         </section> : null}
-        {dashboardSection === 'shifts' && staff ? <ShiftRevenueManagement staff={staff} activeShift={activeShift} shifts={shiftRows} /> : null}
+        {dashboardSection === 'shifts' && staff ? <ShiftRevenueManagement staff={staff} activeShift={entryShift} shifts={shiftRows} /> : null}
         {dashboardSection === 'users' && staff?.role === 'ADMIN' ? <UserManagement currentStaffId={staff.id} /> : null}
         {dashboardSection === 'customers' ? <CustomerManagement /> : null}
 

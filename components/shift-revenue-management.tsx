@@ -1,12 +1,13 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { getCurrentWorkDay } from '@/lib/shift-time';
 import type { ManualRevenueRecord } from '@/lib/revenue-types';
 import type { ShiftRecord, StaffIdentity } from '@/lib/staff-types';
 
 type RevenueFields = { amount: string; date: string; description: string };
 const inputClass = 'min-h-11 w-full rounded-xl border border-[#E5E3B2] bg-white px-3 py-2 text-sm';
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => getCurrentWorkDay();
 const firstOfMonth = () => `${today().slice(0, 7)}-01`;
 const emptyFields = (): RevenueFields => ({ amount: '', date: today(), description: '' });
 

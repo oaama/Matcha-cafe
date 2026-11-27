@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { getCatalog } from '@/lib/catalog-repository';
 import { requireStaffRole } from '@/lib/staff-api';
 import { adjustInventory, deleteInventoryItem, getInventoryData, InventoryItemNotFoundError, saveInventoryConfiguration } from '@/lib/inventory-repository';
+import { extraRecipeKeys, isExtraRecipeKey } from '@/lib/extra-recipe';
 import { inventoryAdjustmentSchema, inventorySettingsSchema } from '@/lib/validation';
 
 async function isStaff() {
@@ -15,7 +16,7 @@ export async function GET() {
   try {
     const catalog = await getCatalog();
     const inventory = await getInventoryData(catalog.products);
-    return NextResponse.json({ ...inventory, products: catalog.products });
+    return NextResponse.json({ ...inventory, products: catalog.products, groups: catalog.groups });
   } catch (error) {
     console.error('Unable to load inventory:', error);
     return NextResponse.json({ error: 'تعذر تحميل المخزون' }, { status: 500 });
@@ -39,8 +40,9 @@ export async function PUT(request: Request) {
   try {
     const catalog = await getCatalog();
     const productIds = new Set(catalog.products.map((product) => product.id));
+    const extraKeys = extraRecipeKeys(catalog.groups);
     if (parsed.data.items.some((item) => item.type === 'product' && !productIds.has(item.productId!))
-      || parsed.data.recipes.some((recipe) => !productIds.has(recipe.productId))) {
+      || parsed.data.recipes.some((recipe) => isExtraRecipeKey(recipe.productId) ? !extraKeys.has(recipe.productId) : !productIds.has(recipe.productId))) {
       return NextResponse.json({ error: 'يوجد صنف غير موجود في المنيو ضمن إعدادات المخزون' }, { status: 400 });
     }
     await saveInventoryConfiguration(parsed.data.items, parsed.data.recipes);

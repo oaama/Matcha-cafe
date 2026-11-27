@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import type { InventoryItem, InventoryMovement, Product, ProductRecipe } from '@/lib/types';
+import { extraRecipeKey } from '@/lib/extra-recipe';
+import type { CatalogGroup, InventoryItem, InventoryMovement, Product, ProductRecipe } from '@/lib/types';
 import { getProductPrice } from '@/lib/pricing';
 import { calculateRecipeCost } from '@/lib/recipe-cost';
 
@@ -9,6 +10,7 @@ type InventoryData = {
   items: InventoryItem[];
   recipes: ProductRecipe[];
   products: Product[];
+  groups?: Record<string, CatalogGroup>;
   movements: InventoryMovement[];
 };
 
@@ -25,6 +27,7 @@ export default function InventoryManagement() {
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [recipes, setRecipes] = useState<ProductRecipe[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [groups, setGroups] = useState<Record<string, CatalogGroup>>({});
   const [movements, setMovements] = useState<InventoryMovement[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -61,6 +64,7 @@ export default function InventoryManagement() {
       setItems(data.items);
       setRecipes(data.recipes);
       setProducts(data.products);
+      setGroups(data.groups ?? {});
       setMovements(data.movements);
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : 'تعذر تحميل المخزون');
@@ -588,6 +592,47 @@ export default function InventoryManagement() {
                 );
               })}
             </div>
+
+            {Object.keys(groups).length ? (
+              <div className="mt-7 space-y-3" data-extras-recipes>
+                <h3 className="font-bold text-[#403d33]">الإضافات والخامات</h3>
+                <p className="text-xs text-[#705331]">اختار لكل إضافة الخامة من المخزون وكميتها. لما الإضافة تتطلب في أوردر بتتخصم من الخامة دي مباشرة.</p>
+                {Object.values(groups).map((group) => (
+                  <div key={group.id} className="rounded-xl border border-[#E5E3B2] bg-white p-3">
+                    <p className="mb-2 text-sm font-bold text-[#403d33]">{group.ar}</p>
+                    <div className="space-y-2">
+                      {group.options.map((option) => {
+                        const key = extraRecipeKey(group.id, option.ar, option.en);
+                        const linked = recipes.find((entry) => entry.productId === key)?.ingredients[0];
+                        const linkable = items.filter((item) => item.type === 'ingredient' || item.trackStock);
+                        return (
+                          <div key={key} data-extra-recipe={key} className="grid grid-cols-[1fr_auto] items-center gap-2 rounded-lg bg-[#f8f8f4] p-2 text-sm">
+                            <span className="font-medium">{option.ar}{option.price ? ` (+${option.price})` : ''}</span>
+                            <span className="flex items-center gap-1.5">
+                              <input aria-label={`كمية ${option.ar}`} type="number" min="0" step="any" inputMode="decimal" placeholder="الكمية" disabled={!linked}
+                                value={linked?.quantity ?? ''}
+                                onChange={(event) => {
+                                  const quantity = Number(event.target.value);
+                                  if (linked && quantity > 0) updateRecipe(key, { productId: key, ingredients: [{ itemId: linked.itemId, quantity }] });
+                                }}
+                                className="w-20 rounded-lg border-[#E5E3B2] px-2 py-1.5 text-sm disabled:opacity-40" />
+                            </span>
+                            <select aria-label={`خامة ${option.ar}`} value={linked?.itemId ?? ''} className="col-span-2 w-full rounded-lg border-[#E5E3B2] px-2 py-1.5 text-sm"
+                              onChange={(event) => {
+                                const itemId = event.target.value;
+                                updateRecipe(key, itemId ? { productId: key, ingredients: [{ itemId, quantity: linked?.quantity ?? 1 }] } : null);
+                              }}>
+                              <option value="">من غير خامة</option>
+                              {linkable.map((item) => <option key={item.id} value={item.id}>{item.name} ({item.unit})</option>)}
+                            </select>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : null}
 
             <div className="mt-7">
               <h3 className="mb-3 font-bold text-[#403d33]">آخر حركات المخزون</h3>

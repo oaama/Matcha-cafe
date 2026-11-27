@@ -2,14 +2,14 @@ import { describe, expect, it, vi } from 'vitest';
 import { calculateOrderTotal, SERVICE_FEE_RATE, TAX_RATE, validateProductSelections } from './store';
 import { menuSeed } from './menu-data';
 import { createStaffSessionToken, hasStaffCredentials, isValidStaffSessionToken, verifyStaffCredentials } from './staff-auth';
-import { endShift, getActiveShift, listShifts, reactivateShift, startShift } from './shift-repository';
-import { formatShiftDuration, getShiftDurationMinutes, getShiftBusinessDate, getShiftsCoveringTimestamp, shiftEndedToday } from './shift-time';
+import { endShift, getActiveShift, getShiftForEntry, listShifts, reactivateShift, startShift } from './shift-repository';
+import { getCurrentWorkDay, formatShiftDuration, getShiftDurationMinutes, getShiftBusinessDate, getShiftsCoveringTimestamp, shiftEndedToday } from './shift-time';
 import { getShiftReportOrders } from './shift-attribution';
 import { clearMockOrders, getOrderRepository } from './order-repository';
 import { clearMockExpenses, createExpense, deleteExpense, listExpenses, updateExpense } from './expense-repository';
 import { clearMockPricingSettings, getPricingSettings, updatePricingSettings } from './pricing-settings';
 import { clearMockCatalog, getCatalog, saveCatalog } from './catalog-repository';
-import { catalogSchema, createOrderSchema } from './validation';
+import { catalogSchema, createOrderSchema, staffCreateOrderSchema } from './validation';
 import { adjustInventory, clearMockInventory, getInventoryData, saveInventoryConfiguration, saveInventorySettings } from './inventory-repository';
 import { deleteStaffAccount, listStaffAccounts, createStaffAccount, updateStaffAccount } from './staff-user-repository';
 import { createStaffPasswordHash, verifyStaffPassword } from './staff-account-repository';
@@ -133,6 +133,13 @@ describe('customer follow-up', () => {
     expect(normalizeCustomerPhone('+20 (10) 1234-5678')).toBe('201012345678');
   });
 
+  it('lets staff orders skip the phone but still rejects a bad one', () => {
+    const order = { orderType: 'TAKEAWAY' as const, items: [{ productId: 'matcha-2', quantity: 1, customizations: [] }] };
+    expect(staffCreateOrderSchema.safeParse(order).success).toBe(true);
+    expect(staffCreateOrderSchema.safeParse({ ...order, customerPhone: 'café please' }).success).toBe(false);
+    expect(staffCreateOrderSchema.safeParse({ orderType: 'DELIVERY', customerName: 'A', customerAddress: 'x', items: order.items }).success).toBe(false);
+  });
+
   it('groups customer orders by normalized phone and keeps follow-up notes in mock storage', async () => {
     const previousProvider = process.env.DATA_PROVIDER;
     process.env.DATA_PROVIDER = 'mock';
@@ -212,6 +219,10 @@ describe('shift tracking', () => {
     expect(getShiftBusinessDate('2026-11-09T21:59:00.000Z')).toBe('2026-11-09');
     expect(getShiftBusinessDate('2026-11-09T22:00:00.000Z')).toBe('2026-11-10');
     expect(shiftEndedToday({ endedAt: '2026-11-09T21:59:00.000Z' }, Date.parse('2026-11-09T18:00:00.000Z'))).toBe(true);
+    // Night shift: 20:00 Cairo Nov 9 to 01:00 Cairo Nov 10 (UTC 18:00 -> 23:00 Nov 9).
+    const night = { startedAt: '2026-11-09T18:00:00.000Z', endedAt: '2026-11-09T23:00:00.000Z' };
+    expect(shiftEndedToday(night, Date.parse('2026-11-09T23:30:00.000Z'))).toBe(true);
+    expect(shiftEndedToday(night, Date.parse('2026-11-10T18:00:00.000Z'))).toBe(false);
     const shifts = [
       { id: 'shift-a', employeeId: 'employee-a', username: 'Employee A', shiftType: 'DAY' as const, startedAt: '2026-11-09T08:00:00.000Z', endedAt: '2026-11-09T16:00:00.000Z' },
       { id: 'shift-b', employeeId: 'employee-b', username: 'Employee B', shiftType: 'DAY' as const, startedAt: '2026-11-09T12:00:00.000Z', endedAt: '2026-11-09T20:00:00.000Z' },
@@ -273,6 +284,37 @@ describe('shift tracking', () => {
     if (!first.shift || !nextShift.shift) throw new Error('Expected shifts to be created');
     expect(nextShift.shift.id).not.toBe(first.shift.id);
     expect((await listShifts('employee-a')).map((shift) => shift.id)).toEqual([nextShift.shift.id, first.shift.id]);
+  });
+
+  it('keeps a night shift on the work day it started, past midnight and until 06:00', async () => {
+    const store = (globalThis as { matchaMockShiftStore?: { shifts: Array<{ employeeId: string }> } }).matchaMockShiftStore ??= { shifts: [] };
+    store.shifts = [];
+    // Started 20:00 Cairo Fri Nov 27 (18:00Z). Still active at 00:40 Sat and 05:30 Sat.
+    const started = await startShift({ employeeId: 'night-b', username: 'Night B', shiftType: 'NIGHT' }, new Date('2026-11-27T18:00:00.000Z'));
+    expect(started.created).toBe(true);
+    expect(getCurrentWorkDay(new Date('2026-11-27T22:40:00.000Z'))).toBe('2026-11-27'); // 00:40 Cairo Sat
+    expect(getCurrentWorkDay(new Date('2026-11-28T03:30:00.000Z'))).toBe('2026-11-27'); // 05:30 Cairo Sat
+    expect(getCurrentWorkDay(new Date('2026-11-28T04:00:00.000Z'))).toBe('2026-11-28'); // 06:00 Cairo Sat
+    expect((await getShiftForEntry('night-b', new Date('2026-11-27T22:40:00.000Z')))?.id).toBe(started.shift?.id);
+    // Closes at 00:30 Sat: still the same work day, so money entries can still go on it, and no new shift yet.
+    await endShift('night-b', new Date('2026-11-27T22:30:00.000Z'));
+    expect((await getShiftForEntry('night-b', new Date('2026-11-27T22:40:00.000Z')))?.id).toBe(started.shift?.id);
+    expect((await startShift({ employeeId: 'night-b', username: 'Night B', shiftType: 'NIGHT' }, new Date('2026-11-27T22:45:00.000Z'))).completedToday).toBe(true);
+    // Next evening everything resets.
+    expect(await getShiftForEntry('night-b', new Date('2026-11-28T18:00:00.000Z'))).toBeNull();
+    expect((await startShift({ employeeId: 'night-b', username: 'Night B', shiftType: 'NIGHT' }, new Date('2026-11-28T18:00:00.000Z'))).created).toBe(true);
+  });
+
+  it('lets an employee start a new night shift the evening after one that closed past midnight', async () => {
+    const store = (globalThis as { matchaMockShiftStore?: { shifts: Array<{ employeeId: string }> } }).matchaMockShiftStore ??= { shifts: [] };
+    store.shifts = [];
+    await startShift({ employeeId: 'night-a', username: 'Night A', shiftType: 'NIGHT' }, new Date('2026-11-09T18:00:00.000Z'));
+    await endShift('night-a', new Date('2026-11-09T23:30:00.000Z'));
+    const sameNight = await startShift({ employeeId: 'night-a', username: 'Night A', shiftType: 'NIGHT' }, new Date('2026-11-09T23:45:00.000Z'));
+    expect(sameNight.completedToday).toBe(true);
+    const nextEvening = await startShift({ employeeId: 'night-a', username: 'Night A', shiftType: 'NIGHT' }, new Date('2026-11-10T18:00:00.000Z'));
+    expect(nextEvening.created).toBe(true);
+    expect(nextEvening.completedToday).not.toBe(true);
   });
 
   it('lets an admin reactivate the same shift without counting the closed gap as work', async () => {
